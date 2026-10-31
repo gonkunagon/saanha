@@ -13,7 +13,7 @@ export default async function NewOrderPage() {
         <h1 className="text-2xl font-bold">สร้างออเดอร์ใหม่</h1>
       </div>
       <Card>
-        <p className="mb-4 text-sm text-gray-500">ระบบจะออกเลขออเดอร์ให้อัตโนมัติ จากนั้นเพิ่มรายการสินค้าในหน้าถัดไป</p>
+        <p className="mb-4 text-sm text-gray-500">ระบบจะออกเลขออเดอร์ให้อัตโนมัติ</p>
         <CreateOrderForm>
           <OrderFields />
         </CreateOrderForm>

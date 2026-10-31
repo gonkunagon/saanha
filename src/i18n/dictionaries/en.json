@@ -7,6 +7,7 @@
     "home": "Home",
     "services": "Services",
     "calculator": "Shipping calculator",
+    "track": "Track shipment",
     "kb": "Guides & FAQ",
     "quote": "Get a quote"
   },
@@ -15,6 +16,7 @@
     "heroSubtitle": "Sourcing, purchasing, supplier payment, CNY exchange and door-to-door delivery — we handle every step.",
     "ctaQuote": "Request sourcing",
     "ctaCalc": "Estimate shipping",
+    "trackLink": "Have a tracking number? Track it here →",
     "features": [
       { "title": "All in one place", "body": "Sourcing, ordering, payment, shipping" },
       { "title": "Checked before shipping", "body": "Counted and inspected in China" },
@@ -79,6 +81,36 @@
     "disclaimer": "Shipping is charged by weight (kg) or volume (CBM) depending on the product type. The figure above is a preliminary estimate. Final charges are based on the weight and dimensions measured at our warehouse and will be confirmed before payment.",
     "excludes": "Excludes domestic delivery, wooden crating and cargo insurance.",
     "baht": "THB"
+  },
+  "track": {
+    "title": "Track your shipment",
+    "subtitle": "Check your shipment status yourself, 24/7",
+    "trackingNo": "Tracking / order number",
+    "trackingNoHint": "Sent to you by our team on LINE",
+    "phoneLast4": "Last 4 digits of your phone",
+    "phoneHint": "The number you use to contact us",
+    "submit": "Check status",
+    "searching": "Searching...",
+    "notFound": "Shipment not found. Please check the tracking number and the last 4 digits of your phone.",
+    "tooMany": "Too many searches. Please wait a moment and try again.",
+    "error": "The system is temporarily unavailable. Please try again or contact us on LINE.",
+    "currentStatus": "Current status",
+    "method": "Shipping method",
+    "boxes": "Boxes",
+    "weight": "Weight (kg)",
+    "cbm": "Volume (CBM)",
+    "domestic": "Thailand courier tracking no.",
+    "note": "Note",
+    "waiting": "Pending",
+    "stages": {
+      "ordered": "Order placed",
+      "china_warehouse": "Arrived at China warehouse",
+      "departed": "Left China warehouse, in transit to Thailand",
+      "thai_warehouse": "Arrived at Thailand warehouse",
+      "out_for_delivery": "Out for delivery",
+      "delivered": "Delivered"
+    },
+    "help": "Questions about your shipment? Contact us on LINE"
   },
   "kb": {
     "title": "Guides & FAQ",

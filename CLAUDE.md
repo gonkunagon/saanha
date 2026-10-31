@@ -7,5 +7,6 @@ China sourcing / shipping / CNY payment business website (Thai market). Next.js 
 - Knowledge base = Markdown in `content/kb/<locale>/<slug>.md` with frontmatter (title, description, category, order). Same slug in both locales. Categories are defined in `src/lib/kb.ts`.
 - Rates and contact info are config, not code: `src/config/rates.ts` (shipping rates per product type × method), `src/config/site.ts`. Current values are placeholders.
 - The CNY exchange rate is deliberately never shown on the site — customers ask on LINE.
+- Tracking (`/[locale]/track`, `src/app/api/track/route.ts`, `src/lib/tracking.ts`) reads a published Google Sheets CSV (`TRACKING_SHEET_CSV_URL`); dev falls back to `data/tracking-sample.csv`, production never does. Lookup requires tracking no. + phone last 4, and is rate-limited per IP.
 - Quote form posts to `src/app/api/quote/route.ts`, which pushes a LINE Messaging API message (env: `LINE_CHANNEL_ACCESS_TOKEN`, `LINE_TARGET_ID`; logs only if unset).
 - Commands: `npm run dev`, `npm run build`, `npm run typecheck`.

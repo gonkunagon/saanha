@@ -11,6 +11,7 @@ import {
   HomeIcon,
   ListIcon,
   PackageIcon,
+  PinIcon,
   ReceiptIcon,
   SearchIcon,
   WalletIcon,
@@ -44,6 +45,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               <Link href={`/${locale}/quote`} className="btn-light">{dict.home.ctaQuote}</Link>
               <Link href={`/${locale}/calculator`} className="btn-outline-light">{dict.home.ctaCalc}</Link>
             </div>
+            <Link
+              href={`/${locale}/track`}
+              className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-accent-300 hover:text-white hover:underline"
+            >
+              <PinIcon className="h-4 w-4" />
+              {dict.home.trackLink}
+            </Link>
           </div>
           <HeroIllustration className="mx-auto w-full max-w-[260px] md:max-w-md" />
         </div>

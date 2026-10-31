@@ -88,6 +88,17 @@ export const BookIcon = (p: IconProps) => (
   </Icon>
 );
 
+export const CheckIcon = (p: IconProps) => (
+  <Icon {...p}><path d="M5 12.5l4.5 4.5L19 7.5" /></Icon>
+);
+
+export const PinIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 21s-7-6.2-7-11.5a7 7 0 0114 0C19 14.8 12 21 12 21z" />
+    <circle cx="12" cy="9.5" r="2.5" />
+  </Icon>
+);
+
 export const ChatIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M4 5h16v11H10l-5 4v-4H4z" />

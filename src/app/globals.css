@@ -3,9 +3,15 @@
 @theme {
   --color-brand-50: #fef2f2;
   --color-brand-100: #fee2e2;
+  --color-brand-200: #fecaca;
+  --color-brand-300: #fca5a5;
   --color-brand-500: #dc2626;
   --color-brand-600: #b91c1c;
   --color-brand-700: #991b1b;
+  --color-brand-800: #7f1d1d;
+  --color-accent-300: #fcd34d;
+  --color-accent-400: #fbbf24;
+  --color-accent-500: #f59e0b;
   --color-ink: #1f2937;
   --font-sans: var(--font-noto-thai), ui-sans-serif, system-ui, sans-serif;
 }
@@ -25,6 +31,15 @@ body {
 
 .btn-secondary {
   @apply inline-flex items-center justify-center rounded-lg border border-brand-600 px-5 py-2.5 font-medium text-brand-600 hover:bg-brand-50;
+}
+
+/* ปุ่มบนพื้นสีแดง */
+.btn-light {
+  @apply inline-flex items-center justify-center rounded-lg bg-white px-5 py-2.5 font-semibold text-brand-700 shadow-sm hover:bg-brand-50;
+}
+
+.btn-outline-light {
+  @apply inline-flex items-center justify-center rounded-lg border border-white/70 px-5 py-2.5 font-medium text-white hover:bg-white/10;
 }
 
 /* บทความใน knowledge base */

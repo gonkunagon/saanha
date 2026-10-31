@@ -7,7 +7,6 @@
     "home": "Home",
     "services": "Services",
     "calculator": "Shipping calculator",
-    "exchange": "CNY exchange",
     "kb": "Guides & FAQ",
     "quote": "Get a quote"
   },
@@ -16,6 +15,23 @@
     "heroSubtitle": "Sourcing, purchasing, supplier payment, CNY exchange and door-to-door delivery — we handle every step.",
     "ctaQuote": "Request sourcing",
     "ctaCalc": "Estimate shipping",
+    "features": [
+      { "title": "All in one place", "body": "Sourcing, ordering, payment, shipping" },
+      { "title": "Checked before shipping", "body": "Counted and inspected in China" },
+      { "title": "Quote before payment", "body": "Costs confirmed every time" },
+      { "title": "Delivered nationwide", "body": "Pick up or door-to-door" }
+    ],
+    "methodsTitle": "Choose the right shipping method",
+    "methodsSubtitle": "From our China warehouse to Thailand, by truck or by sea",
+    "methods": [
+      { "key": "truck", "title": "Truck freight", "body": "Overland via Laos or Vietnam. Fast — ideal for goods you want to sell quickly or smaller items." },
+      { "key": "sea", "title": "Sea freight", "body": "More economical — ideal for bulky or heavy goods and larger volumes." }
+    ],
+    "daysLabel": "Estimated transit",
+    "methodsCta": "Estimate shipping →",
+    "ctaTitle": "Ready to import from China?",
+    "ctaBody": "Send us product links or details and our team will advise you.",
+    "ctaLine": "Chat with us on LINE",
     "stepsTitle": "How it works",
     "steps": [
       { "title": "Send your list", "body": "Share 1688 / Taobao links or photos of what you need" },
@@ -26,6 +42,7 @@
   },
   "services": {
     "title": "Our services",
+    "subtitle": "We handle every step, from finding products in China to delivering them to you.",
     "items": [
       { "key": "sourcing", "title": "Product sourcing", "body": "We find the right factories and shops, compare prices and check quality before ordering." },
       { "key": "order", "title": "Purchasing agent", "body": "We order from 1688, Taobao, Tmall and Chinese suppliers, and negotiate for you." },
@@ -62,20 +79,6 @@
     "disclaimer": "Shipping is charged by weight (kg) or volume (CBM) depending on the product type. The figure above is a preliminary estimate. Final charges are based on the weight and dimensions measured at our warehouse and will be confirmed before payment.",
     "excludes": "Excludes domestic delivery, wooden crating and cargo insurance.",
     "baht": "THB"
-  },
-  "exchange": {
-    "title": "CNY exchange & supplier payment",
-    "subtitle": "Pay Chinese shops and suppliers in Thai baht via Alipay, WeChat Pay or a Chinese bank account.",
-    "rateOnRequest": "Contact us for today's rate",
-    "cta": "Ask for a rate on LINE",
-    "stepsTitle": "Steps",
-    "steps": [
-      "Send the CNY amount and recipient account details on LINE",
-      "We quote the rate and THB amount",
-      "Transfer and send us the slip",
-      "Receive proof of payment from the China side"
-    ],
-    "note": "Rates follow the market and change during the day. A quoted rate is valid only for the time our staff specify."
   },
   "kb": {
     "title": "Guides & FAQ",

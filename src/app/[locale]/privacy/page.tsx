@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale } from "@/i18n/config";
 import { getPage } from "@/lib/kb";
+import { PageHeader } from "@/components/PageHeader";
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -19,9 +20,11 @@ export default async function PrivacyPage({ params }: Props) {
   if (!page) notFound();
 
   return (
-    <article className="mx-auto max-w-3xl px-4 py-16">
-      <h1 className="text-3xl font-bold">{page.title}</h1>
-      <div className="prose-kb mt-6" dangerouslySetInnerHTML={{ __html: page.html }} />
-    </article>
+    <>
+      <PageHeader title={page.title} width="max-w-3xl" />
+      <article className="mx-auto max-w-3xl px-4 py-10">
+        <div className="prose-kb" dangerouslySetInnerHTML={{ __html: page.html }} />
+      </article>
+    </>
   );
 }

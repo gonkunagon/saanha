@@ -4,7 +4,7 @@
 export function HeroIllustration({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 480 360" fill="none" aria-hidden="true" className={className}>
-      <circle cx="240" cy="180" r="160" className="fill-brand-50" />
+      <circle cx="240" cy="180" r="160" className="fill-white" />
 
       {/* เส้นทาง */}
       <path

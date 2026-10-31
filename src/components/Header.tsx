@@ -10,7 +10,6 @@ export function Header({ locale, nav }: Props) {
   const links = [
     { href: "/services", label: nav.services },
     { href: "/calculator", label: nav.calculator },
-    { href: "/exchange", label: nav.exchange },
     { href: "/kb", label: nav.kb },
   ];
 

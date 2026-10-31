@@ -31,7 +31,6 @@ src/app/api/quote/          รับข้อมูลจากฟอร์ม�
 | `/th` | หน้าแรก |
 | `/th/services` | บริการ |
 | `/th/calculator` | คำนวณค่าขนส่ง (กิโล / คิว) |
-| `/th/exchange` | แลกเงินหยวน & ฝากจ่าย (สอบถามเรททาง LINE) |
 | `/th/kb` | คู่มือ & FAQ |
 | `/th/quote` | ฟอร์มฝากหาสินค้า / ขอใบเสนอราคา (มีช่องยินยอม PDPA) |
 | `/th/privacy` | นโยบายความเป็นส่วนตัว (แก้ที่ `content/pages/<locale>/privacy.md`) |

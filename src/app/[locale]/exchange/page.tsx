@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { site } from "@/config/site";
+import { ChatIcon } from "@/components/icons";
 
 export default async function ExchangePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -13,6 +14,9 @@ export default async function ExchangePage({ params }: { params: Promise<{ local
       <h1 className="text-3xl font-bold">{t.title}</h1>
       <p className="mt-2 text-gray-600">{t.subtitle}</p>
       <div className="my-8 rounded-xl bg-brand-50 p-8 text-center">
+        <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white text-brand-600 shadow-sm">
+          <ChatIcon className="h-7 w-7" />
+        </span>
         <p className="text-xl font-semibold text-brand-700">{t.rateOnRequest}</p>
         <p className="mt-2 text-gray-600">LINE: {site.lineId}</p>
         <a href={site.lineUrl} target="_blank" rel="noopener noreferrer" className="btn-primary mt-6">

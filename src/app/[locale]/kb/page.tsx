@@ -2,7 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
-import { getArticles, kbCategories } from "@/lib/kb";
+import { getArticles, kbCategories, type KbCategory } from "@/lib/kb";
+import { BookIcon, ShieldIcon, TruckIcon, WalletIcon } from "@/components/icons";
+
+const categoryIcons: Record<KbCategory, typeof BookIcon> = {
+  "getting-started": BookIcon,
+  shipping: TruckIcon,
+  payment: WalletIcon,
+  policies: ShieldIcon,
+};
 
 export default async function KbIndexPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -18,9 +26,13 @@ export default async function KbIndexPage({ params }: { params: Promise<{ locale
         {kbCategories.map((cat) => {
           const list = articles.filter((a) => a.category === cat);
           if (list.length === 0) return null;
+          const Icon = categoryIcons[cat];
           return (
             <div key={cat}>
-              <h2 className="mb-3 text-lg font-semibold text-brand-700">{t.categories[cat]}</h2>
+              <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-brand-700">
+                <Icon className="h-5 w-5" />
+                {t.categories[cat]}
+              </h2>
               <ul className="space-y-3">
                 {list.map((a) => (
                   <li key={a.slug}>

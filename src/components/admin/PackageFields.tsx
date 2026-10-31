@@ -12,12 +12,14 @@ export type PackageInput = {
   heightCm?: number | null;
 };
 
-type Row = { key: number; tracking: string; boxes: string; weight: string; w: string; l: string; h: string };
+// auto = เลขพัสดุจีนของแถวนี้ให้ระบบตั้งให้ (ตามแถวแรก) จนกว่าพนักงานจะพิมพ์เอง
+type Row = { key: number; tracking: string; auto: boolean; boxes: string; weight: string; w: string; l: string; h: string };
 
 const str = (v?: number | string | null) => (v == null ? "" : String(v));
 const toRow = (p: PackageInput, key: number): Row => ({
   key,
   tracking: str(p.chinaTrackingNo),
+  auto: !p.chinaTrackingNo,
   boxes: str(p.boxes),
   weight: str(p.weightKg),
   w: str(p.widthCm),
@@ -26,19 +28,33 @@ const toRow = (p: PackageInput, key: number): Row => ({
 });
 const rowCbm = (r: Row) => calcCbm(Number(r.w) || null, Number(r.l) || null, Number(r.h) || null, Number(r.boxes) || null);
 
+// เลขพัสดุจีนของแถวที่ระบบตั้งให้ = เลขแถวแรก + "-ลำดับ" เช่น 0010883 → 0010883-1, 0010883-2
+function autoNumber(rows: Row[]): Row[] {
+  const base = rows[0]?.tracking.trim() ?? "";
+  return rows.map((r, i) => (i > 0 && r.auto ? { ...r, tracking: base ? `${base}-${i}` : "" } : r));
+}
+
 // พัสดุย่อยของรายการสินค้า: เพิ่มได้หลายแถว แต่ละแถว = กล่องขนาดเดียวกัน
 // prefix: ชื่อช่อง เช่น "pkg_" (ฟอร์มรายการเดียว) หรือ "pkg_3_" (แถวที่ 3 ในฟอร์มสร้างออเดอร์)
 export function PackageFields({ prefix = "pkg_", defaults = [] }: { prefix?: string; defaults?: PackageInput[] }) {
   const [rows, setRows] = useState<Row[]>(() => (defaults.length ? defaults : [{}]).map(toRow));
   const [nextKey, setNextKey] = useState(rows.length);
 
-  const update = (key: number, field: keyof Omit<Row, "key">, value: string) =>
-    setRows((rs) => rs.map((r) => (r.key === key ? { ...r, [field]: value } : r)));
+  const update = (key: number, field: keyof Omit<Row, "key" | "auto">, value: string) =>
+    setRows((rs) => {
+      const next = rs.map((r) => {
+        if (r.key !== key) return r;
+        // พิมพ์เลขพัสดุเองในแถวที่ 2 ขึ้นไป = เลิกตั้งอัตโนมัติ (ลบจนว่าง = กลับมาตั้งอัตโนมัติ)
+        if (field === "tracking") return { ...r, tracking: value, auto: value.trim() === "" };
+        return { ...r, [field]: value };
+      });
+      return field === "tracking" && rs[0]?.key === key ? autoNumber(next) : next;
+    });
   const addRow = () => {
-    setRows((rs) => [...rs, toRow({}, nextKey)]);
+    setRows((rs) => autoNumber([...rs, toRow({}, nextKey)]));
     setNextKey((k) => k + 1);
   };
-  const removeRow = (key: number) => setRows((rs) => (rs.length > 1 ? rs.filter((r) => r.key !== key) : rs));
+  const removeRow = (key: number) => setRows((rs) => (rs.length > 1 ? autoNumber(rs.filter((r) => r.key !== key)) : rs));
 
   const totalBoxes = rows.reduce((s, r) => s + (Number(r.boxes) || 0), 0);
   const totalWeight = rows.reduce((s, r) => s + (Number(r.weight) || 0), 0);

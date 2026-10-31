@@ -58,6 +58,9 @@
     "total": "Estimated shipping cost",
     "days": "Estimated transit time",
     "daysUnit": "days",
+    "disclaimerTitle": "Note",
+    "disclaimer": "This is a preliminary estimate only. Final shipping charges are based on the actual weight and dimensions measured at our warehouse and the verified product type. Our team will always confirm the exact amount before payment.",
+    "excludes": "Excludes domestic delivery, wooden crating and cargo insurance (if applicable).",
     "baht": "THB"
   },
   "exchange": {

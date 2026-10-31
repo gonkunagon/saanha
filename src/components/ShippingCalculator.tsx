@@ -93,6 +93,12 @@ export function ShippingCalculator({ t }: { t: Dictionary["calculator"] }) {
         <p className="mt-6 text-sm text-gray-600">{t.total}</p>
         <p className="text-3xl font-bold text-brand-700">{fmt(total)} {t.baht}</p>
         <p className="mt-4 text-sm text-gray-600">{t.days}: {transitDays[method]} {t.daysUnit}</p>
+        <div className="mt-6 border-t border-brand-100 pt-4 text-sm leading-relaxed text-gray-600">
+          <p>
+            <span className="font-semibold text-gray-700">{t.disclaimerTitle}:</span> {t.disclaimer}
+          </p>
+          <p className="mt-2">{t.excludes}</p>
+        </div>
       </div>
     </div>
   );

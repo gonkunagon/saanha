@@ -37,7 +37,7 @@
   },
   "calculator": {
     "title": "China–Thailand shipping calculator",
-    "note": "Estimate only. Charged by weight (kg) or volume (CBM), whichever is higher.",
+    "note": "Preliminary shipping estimate by weight (kg) and volume (CBM).",
     "productType": "Product type",
     "types": {
       "general": "General goods",
@@ -59,8 +59,8 @@
     "days": "Estimated transit time",
     "daysUnit": "days",
     "disclaimerTitle": "Note",
-    "disclaimer": "This is a preliminary estimate only. Final shipping charges are based on the actual weight and dimensions measured at our warehouse and the verified product type. Our team will always confirm the exact amount before payment.",
-    "excludes": "Excludes domestic delivery, wooden crating and cargo insurance (if applicable).",
+    "disclaimer": "Shipping is charged by weight (kg) or volume (CBM) depending on the product type. The figure above is a preliminary estimate. Final charges are based on the weight and dimensions measured at our warehouse and will be confirmed before payment.",
+    "excludes": "Excludes domestic delivery, wooden crating and cargo insurance.",
     "baht": "THB"
   },
   "exchange": {

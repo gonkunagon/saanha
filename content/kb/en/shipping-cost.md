@@ -5,10 +5,14 @@ category: shipping
 order: 11
 ---
 
-Shipping is calculated two ways and we charge **whichever is higher**:
+Shipping is charged one of two ways, **depending on the type and nature of the goods**:
 
 - **By weight** = total weight (kg) × rate per kg
 - **By volume** = volume (CBM) × rate per CBM
+
+In general, heavy but compact goods such as metal parts or tools are charged by weight, while light but bulky goods such as plush toys, pillows or furniture are charged by volume. Our team will tell you which method applies to your goods before payment.
+
+The shipping calculator shows both and uses the higher one as the estimate, so it won't understate your actual cost.
 
 ## Calculating CBM
 

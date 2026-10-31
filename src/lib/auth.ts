@@ -69,3 +69,10 @@ export async function requireUser(): Promise<User> {
   if (!user) redirect("/admin/login");
   return user;
 }
+
+// เฉพาะผู้ดูแลระบบ (จัดการบัญชีพนักงาน) — พนักงานทั่วไปจะถูกส่งกลับหน้าภาพรวม
+export async function requireAdmin(): Promise<User> {
+  const user = await requireUser();
+  if (user.role !== "admin") redirect("/admin");
+  return user;
+}

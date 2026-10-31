@@ -18,11 +18,16 @@ const updatedAt = () =>
 export const shippingMethods = ["truck", "sea"] as const;
 export type ShippingMethod = (typeof shippingMethods)[number];
 
+// admin = จัดการบัญชีพนักงานได้ / staff = ใช้งานออเดอร์และตู้ได้อย่างเดียว
+export const userRoles = ["admin", "staff"] as const;
+export type UserRole = (typeof userRoles)[number];
+
 export const users = sqliteTable("users", {
   id: id(),
   username: text("username").notNull().unique(),
   name: text("name").notNull(),
   passwordHash: text("password_hash").notNull(),
+  role: text("role", { enum: userRoles }).notNull().default("staff"),
   active: integer("active", { mode: "boolean" }).notNull().default(true),
   createdAt: createdAt(),
 });

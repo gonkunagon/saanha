@@ -3,14 +3,19 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { users } from "@/db/schema";
-import { requireUser } from "@/lib/auth";
+import { userRoles, users, type UserRole } from "@/db/schema";
+import { requireAdmin } from "@/lib/auth";
 import { hashPassword } from "@/lib/password";
+
+// ทุก action ในไฟล์นี้ใช้ได้เฉพาะผู้ดูแลระบบ
 
 export type UserFormState = { error?: string; ok?: string } | null;
 
+const role = (v: FormDataEntryValue | null): UserRole =>
+  (userRoles as readonly string[]).includes(String(v)) ? (v as UserRole) : "staff";
+
 export async function createUser(_prev: UserFormState, formData: FormData): Promise<UserFormState> {
-  await requireUser();
+  await requireAdmin();
   const username = String(formData.get("username") ?? "").trim().toLowerCase();
   const name = String(formData.get("name") ?? "").trim();
   const password = String(formData.get("password") ?? "");
@@ -20,13 +25,13 @@ export async function createUser(_prev: UserFormState, formData: FormData): Prom
   if (await db.query.users.findFirst({ where: eq(users.username, username) })) {
     return { error: "ชื่อผู้ใช้นี้มีอยู่แล้ว" };
   }
-  await db.insert(users).values({ username, name, passwordHash: await hashPassword(password) });
+  await db.insert(users).values({ username, name, role: role(formData.get("role")), passwordHash: await hashPassword(password) });
   revalidatePath("/admin/users");
   return { ok: `เพิ่มพนักงาน ${name} แล้ว` };
 }
 
 export async function changePassword(_prev: UserFormState, formData: FormData): Promise<UserFormState> {
-  await requireUser();
+  await requireAdmin();
   const id = Number(formData.get("id"));
   const password = String(formData.get("password") ?? "");
   if (password.length < 8) return { error: "รหัสผ่านต้องยาวอย่างน้อย 8 ตัวอักษร" };
@@ -35,9 +40,17 @@ export async function changePassword(_prev: UserFormState, formData: FormData): 
 }
 
 export async function setUserActive(formData: FormData) {
-  const me = await requireUser();
+  const me = await requireAdmin();
   const id = Number(formData.get("id"));
   if (id === me.id) return; // ปิดบัญชีตัวเองไม่ได้
   await db.update(users).set({ active: formData.get("active") === "1" }).where(eq(users.id, id));
+  revalidatePath("/admin/users");
+}
+
+export async function setUserRole(formData: FormData) {
+  const me = await requireAdmin();
+  const id = Number(formData.get("id"));
+  if (id === me.id) return; // ลดสิทธิ์ตัวเองไม่ได้ กันไม่มีแอดมินเหลือ
+  await db.update(users).set({ role: role(formData.get("role")) }).where(eq(users.id, id));
   revalidatePath("/admin/users");
 }

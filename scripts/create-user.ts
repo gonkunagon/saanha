@@ -1,4 +1,4 @@
-// สร้างบัญชีพนักงานคนแรก (คนต่อไปเพิ่มได้จากหน้า /admin/users)
+// สร้างบัญชีแอดมินคนแรก (พนักงานคนต่อไปเพิ่มได้จากหน้า /admin/users)
 // ใช้: npm run user:create -- <username> "<ชื่อที่แสดง>"
 // ระบบจะสุ่มรหัสผ่านให้และแสดงครั้งเดียว — เข้าสู่ระบบแล้วเปลี่ยนได้ที่หน้าพนักงาน
 
@@ -14,7 +14,8 @@ async function main() {
     process.exit(1);
   }
   const password = randomBytes(9).toString("base64url");
-  await db.insert(users).values({ username: username.toLowerCase(), name, passwordHash: await hashPassword(password) });
+  // บัญชีจาก command line เป็นแอดมินเสมอ (ใช้สร้างบัญชีแรก)
+  await db.insert(users).values({ username: username.toLowerCase(), name, role: "admin", passwordHash: await hashPassword(password) });
   console.log(`Created user "${username}". Password (shown once): ${password}`);
 }
 

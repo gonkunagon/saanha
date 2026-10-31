@@ -13,7 +13,7 @@ function Message({ state }: { state: { error?: string; ok?: string } | null }) {
 export function CreateUserForm() {
   const [state, action, pending] = useActionState(createUser, null);
   return (
-    <form action={action} className="grid gap-3 sm:grid-cols-4 sm:items-end">
+    <form action={action} className="grid gap-3 sm:grid-cols-5 sm:items-end">
       <Field label="ชื่อผู้ใช้ (ใช้ล็อกอิน)">
         <input name="username" required className="input" autoComplete="off" />
       </Field>
@@ -23,8 +23,14 @@ export function CreateUserForm() {
       <Field label="รหัสผ่าน (8 ตัวขึ้นไป)">
         <input name="password" type="password" required minLength={8} className="input" autoComplete="new-password" />
       </Field>
+      <Field label="สิทธิ์">
+        <select name="role" defaultValue="staff" className="input">
+          <option value="staff">พนักงาน</option>
+          <option value="admin">แอดมิน (จัดการพนักงานได้)</option>
+        </select>
+      </Field>
       <button disabled={pending} className="btn-primary">เพิ่มพนักงาน</button>
-      <div className="sm:col-span-4"><Message state={state} /></div>
+      <div className="sm:col-span-5"><Message state={state} /></div>
     </form>
   );
 }

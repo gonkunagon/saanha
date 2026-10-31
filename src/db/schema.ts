@@ -73,6 +73,10 @@ export const orderItems = sqliteTable("order_items", {
   chinaTrackingNo: text("china_tracking_no"),
   boxes: integer("boxes"),
   weightKg: real("weight_kg"),
+  // ขนาดต่อกล่อง (ซม.) — cbm คำนวณจาก กว้าง × ยาว × สูง × จำนวนกล่อง ÷ 1,000,000
+  widthCm: real("width_cm"),
+  lengthCm: real("length_cm"),
+  heightCm: real("height_cm"),
   cbm: real("cbm"),
   receivedAt: timestamp("received_at"), // ถึงโกดังจีน
   outForDeliveryAt: timestamp("out_for_delivery_at"),

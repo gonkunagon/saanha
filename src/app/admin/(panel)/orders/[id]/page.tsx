@@ -12,6 +12,7 @@ import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { OrderFields } from "../OrderFields";
 import { addItem, deleteItem, deleteOrder, updateItem, updateOrder } from "../actions";
 import { StageUpdateForm, type ContainerOption } from "./StageUpdateForm";
+import { SizeFields } from "@/components/admin/SizeFields";
 
 const STAGE_FORM = "stage-form";
 
@@ -30,15 +31,9 @@ function ItemEditForm({ item, containerOptions }: { item: ItemWithContainer; con
         <Field label="เลขพัสดุจีน">
           <input name="chinaTrackingNo" defaultValue={item.chinaTrackingNo ?? ""} className="input bg-white" />
         </Field>
-        <Field label="กล่อง">
-          <input name="boxes" type="number" min={0} defaultValue={item.boxes ?? ""} className="input bg-white" />
-        </Field>
-        <Field label="น้ำหนัก (กก.)">
-          <input name="weightKg" type="number" step="0.01" min={0} defaultValue={item.weightKg ?? ""} className="input bg-white" />
-        </Field>
-        <Field label="ปริมาตร (คิว)">
-          <input name="cbm" type="number" step="0.001" min={0} defaultValue={item.cbm ?? ""} className="input bg-white" />
-        </Field>
+        <div className="sm:col-span-2 lg:col-span-4 [&_input]:bg-white">
+          <SizeFields defaults={item} />
+        </div>
         <Field label="ตู้">
           <select name="containerCode" defaultValue={item.container?.code ?? ""} className="input bg-white">
             <option value="">— ไม่อยู่ในตู้ —</option>
@@ -156,6 +151,8 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                           {[
                             item.boxes != null && `${item.boxes} กล่อง`,
                             item.weightKg != null && `${item.weightKg} กก.`,
+                            item.widthCm && item.lengthCm && item.heightCm &&
+                              `${item.widthCm}×${item.lengthCm}×${item.heightCm} ซม.`,
                             item.cbm != null && `${item.cbm} คิว`,
                             item.chinaTrackingNo && `พัสดุจีน ${item.chinaTrackingNo}`,
                           ]
@@ -201,13 +198,16 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
         <form action={addItem} className="mt-6 border-t border-gray-100 pt-4">
           <input type="hidden" name="orderId" value={order.id} />
           <p className="mb-2 text-sm font-medium">+ เพิ่มรายการสินค้า</p>
-          <div className="grid gap-2 sm:grid-cols-[3fr_1fr_1fr_1fr_1fr_auto]">
-            <input name="description" required placeholder="ชื่อสินค้า *" className="input" />
-            <input name="quantity" type="number" min={0} placeholder="จำนวน" className="input" />
-            <input name="boxes" type="number" min={0} placeholder="กล่อง" className="input" />
-            <input name="weightKg" type="number" step="0.01" min={0} placeholder="กก." className="input" />
-            <input name="cbm" type="number" step="0.001" min={0} placeholder="คิว" className="input" />
-            <button className="btn-primary">เพิ่ม</button>
+          <div className="space-y-2">
+            <div className="grid gap-2 sm:grid-cols-[3fr_1fr_2fr]">
+              <input name="description" required placeholder="ชื่อสินค้า *" className="input" />
+              <input name="quantity" type="number" min={0} placeholder="จำนวน" className="input" />
+              <input name="chinaTrackingNo" placeholder="เลขพัสดุจีน" className="input" />
+            </div>
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <SizeFields />
+              <button className="btn-primary">เพิ่มรายการ</button>
+            </div>
           </div>
           <p className="mt-2 text-xs text-gray-500">สินค้าชิ้นเดียวกันที่แบ่งไปหลายตู้ ให้เพิ่มเป็นหลายรายการ</p>
         </form>

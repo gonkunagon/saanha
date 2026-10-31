@@ -8,6 +8,7 @@ import { containers, orderItems, orders, shippingMethods, type ShippingMethod } 
 import { requireUser } from "@/lib/auth";
 import { parseLocalDateTime } from "@/lib/datetime";
 import { nextOrderCode } from "@/lib/orders";
+import { calcCbm } from "@/lib/cbm";
 import { containerStageFields, itemStages, stageIndex, type ContainerStage, type ItemStage } from "@/lib/stages";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -37,6 +38,15 @@ async function findOrCreateContainer(tx: Tx, code: string, m: ShippingMethod) {
   return created;
 }
 
+// กล่อง น้ำหนัก ขนาดต่อกล่อง และคิวที่คำนวณจากขนาด
+function sizeFields(get: (key: string) => FormDataEntryValue | null | undefined) {
+  const boxes = toInt(get("boxes"));
+  const widthCm = toNum(get("widthCm"));
+  const lengthCm = toNum(get("lengthCm"));
+  const heightCm = toNum(get("heightCm"));
+  return { boxes, weightKg: toNum(get("weightKg")), widthCm, lengthCm, heightCm, cbm: calcCbm(widthCm, lengthCm, heightCm, boxes) };
+}
+
 // ---- ออเดอร์ ----
 
 function orderFields(fd: FormData) {
@@ -61,14 +71,13 @@ export async function createOrder(_prev: string | null, fd: FormData): Promise<s
   }
 
   const descriptions = fd.getAll("itemDescription");
+  const at = (key: string, i: number) => fd.getAll(key)[i];
   const items = descriptions
     .map((d, i) => ({
       description: str(d) ?? "",
-      quantity: toInt(fd.getAll("itemQuantity")[i]),
-      boxes: toInt(fd.getAll("itemBoxes")[i]),
-      weightKg: toNum(fd.getAll("itemWeightKg")[i]),
-      cbm: toNum(fd.getAll("itemCbm")[i]),
-      chinaTrackingNo: str(fd.getAll("itemChinaTrackingNo")[i]),
+      quantity: toInt(at("itemQuantity", i)),
+      chinaTrackingNo: str(at("itemChinaTrackingNo", i)),
+      ...sizeFields((k) => at(`item${k[0].toUpperCase()}${k.slice(1)}`, i)),
     }))
     .filter((i) => i.description);
 
@@ -120,10 +129,8 @@ export async function addItem(fd: FormData) {
     orderId: Number(fd.get("orderId")),
     description,
     quantity: toInt(fd.get("quantity")),
-    boxes: toInt(fd.get("boxes")),
-    weightKg: toNum(fd.get("weightKg")),
-    cbm: toNum(fd.get("cbm")),
     chinaTrackingNo: text(fd, "chinaTrackingNo"),
+    ...sizeFields((k) => fd.get(k)),
   });
   refresh();
 }
@@ -139,15 +146,16 @@ export async function updateItem(fd: FormData) {
     if (!item) return;
     const code = text(fd, "containerCode");
     const container = code ? await findOrCreateContainer(tx, code, item.order.method) : null;
+    const size = sizeFields((k) => fd.get(k));
     await tx
       .update(orderItems)
       .set({
         description,
         quantity: toInt(fd.get("quantity")),
         chinaTrackingNo: text(fd, "chinaTrackingNo"),
-        boxes: toInt(fd.get("boxes")),
-        weightKg: toNum(fd.get("weightKg")),
-        cbm: toNum(fd.get("cbm")),
+        ...size,
+        // รายการเก่าที่ยังไม่มีขนาด: ไม่ล้างคิวเดิมทิ้ง
+        cbm: size.cbm ?? item.cbm,
         containerId: container?.id ?? null,
         receivedAt: parseLocalDateTime(fd.get("receivedAt")),
         outForDeliveryAt: parseLocalDateTime(fd.get("outForDeliveryAt")),

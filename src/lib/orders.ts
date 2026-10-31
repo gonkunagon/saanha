@@ -1,0 +1,114 @@
+import { desc, like } from "drizzle-orm";
+import { db } from "@/db";
+import { orders, type Container, type OrderItem } from "@/db/schema";
+import {
+  containerStageFields,
+  containerStages,
+  currentStage,
+  itemStageDates,
+  slowestStage,
+  type ContainerStage,
+  type ItemStage,
+} from "./stages";
+
+export type ItemWithContainer = OrderItem & { container: Container | null };
+
+export const stageOfItem = (item: ItemWithContainer) => currentStage(itemStageDates(item, item.container));
+
+export function summarizeOrder(items: ItemWithContainer[]) {
+  const stages = items.map(stageOfItem);
+  return {
+    stage: slowestStage(stages),
+    itemCount: items.length,
+    deliveredCount: stages.filter((s) => s === "delivered").length,
+    containerCount: new Set(items.map((i) => i.containerId).filter(Boolean)).size,
+  };
+}
+
+// สถานะล่าสุดของตู้ (null = ยังเปิดตู้ รอโหลดสินค้า)
+export function containerStageOf(c: Container): ContainerStage | null {
+  let stage: ContainerStage | null = null;
+  for (const s of containerStages) if (c[containerStageFields[s]]) stage = s;
+  return stage;
+}
+
+// เลขออเดอร์อัตโนมัติ เช่น SH2611-0001 (ปี-เดือน ตามเวลาไทย + ลำดับในเดือน)
+export async function nextOrderCode() {
+  const bkk = new Date(Date.now() + 7 * 3600_000);
+  const prefix = `SH${String(bkk.getUTCFullYear()).slice(2)}${String(bkk.getUTCMonth() + 1).padStart(2, "0")}-`;
+  const [last] = await db
+    .select({ code: orders.code })
+    .from(orders)
+    .where(like(orders.code, `${prefix}%`))
+    .orderBy(desc(orders.code))
+    .limit(1);
+  const seq = last ? Number(last.code.slice(prefix.length)) + 1 : 1;
+  return `${prefix}${String(seq).padStart(4, "0")}`;
+}
+
+// ---- ข้อมูลสำหรับหน้าติดตามพัสดุของลูกค้า ----
+
+export type TrackingGroup = {
+  container: { code: string; method: string } | null; // null = ยังไม่ได้เข้าตู้
+  items: { description: string; quantity: number | null; boxes: number | null }[];
+  stages: { stage: ItemStage; at: string | null }[];
+  domesticTracking: string[];
+};
+
+export type TrackingView = {
+  code: string;
+  method: string;
+  stage: ItemStage;
+  itemCount: number;
+  deliveredCount: number;
+  note: string | null;
+  groups: TrackingGroup[];
+};
+
+const last4 = (s: string) => s.replace(/\D/g, "").slice(-4);
+
+export async function getTrackingView(code: string, phoneLast4: string): Promise<TrackingView | null> {
+  const order = await db.query.orders.findFirst({
+    where: (o, { eq }) => eq(o.code, code.replace(/\s+/g, "").toUpperCase()),
+    with: { items: { with: { container: true } } },
+  });
+  // เทียบเบอร์ 4 ตัวท้าย เพื่อไม่ให้คนอื่นดูข้อมูลได้จากเลขออเดอร์อย่างเดียว
+  if (!order || last4(order.customerPhone) !== phoneLast4) return null;
+
+  // จัดกลุ่มรายการตามตู้ ขั้นใดจะถือว่าเสร็จเมื่อทุกรายการในกลุ่มผ่านขั้นนั้นแล้ว
+  const byContainer = new Map<number | null, ItemWithContainer[]>();
+  for (const item of order.items) {
+    const key = item.containerId ?? null;
+    byContainer.set(key, [...(byContainer.get(key) ?? []), item]);
+  }
+
+  const groups: TrackingGroup[] = [...byContainer.values()].map((items) => {
+    const allDates = items.map((i) => itemStageDates(i, i.container));
+    const stages = (Object.keys(allDates[0]) as ItemStage[]).map((stage) => {
+      const dates = allDates.map((d) => d[stage]);
+      const done = dates.every(Boolean);
+      const latest = done ? new Date(Math.max(...dates.map((d) => d!.getTime()))) : null;
+      return { stage, at: latest?.toISOString() ?? null };
+    });
+    const container = items[0].container;
+    return {
+      container: container ? { code: container.code, method: container.method } : null,
+      items: items.map((i) => ({ description: i.description, quantity: i.quantity, boxes: i.boxes })),
+      stages,
+      domesticTracking: [...new Set(items.map((i) => i.domesticTracking).filter((t): t is string => Boolean(t)))],
+    };
+  });
+  // กลุ่มที่ยังไม่เข้าตู้ไว้ท้ายสุด
+  groups.sort((a, b) => Number(a.container === null) - Number(b.container === null));
+
+  const summary = summarizeOrder(order.items);
+  return {
+    code: order.code,
+    method: order.method,
+    stage: summary.stage,
+    itemCount: summary.itemCount,
+    deliveredCount: summary.deliveredCount,
+    note: order.note,
+    groups,
+  };
+}

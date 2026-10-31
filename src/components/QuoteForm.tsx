@@ -33,7 +33,8 @@ export function QuoteForm({ locale, t, cal }: Props) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
+    // method="post": ถ้ากดก่อน JS โหลดเสร็จ ข้อมูลส่วนตัวจะไม่ไปโผล่ใน URL
+    <form onSubmit={onSubmit} method="post" className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <label>
           <span className="mb-1 block text-sm">{t.name} *</span>

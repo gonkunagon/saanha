@@ -1,0 +1,104 @@
+import Link from "next/link";
+import { desc, like, or } from "drizzle-orm";
+import { db } from "@/db";
+import { orders } from "@/db/schema";
+import { requireUser } from "@/lib/auth";
+import { summarizeOrder } from "@/lib/orders";
+import { formatThaiDateTime } from "@/lib/datetime";
+import { itemStages, stageLabelsTh, type ItemStage } from "@/lib/stages";
+import { Card, StageBadge, methodLabel } from "@/components/admin/ui";
+
+type Props = { searchParams: Promise<{ q?: string; stage?: string }> };
+
+export default async function OrdersPage({ searchParams }: Props) {
+  await requireUser();
+  const { q = "", stage = "" } = await searchParams;
+  const term = q.trim();
+
+  const list = await db.query.orders.findMany({
+    where: term
+      ? or(
+          like(orders.code, `%${term}%`),
+          like(orders.customerName, `%${term}%`),
+          like(orders.customerPhone, `%${term}%`),
+          like(orders.externalId, `%${term}%`),
+        )
+      : undefined,
+    orderBy: desc(orders.createdAt),
+    limit: 200,
+    with: { items: { with: { container: true } } },
+  });
+
+  const rows = list
+    .map((o) => ({ order: o, summary: summarizeOrder(o.items) }))
+    .filter((r) => !stage || r.summary.stage === stage);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">ออเดอร์</h1>
+        <Link href="/admin/orders/new" className="btn-primary">+ สร้างออเดอร์</Link>
+      </div>
+
+      <Card>
+        <form className="mb-4 flex flex-wrap gap-2">
+          <input
+            name="q"
+            defaultValue={q}
+            placeholder="ค้นหา เลขออเดอร์ / ชื่อ / เบอร์ / External ID"
+            className="input max-w-sm flex-1"
+          />
+          <select name="stage" defaultValue={stage} className="input w-auto">
+            <option value="">ทุกสถานะ</option>
+            {itemStages.map((s) => (
+              <option key={s} value={s}>{stageLabelsTh[s]}</option>
+            ))}
+          </select>
+          <button className="rounded-lg border border-gray-300 px-4 hover:bg-gray-50">ค้นหา</button>
+        </form>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-left text-gray-500">
+              <tr>
+                <th className="py-2 pr-4">เลขออเดอร์</th>
+                <th className="py-2 pr-4">ลูกค้า</th>
+                <th className="py-2 pr-4">วิธีขนส่ง</th>
+                <th className="py-2 pr-4">รายการ / ตู้</th>
+                <th className="py-2 pr-4">สถานะ</th>
+                <th className="py-2 pr-4">External ID</th>
+                <th className="py-2">สร้างเมื่อ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(({ order: o, summary: s }) => (
+                <tr key={o.id} className="border-t border-gray-100">
+                  <td className="py-2 pr-4">
+                    <Link href={`/admin/orders/${o.id}`} className="font-semibold text-brand-600 hover:underline">{o.code}</Link>
+                  </td>
+                  <td className="py-2 pr-4">
+                    {o.customerName}
+                    <span className="block text-xs text-gray-500">{o.customerPhone}</span>
+                  </td>
+                  <td className="py-2 pr-4">{methodLabel(o.method)}</td>
+                  <td className="py-2 pr-4">{s.itemCount} / {s.containerCount} ตู้</td>
+                  <td className="py-2 pr-4">
+                    <StageBadge
+                      stage={s.stage as ItemStage}
+                      suffix={s.deliveredCount > 0 && s.stage !== "delivered" ? ` · ส่งแล้ว ${s.deliveredCount}/${s.itemCount}` : ""}
+                    />
+                  </td>
+                  <td className="py-2 pr-4 text-gray-600">{o.externalId ?? "-"}</td>
+                  <td className="py-2 text-gray-500">{formatThaiDateTime(o.createdAt)}</td>
+                </tr>
+              ))}
+              {rows.length === 0 && (
+                <tr><td colSpan={7} className="py-6 text-center text-gray-400">ไม่พบออเดอร์</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  );
+}

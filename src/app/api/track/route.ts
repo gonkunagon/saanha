@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { findShipment, TrackingNotConfiguredError } from "@/lib/tracking";
+import { getTrackingView } from "@/lib/orders";
 
 // จำกัดจำนวนครั้งที่ค้นหาต่อ IP กันการสุ่มเดาเบอร์ 4 ตัวท้าย
 // (เก็บในหน่วยความจำ ใช้ได้ระดับพื้นฐาน ถ้ามีหลายเซิร์ฟเวอร์ควรย้ายไปใช้ Redis)
@@ -38,11 +38,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const shipment = await findShipment(trackingNo, phoneLast4);
-    if (!shipment) return NextResponse.json({ error: "not_found" }, { status: 404 });
-    return NextResponse.json({ shipment });
+    const order = await getTrackingView(trackingNo, phoneLast4);
+    if (!order) return NextResponse.json({ error: "not_found" }, { status: 404 });
+    return NextResponse.json({ order });
   } catch (err) {
-    if (!(err instanceof TrackingNotConfiguredError)) console.error("[track]", err);
+    console.error("[track]", err);
     return NextResponse.json({ error: "unavailable" }, { status: 503 });
   }
 }

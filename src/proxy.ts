@@ -14,5 +14,6 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next|.*\\..*).*)"],
+  // /admin คือหลังบ้าน ไม่มีหลายภาษา
+  matcher: ["/((?!api|admin|_next|.*\\..*).*)"],
 };

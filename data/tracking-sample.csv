@@ -1,3 +1,0 @@
-tracking_no,phone,method,boxes,weight_kg,cbm,ordered_at,china_warehouse_at,departed_at,thai_warehouse_at,out_for_delivery_at,delivered_at,domestic_tracking,note
-SH0001,0812341234,sea,3,45,0.42,2026-10-12,2026-10-15,2026-10-17,,,,,"ตัวอย่าง: กำลังขนส่งทางเรือ"
-SH0002,0899995678,truck,1,8.5,0.05,2026-10-20,2026-10-22,2026-10-23,2026-10-28,2026-10-29,2026-10-30,TH123456789,

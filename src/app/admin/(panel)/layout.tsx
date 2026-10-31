@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
+import { Logo } from "@/components/Logo";
 import { logout } from "./actions";
 
 const nav = [
@@ -16,8 +17,9 @@ export default async function PanelLayout({ children }: { children: React.ReactN
     <div className="min-h-screen">
       <header className="bg-slate-900 text-slate-200">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-          <Link href="/admin" className="font-bold text-white">
-            SANHA <span className="font-normal text-accent-400">หลังบ้าน</span>
+          <Link href="/admin" className="flex items-center gap-2">
+            <Logo markClassName="text-accent-400" textClassName="text-white" />
+            <span className="text-sm text-accent-400">หลังบ้าน</span>
           </Link>
           <nav className="order-3 flex w-full gap-4 overflow-x-auto text-sm md:order-none md:w-auto">
             {nav.map((n) => (

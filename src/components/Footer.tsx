@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { site } from "@/config/site";
+import { Logo } from "./Logo";
 
 type Props = { locale: Locale; dict: Dictionary["footer"] };
 
@@ -10,7 +11,7 @@ export function Footer({ locale, dict }: Props) {
     <footer className="border-t-4 border-accent-400 bg-slate-900 text-slate-300">
       <div className="mx-auto grid max-w-6xl gap-6 px-4 py-10 text-sm md:grid-cols-2">
         <div>
-          <p className="text-lg font-bold text-white">{site.name}</p>
+          <Logo markClassName="text-accent-400" textClassName="text-white" />
           <p className="mt-2">{site.address[locale]}</p>
         </div>
         <div>

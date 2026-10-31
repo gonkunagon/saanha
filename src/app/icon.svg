@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <rect width="48" height="48" rx="10" fill="#ffffff"/>
+  <mask id="m">
+    <rect width="48" height="48" fill="white"/>
+    <circle cx="32" cy="32" r="10.5" fill="black"/>
+  </mask>
+  <g stroke="#1e3a8a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <g mask="url(#m)">
+      <path d="M24 4 42 13v20l-18 9-18-9V13z"/>
+      <path d="M6 13l18 9 18-9M24 22v20M15 8.5l8 4"/>
+    </g>
+    <circle cx="32" cy="32" r="7"/>
+    <path d="M37 37l5 5"/>
+  </g>
+</svg>

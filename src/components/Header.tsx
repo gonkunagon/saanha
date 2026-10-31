@@ -3,6 +3,7 @@ import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { site } from "@/config/site";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { Logo } from "./Logo";
 
 type Props = { locale: Locale; nav: Dictionary["nav"] };
 
@@ -17,8 +18,8 @@ export function Header({ locale, nav }: Props) {
   return (
     <header className="sticky top-0 z-10 border-b border-gray-100 bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-        <Link href={`/${locale}`} className="text-xl font-bold text-brand-600">
-          {site.name}
+        <Link href={`/${locale}`} aria-label={site.name}>
+          <Logo />
         </Link>
         <nav className="order-3 flex w-full gap-4 overflow-x-auto text-sm md:order-none md:w-auto">
           {links.map((l) => (

@@ -1,10 +1,10 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { containers, orderItems, orders, shippingMethods, type ShippingMethod } from "@/db/schema";
+import { containers, itemPackages, orderItems, orders, shippingMethods, type ShippingMethod } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { parseLocalDateTime } from "@/lib/datetime";
 import { nextOrderCode } from "@/lib/orders";
@@ -38,13 +38,47 @@ async function findOrCreateContainer(tx: Tx, code: string, m: ShippingMethod) {
   return created;
 }
 
-// กล่อง น้ำหนัก ขนาดต่อกล่อง และคิวที่คำนวณจากขนาด
-function sizeFields(get: (key: string) => FormDataEntryValue | null | undefined) {
-  const boxes = toInt(get("boxes"));
-  const widthCm = toNum(get("widthCm"));
-  const lengthCm = toNum(get("lengthCm"));
-  const heightCm = toNum(get("heightCm"));
-  return { boxes, weightKg: toNum(get("weightKg")), widthCm, lengthCm, heightCm, cbm: calcCbm(widthCm, lengthCm, heightCm, boxes) };
+// ---- พัสดุย่อยของรายการ ----
+
+// แถวพัสดุจากฟอร์ม (ช่องชื่อขึ้นต้นด้วย prefix ส่งมาหลายแถว) ข้ามแถวที่ว่างทั้งแถว
+function parsePackages(fd: FormData, prefix: string) {
+  const col = (k: string) => fd.getAll(`${prefix}${k}`);
+  return col("chinaTrackingNo")
+    .map((tracking, i) => {
+      const boxes = toInt(col("boxes")[i]);
+      const widthCm = toNum(col("widthCm")[i]);
+      const lengthCm = toNum(col("lengthCm")[i]);
+      const heightCm = toNum(col("heightCm")[i]);
+      return {
+        chinaTrackingNo: str(tracking),
+        boxes,
+        weightKg: toNum(col("weightKg")[i]),
+        widthCm,
+        lengthCm,
+        heightCm,
+        cbm: calcCbm(widthCm, lengthCm, heightCm, boxes),
+      };
+    })
+    .filter((p) => p.chinaTrackingNo || [p.boxes, p.weightKg, p.widthCm, p.lengthCm, p.heightCm].some((v) => v != null));
+}
+type PackageRow = ReturnType<typeof parsePackages>[number];
+
+// ยอดรวมของรายการ = ผลรวมพัสดุทุกแถว (ไม่มีข้อมูลเลย = ว่าง)
+function packageTotals(pkgs: PackageRow[]) {
+  const sum = (vals: (number | null)[], digits: number) =>
+    vals.some((v) => v != null)
+      ? Math.round(vals.reduce<number>((s, v) => s + (v ?? 0), 0) * 10 ** digits) / 10 ** digits
+      : null;
+  return {
+    boxes: sum(pkgs.map((p) => p.boxes), 0),
+    weightKg: sum(pkgs.map((p) => p.weightKg), 2),
+    cbm: sum(pkgs.map((p) => p.cbm), 4),
+  };
+}
+
+async function savePackages(tx: Tx, itemId: number, pkgs: PackageRow[]) {
+  await tx.delete(itemPackages).where(eq(itemPackages.itemId, itemId));
+  if (pkgs.length) await tx.insert(itemPackages).values(pkgs.map((p) => ({ ...p, itemId })));
 }
 
 // ---- ออเดอร์ ----
@@ -70,16 +104,18 @@ export async function createOrder(_prev: string | null, fd: FormData): Promise<s
     return "กรุณาใส่ชื่อลูกค้าและเบอร์โทรให้ครบ";
   }
 
+  // แต่ละแถวสินค้ามี itemKey ใช้จับคู่กับช่องพัสดุของแถวนั้น (pkg_<key>_...)
   const descriptions = fd.getAll("itemDescription");
-  const at = (key: string, i: number) => fd.getAll(key)[i];
-  const items = descriptions
-    .map((d, i) => ({
-      description: str(d) ?? "",
-      quantity: toInt(at("itemQuantity", i)),
-      chinaTrackingNo: str(at("itemChinaTrackingNo", i)),
-      ...sizeFields((k) => at(`item${k[0].toUpperCase()}${k.slice(1)}`, i)),
-    }))
-    .filter((i) => i.description);
+  const items = fd
+    .getAll("itemKey")
+    .map((key, i) => {
+      const packages = parsePackages(fd, `pkg_${key}_`);
+      return {
+        item: { description: str(descriptions[i]) ?? "", quantity: toInt(fd.getAll("itemQuantity")[i]), ...packageTotals(packages) },
+        packages,
+      };
+    })
+    .filter((i) => i.item.description);
 
   // กันเลขออเดอร์ชนกันกรณีสร้างพร้อมกัน
   let newId: number | null = null;
@@ -90,7 +126,10 @@ export async function createOrder(_prev: string | null, fd: FormData): Promise<s
           .insert(orders)
           .values({ ...fields, code: await nextOrderCode() })
           .returning({ id: orders.id });
-        if (items.length) await tx.insert(orderItems).values(items.map((i) => ({ ...i, orderId: row.id })));
+        for (const { item, packages } of items) {
+          const [created] = await tx.insert(orderItems).values({ ...item, orderId: row.id }).returning({ id: orderItems.id });
+          await savePackages(tx, created.id, packages);
+        }
         return row.id;
       });
     } catch (err) {
@@ -113,8 +152,12 @@ export async function updateOrder(fd: FormData) {
 export async function deleteOrder(fd: FormData) {
   await requireUser();
   const id = Number(fd.get("id"));
-  await db.delete(orderItems).where(eq(orderItems.orderId, id));
-  await db.delete(orders).where(eq(orders.id, id));
+  await db.transaction(async (tx) => {
+    const itemIds = tx.select({ id: orderItems.id }).from(orderItems).where(eq(orderItems.orderId, id));
+    await tx.delete(itemPackages).where(inArray(itemPackages.itemId, itemIds));
+    await tx.delete(orderItems).where(eq(orderItems.orderId, id));
+    await tx.delete(orders).where(eq(orders.id, id));
+  });
   refresh();
   redirect("/admin/orders");
 }
@@ -125,12 +168,13 @@ export async function addItem(fd: FormData) {
   await requireUser();
   const description = text(fd, "description");
   if (!description) return;
-  await db.insert(orderItems).values({
-    orderId: Number(fd.get("orderId")),
-    description,
-    quantity: toInt(fd.get("quantity")),
-    chinaTrackingNo: text(fd, "chinaTrackingNo"),
-    ...sizeFields((k) => fd.get(k)),
+  const packages = parsePackages(fd, "pkg_");
+  await db.transaction(async (tx) => {
+    const [created] = await tx
+      .insert(orderItems)
+      .values({ orderId: Number(fd.get("orderId")), description, quantity: toInt(fd.get("quantity")), ...packageTotals(packages) })
+      .returning({ id: orderItems.id });
+    await savePackages(tx, created.id, packages);
   });
   refresh();
 }
@@ -146,16 +190,14 @@ export async function updateItem(fd: FormData) {
     if (!item) return;
     const code = text(fd, "containerCode");
     const container = code ? await findOrCreateContainer(tx, code, item.order.method) : null;
-    const size = sizeFields((k) => fd.get(k));
+    const packages = parsePackages(fd, "pkg_");
+    await savePackages(tx, itemId, packages);
     await tx
       .update(orderItems)
       .set({
         description,
         quantity: toInt(fd.get("quantity")),
-        chinaTrackingNo: text(fd, "chinaTrackingNo"),
-        ...size,
-        // รายการเก่าที่ยังไม่มีขนาด: ไม่ล้างคิวเดิมทิ้ง
-        cbm: size.cbm ?? item.cbm,
+        ...packageTotals(packages),
         containerId: container?.id ?? null,
         receivedAt: parseLocalDateTime(fd.get("receivedAt")),
         outForDeliveryAt: parseLocalDateTime(fd.get("outForDeliveryAt")),
@@ -169,7 +211,11 @@ export async function updateItem(fd: FormData) {
 
 export async function deleteItem(fd: FormData) {
   await requireUser();
-  await db.delete(orderItems).where(eq(orderItems.id, Number(fd.get("itemId"))));
+  const itemId = Number(fd.get("itemId"));
+  await db.transaction(async (tx) => {
+    await tx.delete(itemPackages).where(eq(itemPackages.itemId, itemId));
+    await tx.delete(orderItems).where(eq(orderItems.id, itemId));
+  });
   refresh();
 }
 

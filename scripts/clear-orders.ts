@@ -11,14 +11,17 @@ async function main() {
   }
 
   const db = createClient({ url });
-  const tables = ["order_items", "orders", "containers", "users"];
+  const tables = ["item_packages", "order_items", "orders", "containers", "users"];
   const count = async () =>
     Object.fromEntries(
       await Promise.all(tables.map(async (t) => [t, Number((await db.execute(`select count(*) as n from ${t}`)).rows[0].n)])),
     );
 
   console.log("before", await count());
-  await db.batch(["delete from order_items", "delete from orders", "delete from containers"], "write");
+  await db.batch(
+    ["delete from item_packages", "delete from order_items", "delete from orders", "delete from containers"],
+    "write",
+  );
   console.log("after ", await count());
   db.close();
 }

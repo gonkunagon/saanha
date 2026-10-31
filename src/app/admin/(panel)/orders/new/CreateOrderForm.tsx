@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { createOrder } from "../actions";
-import { SizeFields } from "@/components/admin/SizeFields";
+import { PackageFields } from "@/components/admin/PackageFields";
 
 // สร้างออเดอร์พร้อมรายการสินค้าในหน้าเดียว (children = ช่องข้อมูลลูกค้า)
 export function CreateOrderForm({ children }: { children: React.ReactNode }) {
@@ -25,10 +25,10 @@ export function CreateOrderForm({ children }: { children: React.ReactNode }) {
         <div className="space-y-3">
           {rows.map((key, i) => (
             <div key={key} className="space-y-2 rounded-lg border border-gray-200 p-3">
-              <div className="grid gap-2 sm:grid-cols-[3fr_1fr_2fr_auto]">
+              <input type="hidden" name="itemKey" value={key} />
+              <div className="grid gap-2 sm:grid-cols-[3fr_1fr_auto]">
                 <input name="itemDescription" placeholder={`ชื่อสินค้า ${i + 1}`} className="input" required={i === 0} />
                 <input name="itemQuantity" type="number" min={0} placeholder="จำนวน" className="input" />
-                <input name="itemChinaTrackingNo" placeholder="เลขพัสดุจีน" className="input" />
                 <button
                   type="button"
                   onClick={() => removeRow(key)}
@@ -39,7 +39,7 @@ export function CreateOrderForm({ children }: { children: React.ReactNode }) {
                   ✕
                 </button>
               </div>
-              <SizeFields prefix="item" />
+              <PackageFields prefix={`pkg_${key}_`} />
             </div>
           ))}
         </div>
@@ -47,7 +47,7 @@ export function CreateOrderForm({ children }: { children: React.ReactNode }) {
           + เพิ่มสินค้าอีกรายการ
         </button>
         <p className="mt-1 text-xs text-gray-500">
-          ใส่ขนาดต่อกล่อง ระบบคำนวณคิวให้เอง (กว้าง × ยาว × สูง × จำนวนกล่อง) · ขนาด น้ำหนัก เลขพัสดุจีน ไม่ต้องกรอกตอนนี้ก็ได้
+          สินค้าที่มีหลายพัสดุหรือหลายขนาด กด "+ เพิ่มพัสดุ / ขนาดอื่น" · ระบบคำนวณคิวให้เอง · ขนาด น้ำหนัก เลขพัสดุจีน ไม่ต้องกรอกตอนนี้ก็ได้
         </p>
       </div>
 

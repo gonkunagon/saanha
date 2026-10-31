@@ -12,12 +12,15 @@ import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { OrderFields } from "../OrderFields";
 import { addItem, deleteItem, deleteOrder, updateItem, updateOrder } from "../actions";
 import { StageUpdateForm, type ContainerOption } from "./StageUpdateForm";
-import { SizeFields } from "@/components/admin/SizeFields";
+import { PackageFields } from "@/components/admin/PackageFields";
+import type { ItemPackage } from "@/db/schema";
 
 const STAGE_FORM = "stage-form";
 
 // ฟอร์มแก้ไขรายละเอียดรายการ (ซ่อนไว้ กดเปิดเมื่อต้องแก้ข้อมูลผิด)
-function ItemEditForm({ item, containerOptions }: { item: ItemWithContainer; containerOptions: ContainerOption[] }) {
+type ItemWithPackages = ItemWithContainer & { packages: ItemPackage[] };
+
+function ItemEditForm({ item, containerOptions }: { item: ItemWithPackages; containerOptions: ContainerOption[] }) {
   return (
     <form action={updateItem} className="mt-3 rounded-lg bg-gray-50 p-4">
       <input type="hidden" name="itemId" value={item.id} />
@@ -28,11 +31,9 @@ function ItemEditForm({ item, containerOptions }: { item: ItemWithContainer; con
         <Field label="จำนวน">
           <input name="quantity" type="number" min={0} defaultValue={item.quantity ?? ""} className="input bg-white" />
         </Field>
-        <Field label="เลขพัสดุจีน">
-          <input name="chinaTrackingNo" defaultValue={item.chinaTrackingNo ?? ""} className="input bg-white" />
-        </Field>
         <div className="sm:col-span-2 lg:col-span-4 [&_input]:bg-white">
-          <SizeFields defaults={item} />
+          <span className="mb-1 block text-sm text-gray-600">พัสดุ</span>
+          <PackageFields defaults={item.packages} />
         </div>
         <Field label="ตู้">
           <select name="containerCode" defaultValue={item.container?.code ?? ""} className="input bg-white">
@@ -72,7 +73,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   const { id } = await params;
   const order = await db.query.orders.findFirst({
     where: eq(orders.id, Number(id)),
-    with: { items: { with: { container: true } } },
+    with: { items: { with: { container: true, packages: true } } },
   });
   if (!order) notFound();
 
@@ -149,16 +150,32 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                         </p>
                         <p className="text-xs text-gray-500">
                           {[
+                            item.packages.length > 1 && `${item.packages.length} พัสดุ`,
                             item.boxes != null && `${item.boxes} กล่อง`,
                             item.weightKg != null && `${item.weightKg} กก.`,
-                            item.widthCm && item.lengthCm && item.heightCm &&
-                              `${item.widthCm}×${item.lengthCm}×${item.heightCm} ซม.`,
                             item.cbm != null && `${item.cbm} คิว`,
-                            item.chinaTrackingNo && `พัสดุจีน ${item.chinaTrackingNo}`,
                           ]
                             .filter(Boolean)
                             .join(" · ") || "ยังไม่มีขนาด/น้ำหนัก"}
                         </p>
+                        {item.packages.length > 0 && (
+                          <ul className="mt-1 space-y-0.5 text-xs text-gray-500">
+                            {item.packages.map((p) => (
+                              <li key={p.id}>
+                                └{" "}
+                                {[
+                                  p.chinaTrackingNo && `พัสดุจีน ${p.chinaTrackingNo}`,
+                                  p.boxes != null && `${p.boxes} กล่อง`,
+                                  p.widthCm && p.lengthCm && p.heightCm && `${p.widthCm}×${p.lengthCm}×${p.heightCm} ซม.`,
+                                  p.weightKg != null && `${p.weightKg} กก.`,
+                                  p.cbm != null && `${p.cbm} คิว`,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </div>
                       <div className="w-32 text-sm">
                         {item.container ? (
@@ -199,15 +216,12 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           <input type="hidden" name="orderId" value={order.id} />
           <p className="mb-2 text-sm font-medium">+ เพิ่มรายการสินค้า</p>
           <div className="space-y-2">
-            <div className="grid gap-2 sm:grid-cols-[3fr_1fr_2fr]">
+            <div className="grid gap-2 sm:grid-cols-[3fr_1fr]">
               <input name="description" required placeholder="ชื่อสินค้า *" className="input" />
               <input name="quantity" type="number" min={0} placeholder="จำนวน" className="input" />
-              <input name="chinaTrackingNo" placeholder="เลขพัสดุจีน" className="input" />
             </div>
-            <div className="flex flex-wrap items-end justify-between gap-2">
-              <SizeFields />
-              <button className="btn-primary">เพิ่มรายการ</button>
-            </div>
+            <PackageFields />
+            <button className="btn-primary">เพิ่มรายการ</button>
           </div>
           <p className="mt-2 text-xs text-gray-500">สินค้าชิ้นเดียวกันที่แบ่งไปหลายตู้ ให้เพิ่มเป็นหลายรายการ</p>
         </form>

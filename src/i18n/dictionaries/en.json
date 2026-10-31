@@ -96,6 +96,8 @@
     "method": "Preferred shipping",
     "notSure": "Not sure yet",
     "message": "Additional notes",
+    "consent": "I agree that SANHA may collect and use the information above to contact me and prepare a quote, as described in the",
+    "consentLink": "privacy policy",
     "submit": "Send request",
     "sending": "Sending...",
     "success": "Request received. Our team will contact you soon.",
@@ -103,6 +105,10 @@
   },
   "footer": {
     "contact": "Contact",
+    "privacy": "Privacy policy",
     "rights": "All rights reserved"
+  },
+  "line": {
+    "button": "Chat on LINE"
   }
 }

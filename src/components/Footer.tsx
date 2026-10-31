@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { site } from "@/config/site";
@@ -22,7 +23,10 @@ export function Footer({ locale, dict }: Props) {
         </div>
       </div>
       <p className="pb-6 text-center text-xs text-gray-500">
-        © {new Date().getFullYear()} {site.name}. {dict.rights}
+        © {new Date().getFullYear()} {site.name}. {dict.rights} ·{" "}
+        <Link href={`/${locale}/privacy`} className="hover:text-brand-600 hover:underline">
+          {dict.privacy}
+        </Link>
       </p>
     </footer>
   );

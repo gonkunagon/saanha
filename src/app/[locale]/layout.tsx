@@ -5,6 +5,8 @@ import { isLocale, locales } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { LineButton } from "@/components/LineButton";
+import { site } from "@/config/site";
 import "../globals.css";
 
 const notoThai = Noto_Sans_Thai({
@@ -25,7 +27,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   const dict = getDictionary(locale);
-  return { title: dict.meta.title, description: dict.meta.description };
+  return {
+    metadataBase: new URL(site.url),
+    title: dict.meta.title,
+    description: dict.meta.description,
+    openGraph: {
+      type: "website",
+      siteName: site.name,
+      title: dict.meta.title,
+      description: dict.meta.description,
+      locale: locale === "th" ? "th_TH" : "en_US",
+    },
+  };
 }
 
 export default async function LocaleLayout({ children, params }: Props) {
@@ -39,6 +52,7 @@ export default async function LocaleLayout({ children, params }: Props) {
         <Header locale={locale} nav={dict.nav} />
         <main className="flex-1">{children}</main>
         <Footer locale={locale} dict={dict.footer} />
+        <LineButton label={dict.line.button} />
       </body>
     </html>
   );

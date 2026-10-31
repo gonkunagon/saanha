@@ -47,6 +47,18 @@ export function getArticles(locale: Locale): KbArticleMeta[] {
     .sort((a, b) => a.order - b.order);
 }
 
+// หน้าเนื้อหาทั่วไป เช่น นโยบายความเป็นส่วนตัว อยู่ที่ content/pages/<locale>/<slug>.md
+export async function getPage(locale: Locale, slug: string) {
+  const file = path.join(process.cwd(), "content", "pages", locale, `${slug}.md`);
+  if (!fs.existsSync(file)) return null;
+  const { data, content } = matter(fs.readFileSync(file, "utf8"));
+  return {
+    title: String(data.title ?? slug),
+    description: String(data.description ?? ""),
+    html: await marked.parse(content),
+  };
+}
+
 export async function getArticle(locale: Locale, slug: string) {
   const file = readFile(locale, slug);
   if (!file) return null;

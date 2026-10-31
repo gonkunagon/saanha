@@ -1,12 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
+import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { productTypes } from "@/config/rates";
 
 type Status = "idle" | "sending" | "success" | "error";
 
-export function QuoteForm({ t, cal }: { t: Dictionary["quote"]; cal: Dictionary["calculator"] }) {
+type Props = { locale: Locale; t: Dictionary["quote"]; cal: Dictionary["calculator"] };
+
+export function QuoteForm({ locale, t, cal }: Props) {
   const [status, setStatus] = useState<Status>("idle");
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -74,6 +78,15 @@ export function QuoteForm({ t, cal }: { t: Dictionary["quote"]; cal: Dictionary[
       <label className="block">
         <span className="mb-1 block text-sm">{t.message}</span>
         <textarea name="message" rows={3} className="input" />
+      </label>
+      <label className="flex items-start gap-2 text-sm text-gray-700">
+        <input name="consent" type="checkbox" required className="mt-1 h-4 w-4 accent-brand-600" />
+        <span>
+          {t.consent}{" "}
+          <Link href={`/${locale}/privacy`} target="_blank" className="text-brand-600 underline">
+            {t.consentLink}
+          </Link>
+        </span>
       </label>
       <button type="submit" disabled={status === "sending"} className="btn-primary w-full sm:w-auto">
         {status === "sending" ? t.sending : t.submit}

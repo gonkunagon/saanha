@@ -9,6 +9,7 @@ type QuoteRequest = {
   productType?: string;
   method?: string;
   message?: string;
+  consent?: string;
 };
 
 const methodLabels: Record<string, string> = { truck: "ทางรถ", sea: "ทางเรือ", unsure: "ยังไม่แน่ใจ" };
@@ -63,6 +64,10 @@ export async function POST(request: Request) {
 
   if (!body.name?.trim() || !body.phone?.trim() || !body.product?.trim()) {
     return NextResponse.json({ error: "missing_fields" }, { status: 400 });
+  }
+  // PDPA: ต้องได้รับความยินยอมก่อนส่งข้อมูลต่อให้ทีมงาน
+  if (body.consent !== "on") {
+    return NextResponse.json({ error: "consent_required" }, { status: 400 });
   }
 
   const sent = await pushToLine(buildMessage(body as QuoteRequest));

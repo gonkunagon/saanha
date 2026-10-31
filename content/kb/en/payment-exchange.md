@@ -12,7 +12,7 @@ You transfer baht to us, and we pay your Chinese shop, factory or supplier in yu
 ## Steps
 
 1. Send the recipient's account details (Alipay / WeChat / bank) and the CNY amount
-2. We quote the THB amount at [today's rate](/en/exchange)
+2. We quote the current rate and THB amount (rates follow the market, so always ask us on LINE)
 3. Transfer and send us the slip
 4. Receive proof of payment from the China side
 

@@ -20,4 +20,14 @@ Example: 4 boxes of 50 × 50 × 50 cm = 0.5 CBM
 
 Try it on the [shipping calculator](/en/calculator).
 
-> TODO: list special rates per product type (general / FDA-regulated / branded)
+## Rates by product type
+
+| Product type | Examples |
+|---|---|
+| General goods | Clothing, household items, general accessories |
+| FDA / TISI regulated | Food, cosmetics, supplements, electrical appliances |
+| Branded goods | Items with logos or trademarks |
+
+Regulated and branded goods cost more to ship than general goods because they go through more customs checks. Choose the product type in the calculator.
+
+> TODO: confirm the examples for each type against company policy

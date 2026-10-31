@@ -7,7 +7,7 @@
     "home": "Home",
     "services": "Services",
     "calculator": "Shipping calculator",
-    "exchange": "CNY rate",
+    "exchange": "CNY exchange",
     "kb": "Guides & FAQ",
     "quote": "Get a quote"
   },
@@ -38,6 +38,12 @@
   "calculator": {
     "title": "China–Thailand shipping calculator",
     "note": "Estimate only. Charged by weight (kg) or volume (CBM), whichever is higher.",
+    "productType": "Product type",
+    "types": {
+      "general": "General goods",
+      "regulated": "FDA / TISI regulated",
+      "brand": "Branded goods"
+    },
     "method": "Shipping method",
     "truck": "Truck",
     "sea": "Sea",
@@ -55,12 +61,18 @@
     "baht": "THB"
   },
   "exchange": {
-    "title": "Today's CNY rate",
-    "rateLabel": "1 CNY =",
-    "updated": "Last updated",
-    "note": "This rate applies to supplier payments in China. Rates may change during the day — please confirm with our staff before transferring.",
-    "cny": "Amount in CNY",
-    "thb": "Amount in THB"
+    "title": "CNY exchange & supplier payment",
+    "subtitle": "Pay Chinese shops and suppliers in Thai baht via Alipay, WeChat Pay or a Chinese bank account.",
+    "rateOnRequest": "Contact us for today's rate",
+    "cta": "Ask for a rate on LINE",
+    "stepsTitle": "Steps",
+    "steps": [
+      "Send the CNY amount and recipient account details on LINE",
+      "We quote the rate and THB amount",
+      "Transfer and send us the slip",
+      "Receive proof of payment from the China side"
+    ],
+    "note": "Rates follow the market and change during the day. A quoted rate is valid only for the time our staff specify."
   },
   "kb": {
     "title": "Guides & FAQ",

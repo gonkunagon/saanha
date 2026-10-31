@@ -2,11 +2,18 @@
 
 import { useState } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
-import { shippingRates, type ShippingMethod } from "@/config/rates";
+import {
+  productTypes,
+  shippingRates,
+  transitDays,
+  type ProductType,
+  type ShippingMethod,
+} from "@/config/rates";
 
 const fmt = (n: number) => n.toLocaleString("th-TH", { maximumFractionDigits: 2 });
 
 export function ShippingCalculator({ t }: { t: Dictionary["calculator"] }) {
+  const [productType, setProductType] = useState<ProductType>("general");
   const [method, setMethod] = useState<ShippingMethod>("truck");
   const [weight, setWeight] = useState(0);
   const [w, setW] = useState(0);
@@ -14,7 +21,7 @@ export function ShippingCalculator({ t }: { t: Dictionary["calculator"] }) {
   const [h, setH] = useState(0);
   const [boxes, setBoxes] = useState(1);
 
-  const rate = shippingRates[method];
+  const rate = shippingRates[productType][method];
   const cbm = (w * l * h * boxes) / 1_000_000;
   const byWeight = weight * rate.perKg;
   const byVolume = cbm * rate.perCbm;
@@ -26,6 +33,18 @@ export function ShippingCalculator({ t }: { t: Dictionary["calculator"] }) {
   return (
     <div className="grid gap-8 md:grid-cols-2">
       <div className="space-y-4">
+        <label className="block">
+          <span className="mb-1 block font-medium">{t.productType}</span>
+          <select
+            className="input"
+            value={productType}
+            onChange={(e) => setProductType(e.target.value as ProductType)}
+          >
+            {productTypes.map((p) => (
+              <option key={p} value={p}>{t.types[p]}</option>
+            ))}
+          </select>
+        </label>
         <fieldset>
           <legend className="mb-2 font-medium">{t.method}</legend>
           <div className="flex gap-2">
@@ -73,7 +92,7 @@ export function ShippingCalculator({ t }: { t: Dictionary["calculator"] }) {
         </dl>
         <p className="mt-6 text-sm text-gray-600">{t.total}</p>
         <p className="text-3xl font-bold text-brand-700">{fmt(total)} {t.baht}</p>
-        <p className="mt-4 text-sm text-gray-600">{t.days}: {rate.days} {t.daysUnit}</p>
+        <p className="mt-4 text-sm text-gray-600">{t.days}: {transitDays[method]} {t.daysUnit}</p>
       </div>
     </div>
   );

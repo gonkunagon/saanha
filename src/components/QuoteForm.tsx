@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
+import { productTypes } from "@/config/rates";
 
 type Status = "idle" | "sending" | "success" | "error";
 
@@ -47,10 +48,19 @@ export function QuoteForm({ t, cal }: { t: Dictionary["quote"]; cal: Dictionary[
         <span className="mb-1 block text-sm">{t.product} *</span>
         <textarea name="product" required rows={4} className="input" />
       </label>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-3">
         <label>
           <span className="mb-1 block text-sm">{t.quantity}</span>
           <input name="quantity" className="input" />
+        </label>
+        <label>
+          <span className="mb-1 block text-sm">{cal.productType}</span>
+          <select name="productType" className="input" defaultValue="unsure">
+            <option value="unsure">{t.notSure}</option>
+            {productTypes.map((p) => (
+              <option key={p} value={p}>{cal.types[p]}</option>
+            ))}
+          </select>
         </label>
         <label>
           <span className="mb-1 block text-sm">{t.method}</span>

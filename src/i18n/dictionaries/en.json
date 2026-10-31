@@ -1,0 +1,96 @@
+{
+  "meta": {
+    "title": "SANHA — China Sourcing, Payment, CNY Exchange & Shipping",
+    "description": "One-stop China import service: product sourcing, purchasing, supplier payment, CNY exchange, and truck or sea freight delivered to your door in Thailand."
+  },
+  "nav": {
+    "home": "Home",
+    "services": "Services",
+    "calculator": "Shipping calculator",
+    "exchange": "CNY rate",
+    "kb": "Guides & FAQ",
+    "quote": "Get a quote"
+  },
+  "home": {
+    "heroTitle": "Import from China, all in one place",
+    "heroSubtitle": "Sourcing, purchasing, supplier payment, CNY exchange and door-to-door delivery — we handle every step.",
+    "ctaQuote": "Request sourcing",
+    "ctaCalc": "Estimate shipping",
+    "stepsTitle": "How it works",
+    "steps": [
+      { "title": "Send your list", "body": "Share 1688 / Taobao links or photos of what you need" },
+      { "title": "Get a quote", "body": "We find suppliers, check prices and send you a total" },
+      { "title": "Pay in THB", "body": "You pay in baht, we pay the Chinese supplier in yuan" },
+      { "title": "Delivered to you", "body": "Consolidated at our China warehouse, shipped by truck or sea to your address" }
+    ]
+  },
+  "services": {
+    "title": "Our services",
+    "items": [
+      { "key": "sourcing", "title": "Product sourcing", "body": "We find the right factories and shops, compare prices and check quality before ordering." },
+      { "key": "order", "title": "Purchasing agent", "body": "We order from 1688, Taobao, Tmall and Chinese suppliers, and negotiate for you." },
+      { "key": "payment", "title": "Supplier payment & CNY", "body": "Transfer baht and we pay your Chinese shop or supplier in yuan." },
+      { "key": "shipping", "title": "Truck / sea freight", "body": "Choose by speed and budget, charged by weight or volume." },
+      { "key": "customs", "title": "Customs clearance", "body": "We handle import formalities so you don't have to." },
+      { "key": "delivery", "title": "Door-to-door", "body": "Domestic delivery to your address anywhere in Thailand." }
+    ]
+  },
+  "calculator": {
+    "title": "China–Thailand shipping calculator",
+    "note": "Estimate only. Charged by weight (kg) or volume (CBM), whichever is higher.",
+    "method": "Shipping method",
+    "truck": "Truck",
+    "sea": "Sea",
+    "weight": "Total weight (kg)",
+    "width": "Width (cm)",
+    "length": "Length (cm)",
+    "height": "Height (cm)",
+    "boxes": "Number of boxes",
+    "cbm": "Volume (CBM)",
+    "byWeight": "By weight",
+    "byVolume": "By volume",
+    "total": "Estimated shipping cost",
+    "days": "Estimated transit time",
+    "daysUnit": "days",
+    "baht": "THB"
+  },
+  "exchange": {
+    "title": "Today's CNY rate",
+    "rateLabel": "1 CNY =",
+    "updated": "Last updated",
+    "note": "This rate applies to supplier payments in China. Rates may change during the day — please confirm with our staff before transferring.",
+    "cny": "Amount in CNY",
+    "thb": "Amount in THB"
+  },
+  "kb": {
+    "title": "Guides & FAQ",
+    "subtitle": "Everything you should know before importing from China",
+    "back": "Back to guides",
+    "categories": {
+      "getting-started": "Getting started",
+      "shipping": "Shipping",
+      "payment": "Payment & exchange",
+      "policies": "Policies & prohibited items"
+    }
+  },
+  "quote": {
+    "title": "Request sourcing / Get a quote",
+    "subtitle": "Fill in the details and our team will contact you within 24 hours.",
+    "name": "Full name",
+    "phone": "Phone",
+    "lineId": "LINE ID",
+    "product": "Product link or description",
+    "quantity": "Quantity",
+    "method": "Preferred shipping",
+    "notSure": "Not sure yet",
+    "message": "Additional notes",
+    "submit": "Send request",
+    "sending": "Sending...",
+    "success": "Request received. Our team will contact you soon.",
+    "error": "Could not send. Please try again or contact us on LINE."
+  },
+  "footer": {
+    "contact": "Contact",
+    "rights": "All rights reserved"
+  }
+}

@@ -20,6 +20,7 @@ export type JjParcel = {
 type RawPacking = {
   id: number;
   packing_code: string;
+  customer_code?: string | null;
   tracking_no: string | null;
   weight: number | null;
   cubic1: number | null;
@@ -48,6 +49,16 @@ export function mapParcels(rows: RawPacking[], trackingNo: string): JjParcel[] {
       shipmentCode: r.shipment_code,
       offChinaDate: r.off_china_date,
     }));
+}
+
+// ดึงเฉพาะลูกค้าที่กำหนดใน JJ_CARGO_CUSTOMER_CODES (คั่นด้วย , ไม่สนตัวพิมพ์เล็ก/ใหญ่) — ว่าง = ทุกลูกค้า
+function allowedCustomer(): (code: string | null | undefined) => boolean {
+  const codes = (process.env.JJ_CARGO_CUSTOMER_CODES ?? "")
+    .split(",")
+    .map((c) => c.trim().toLowerCase())
+    .filter(Boolean);
+  if (codes.length === 0) return () => true;
+  return (code) => Boolean(code) && codes.includes(code!.trim().toLowerCase());
 }
 
 function config() {
@@ -92,7 +103,8 @@ async function api<T>(path: string): Promise<T> {
 
 export async function findParcelsByTracking(trackingNo: string): Promise<JjParcel[]> {
   const rows = await api<RawPacking[]>(`/packing?${new URLSearchParams({ tracking: trackingNo.trim() })}`);
-  return mapParcels(Array.isArray(rows) ? rows : [], trackingNo);
+  const allowed = allowedCustomer();
+  return mapParcels(Array.isArray(rows) ? rows.filter((r) => allowed(r.customer_code)) : [], trackingNo);
 }
 
 // ---- ข้อมูลทั้งหมดสำหรับซิงค์เข้าหลังบ้าน (ดู src/lib/jjsync.ts) ----
@@ -142,8 +154,9 @@ export async function fetchJjSnapshot(knownIds: Set<number>): Promise<JjSnapshot
     api<{ id: number; code: string; firstname: string | null; lastname: string | null; phone: string | null }[]>("/customers"),
   ]);
 
+  const allowed = allowedCustomer();
   const parcels: JjSnapshotParcel[] = [];
-  for (const p of list) {
+  for (const p of list.filter((row) => allowed(row.customer_code))) {
     const base = {
       id: p.id,
       packingCode: p.packing_code,
@@ -170,7 +183,7 @@ export async function fetchJjSnapshot(knownIds: Set<number>): Promise<JjSnapshot
   return {
     parcels,
     shipments: shipments.map((s) => ({ code: s.code, date: s.date, arrivedDate: s.arrived_date })),
-    customers: customers.map((c) => ({
+    customers: customers.filter((c) => allowed(c.code)).map((c) => ({
       id: c.id,
       code: c.code,
       name: [c.firstname, c.lastname].filter(Boolean).join(" ") || c.code,

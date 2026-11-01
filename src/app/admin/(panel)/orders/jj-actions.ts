@@ -30,7 +30,13 @@ export async function lookupJjParcels(trackingNo: string): Promise<JjLookupResul
   if (tracking.length < 3) return { ok: false, error: "กรุณาใส่เลขพัสดุจีนก่อนกดดึงข้อมูล" };
   try {
     const parcels = await findParcelsByTracking(tracking);
-    if (parcels.length === 0) return { ok: false, error: `ไม่พบเลขพัสดุ ${tracking} ในระบบ JJ Cargo` };
+    if (parcels.length === 0) {
+      const only = process.env.JJ_CARGO_CUSTOMER_CODES?.trim();
+      return {
+        ok: false,
+        error: `ไม่พบเลขพัสดุ ${tracking} ในระบบ JJ Cargo` + (only ? ` (ค้นเฉพาะลูกค้า ${only})` : ""),
+      };
+    }
     return { ok: true, parcels };
   } catch (err) {
     if (err instanceof JjCargoError) return { ok: false, error: err.message };

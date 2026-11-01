@@ -10,7 +10,8 @@ import { itemStageDates, itemStages, stageIndex, stageLabelsTh, type ItemStage }
 import { Card, Field, StageBadge, methodLabel } from "@/components/admin/ui";
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { OrderFields } from "../OrderFields";
-import { addItem, deleteItem, deleteOrder, updateItem, updateOrder } from "../actions";
+import { addItem, deleteItem, updateItem, updateOrder } from "../actions";
+import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
 import { StageUpdateForm, type ContainerOption } from "./StageUpdateForm";
 import { PackageFields } from "@/components/admin/PackageFields";
 import type { ItemPackage } from "@/db/schema";
@@ -116,6 +117,15 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
         <div className="mt-1 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-bold">{order.code}</h1>
           <StageBadge stage={summary.stage} />
+          <span className="ml-auto">
+            <DeleteOrderButton
+              orderId={order.id}
+              code={order.code}
+              customerName={order.customerName}
+              itemCount={summary.itemCount}
+              fromJj={Boolean(order.importKey?.startsWith("jj:"))}
+            />
+          </span>
         </div>
         {!order.customerPhone && (
           <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
@@ -238,11 +248,8 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           <form action={updateOrder} className="mt-4 grid gap-4 sm:grid-cols-2">
             <input type="hidden" name="id" value={order.id} />
             <OrderFields order={order} />
-            <div className="flex items-center justify-between sm:col-span-2">
+            <div className="sm:col-span-2">
               <button className="btn-primary">บันทึก</button>
-              <ConfirmButton formAction={deleteOrder} message={`ลบออเดอร์ ${order.code} และรายการสินค้าทั้งหมด?`}>
-                ลบออเดอร์
-              </ConfirmButton>
             </div>
           </form>
         </details>

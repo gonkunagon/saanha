@@ -1,6 +1,6 @@
 import { eq, like } from "drizzle-orm";
 import { db } from "@/db";
-import { containers, itemPackages, orderItems, orders, type ShippingMethod } from "@/db/schema";
+import { containers, ignoredImports, itemPackages, orderItems, orders, type ShippingMethod } from "@/db/schema";
 import { calcCbm } from "./cbm";
 import { nextOrderCode } from "./orders";
 import { fetchJjSnapshot, type JjSnapshot, type JjSnapshotParcel } from "./jjcargo";
@@ -67,9 +67,13 @@ export function runJjSync(): Promise<SyncResult> {
   return state.current;
 }
 
+// PackingList id ที่นำเข้าแล้ว หรือถูกลบทิ้งไปแล้ว — ไม่ต้องเปิดหน้ารายละเอียดใน JJ ซ้ำ
 export async function knownJjParcelIds(): Promise<Set<number>> {
-  const rows = await db.select({ key: itemPackages.importKey }).from(itemPackages).where(like(itemPackages.importKey, "jj:%"));
-  return new Set(rows.map((r) => Number(r.key!.slice(3))));
+  const [imported, ignored] = await Promise.all([
+    db.select({ key: itemPackages.importKey }).from(itemPackages).where(like(itemPackages.importKey, "jj:%")),
+    db.select({ key: ignoredImports.importKey }).from(ignoredImports).where(like(ignoredImports.importKey, "jj:%")),
+  ]);
+  return new Set([...imported, ...ignored].map((r) => Number(r.key!.slice(3))));
 }
 
 function packageValues(p: JjSnapshotParcel) {
@@ -98,7 +102,11 @@ export async function applyJjSnapshot(
   };
   const customers = new Map(snap.customers.map((c) => [c.id, c]));
   const shipments = new Map(snap.shipments.map((s) => [s.code, s]));
-  const parcels = [...snap.parcels].sort((a, b) => a.id - b.id);
+  // พัสดุที่พนักงานลบทิ้งแล้ว ไม่ดึงกลับมา
+  const ignored = new Set(
+    (await db.select({ key: ignoredImports.importKey }).from(ignoredImports)).map((r) => r.key),
+  );
+  const parcels = [...snap.parcels].filter((p) => !ignored.has(`jj:${p.id}`)).sort((a, b) => a.id - b.id);
 
   // 1) ตู้ตามรอบขนส่ง
   const containerIdByCode = new Map<string, number>();

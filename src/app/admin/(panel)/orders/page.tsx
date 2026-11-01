@@ -8,6 +8,7 @@ import { formatThaiDateTime } from "@/lib/datetime";
 import { itemStages, stageLabelsTh, type ItemStage } from "@/lib/stages";
 import { Card, StageBadge, methodLabel } from "@/components/admin/ui";
 import { SyncJjButton } from "./SyncJjButton";
+import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
 import { getSyncStatus } from "@/lib/jjsync";
 
 type Props = { searchParams: Promise<{ q?: string; stage?: string }> };
@@ -72,7 +73,8 @@ export default async function OrdersPage({ searchParams }: Props) {
                 <th className="py-2 pr-4">รายการ / ตู้</th>
                 <th className="py-2 pr-4">สถานะ</th>
                 <th className="py-2 pr-4">External ID</th>
-                <th className="py-2">สร้างเมื่อ</th>
+                <th className="py-2 pr-4">สร้างเมื่อ</th>
+                <th className="py-2" aria-label="ลบ" />
               </tr>
             </thead>
             <tbody>
@@ -98,11 +100,20 @@ export default async function OrdersPage({ searchParams }: Props) {
                     />
                   </td>
                   <td className="py-2 pr-4 text-gray-600">{o.externalId ?? "-"}</td>
-                  <td className="py-2 text-gray-500">{formatThaiDateTime(o.createdAt)}</td>
+                  <td className="py-2 pr-4 text-gray-500">{formatThaiDateTime(o.createdAt)}</td>
+                  <td className="py-2 text-right">
+                    <DeleteOrderButton
+                      orderId={o.id}
+                      code={o.code}
+                      customerName={o.customerName}
+                      itemCount={s.itemCount}
+                      fromJj={Boolean(o.importKey?.startsWith("jj:"))}
+                    />
+                  </td>
                 </tr>
               ))}
               {rows.length === 0 && (
-                <tr><td colSpan={7} className="py-6 text-center text-gray-400">ไม่พบออเดอร์</td></tr>
+                <tr><td colSpan={8} className="py-6 text-center text-gray-400">ไม่พบออเดอร์</td></tr>
               )}
             </tbody>
           </table>

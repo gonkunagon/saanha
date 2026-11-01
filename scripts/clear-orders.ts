@@ -19,7 +19,8 @@ async function main() {
 
   console.log("before", await count());
   await db.batch(
-    ["delete from item_packages", "delete from order_items", "delete from orders", "delete from containers"],
+    // ล้างรายการ "ลบแล้วไม่ต้องดึงกลับ" ด้วย เริ่มใหม่แล้วซิงค์จะดึงทุกพัสดุอีกครั้ง
+    ["delete from item_packages", "delete from order_items", "delete from orders", "delete from containers", "delete from ignored_imports"],
     "write",
   );
   console.log("after ", await count());

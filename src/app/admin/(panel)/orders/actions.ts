@@ -1,10 +1,10 @@
 "use server";
 
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, type SQL } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { containers, itemPackages, orderItems, orders, shippingMethods, type ShippingMethod } from "@/db/schema";
+import { containers, ignoredImports, itemPackages, orderItems, orders, shippingMethods, type ShippingMethod } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { parseLocalDateTime } from "@/lib/datetime";
 import { nextOrderCode } from "@/lib/orders";
@@ -50,6 +50,7 @@ function parsePackages(fd: FormData, prefix: string) {
       const lengthCm = toNum(col("lengthCm")[i]);
       const heightCm = toNum(col("heightCm")[i]);
       return {
+        importKey: str(col("importKey")[i]),
         chinaTrackingNo: str(tracking),
         boxes,
         weightKg: toNum(col("weightKg")[i]),
@@ -76,7 +77,24 @@ function packageTotals(pkgs: PackageRow[]) {
   };
 }
 
+// พัสดุที่นำเข้าจากระบบอื่นแล้วถูกลบ: จำ import_key ไว้ ซิงค์ครั้งหน้าจะไม่ดึงกลับมา
+async function rememberDeletedImports(tx: Tx, where: SQL | undefined) {
+  const rows = await tx.select({ key: itemPackages.importKey }).from(itemPackages).where(and(where, isNotNull(itemPackages.importKey)));
+  if (rows.length) {
+    await tx.insert(ignoredImports).values(rows.map((r) => ({ importKey: r.key! }))).onConflictDoNothing();
+  }
+}
+
+// บันทึกพัสดุของรายการใหม่ทั้งชุด — แถวที่มี importKey (มาจาก JJ) เก็บคีย์เดิมไว้
+// แถวที่นำเข้ามาแต่พนักงานลบออกจากฟอร์ม จะถูกจำไว้ไม่ให้ซิงค์ดึงกลับมา
 async function savePackages(tx: Tx, itemId: number, pkgs: PackageRow[]) {
+  const kept = new Set(pkgs.map((p) => p.importKey).filter(Boolean));
+  const removed = await tx
+    .select({ key: itemPackages.importKey })
+    .from(itemPackages)
+    .where(and(eq(itemPackages.itemId, itemId), isNotNull(itemPackages.importKey)));
+  const dropped = removed.map((r) => r.key!).filter((k) => !kept.has(k));
+  if (dropped.length) await tx.insert(ignoredImports).values(dropped.map((importKey) => ({ importKey }))).onConflictDoNothing();
   await tx.delete(itemPackages).where(eq(itemPackages.itemId, itemId));
   if (pkgs.length) await tx.insert(itemPackages).values(pkgs.map((p) => ({ ...p, itemId })));
 }
@@ -154,6 +172,7 @@ export async function deleteOrder(fd: FormData) {
   const id = Number(fd.get("id"));
   await db.transaction(async (tx) => {
     const itemIds = tx.select({ id: orderItems.id }).from(orderItems).where(eq(orderItems.orderId, id));
+    await rememberDeletedImports(tx, inArray(itemPackages.itemId, itemIds));
     await tx.delete(itemPackages).where(inArray(itemPackages.itemId, itemIds));
     await tx.delete(orderItems).where(eq(orderItems.orderId, id));
     await tx.delete(orders).where(eq(orders.id, id));
@@ -213,6 +232,7 @@ export async function deleteItem(fd: FormData) {
   await requireUser();
   const itemId = Number(fd.get("itemId"));
   await db.transaction(async (tx) => {
+    await rememberDeletedImports(tx, eq(itemPackages.itemId, itemId));
     await tx.delete(itemPackages).where(eq(itemPackages.itemId, itemId));
     await tx.delete(orderItems).where(eq(orderItems.id, itemId));
   });

@@ -5,6 +5,7 @@ import { calcCbm } from "@/lib/cbm";
 import { lookupJjParcels } from "@/app/admin/(panel)/orders/jj-actions";
 
 export type PackageInput = {
+  importKey?: string | null; // พัสดุที่มาจาก JJ — ส่งคืนตอนบันทึก กันซิงค์สร้างซ้ำ
   chinaTrackingNo?: string | null;
   boxes?: number | null;
   weightKg?: number | null;
@@ -14,11 +15,22 @@ export type PackageInput = {
 };
 
 // auto = เลขพัสดุจีนของแถวนี้ให้ระบบตั้งให้ (ตามแถวแรก) จนกว่าพนักงานจะพิมพ์เอง
-type Row = { key: number; tracking: string; auto: boolean; boxes: string; weight: string; w: string; l: string; h: string };
+type Row = {
+  key: number;
+  importKey: string;
+  tracking: string;
+  auto: boolean;
+  boxes: string;
+  weight: string;
+  w: string;
+  l: string;
+  h: string;
+};
 
 const str = (v?: number | string | null) => (v == null ? "" : String(v));
 const toRow = (p: PackageInput, key: number): Row => ({
   key,
+  importKey: str(p.importKey),
   tracking: str(p.chinaTrackingNo),
   auto: !p.chinaTrackingNo,
   boxes: str(p.boxes),
@@ -109,6 +121,7 @@ export function PackageFields({ prefix = "pkg_", defaults = [] }: { prefix?: str
           return (
             <div key={r.key} className="grid grid-cols-2 items-center gap-2 md:grid-cols-[13rem_4.5rem_5.5rem_auto_6rem_1.5rem]">
               <div className="col-span-2 flex gap-1 md:col-span-1">
+                <input type="hidden" name={`${prefix}importKey`} value={r.importKey} />
                 <input name={`${prefix}chinaTrackingNo`} value={r.tracking} onChange={(e) => update(r.key, "tracking", e.target.value)} placeholder={`พัสดุจีน ${i + 1}`} className="input" />
                 <button
                   type="button"

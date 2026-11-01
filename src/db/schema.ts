@@ -103,6 +103,12 @@ export const itemPackages = sqliteTable("item_packages", {
   createdAt: createdAt(),
 });
 
+// พัสดุที่นำเข้าจากระบบอื่นแล้วถูกพนักงานลบทิ้ง — ซิงค์ครั้งต่อไปจะข้าม ไม่ดึงกลับมาอีก
+export const ignoredImports = sqliteTable("ignored_imports", {
+  importKey: text("import_key").primaryKey(),
+  createdAt: createdAt(),
+});
+
 export const ordersRelations = relations(orders, ({ many }) => ({ items: many(orderItems) }));
 
 export const containersRelations = relations(containers, ({ many }) => ({ items: many(orderItems) }));

@@ -73,7 +73,7 @@ export default async function OrdersPage({ searchParams }: Props) {
               <tr>
                 <th className="py-2 pr-4">เลขออเดอร์</th>
                 <th className="py-2 pr-4">ลูกค้า</th>
-                <th className="py-2 pr-4">วิธีขนส่ง</th>
+                <th className="py-2 pr-4">วิธีขนส่ง / Tracking no.</th>
                 <th className="py-2 pr-4">รายการ / ตู้</th>
                 <th className="py-2 pr-4">สถานะ</th>
                 <th className="py-2 pr-4">ยอดเงิน</th>

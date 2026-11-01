@@ -1,4 +1,4 @@
-# SANHA
+# SAANHA
 
 China sourcing / shipping / CNY payment business website (Thai market). Next.js 16 App Router, TypeScript, Tailwind v4.
 

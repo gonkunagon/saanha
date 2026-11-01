@@ -1,5 +1,5 @@
 ---
-title: How to order from China with SANHA
+title: How to order from China with SAANHA
 description: From sending a product link to receiving your goods
 category: getting-started
 order: 1

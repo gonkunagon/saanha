@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 // รูปที่แสดงตอนแชร์ลิงก์ใน LINE / Facebook
 // ใช้ข้อความภาษาอังกฤษ เพราะฟอนต์เริ่มต้นของ next/og ไม่มีตัวอักษรไทย
-export const alt = "SANHA — China sourcing, payment & shipping to Thailand";
+export const alt = "SAANHA — China sourcing, payment & shipping to Thailand";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -24,7 +24,7 @@ export default function OgImage() {
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", maxWidth: 640 }}>
-          <div style={{ fontSize: 96, fontWeight: 800, color: red }}>SANHA</div>
+          <div style={{ fontSize: 96, fontWeight: 800, color: red }}>SAANHA</div>
           <div style={{ fontSize: 44, fontWeight: 700, color: "#1f2937", marginTop: 12 }}>
             China → Thailand, all in one place
           </div>

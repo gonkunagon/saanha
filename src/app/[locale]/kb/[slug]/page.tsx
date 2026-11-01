@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug } = await params;
   if (!isLocale(locale)) return {};
   const article = await getArticle(locale, slug);
-  return article ? { title: `${article.title} | SANHA`, description: article.description } : {};
+  return article ? { title: `${article.title} | SAANHA`, description: article.description } : {};
 }
 
 export default async function KbArticlePage({ params }: Props) {

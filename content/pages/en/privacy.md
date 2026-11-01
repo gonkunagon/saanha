@@ -1,13 +1,13 @@
 ---
 title: Privacy policy
-description: How SANHA collects, uses and protects your personal data under Thailand's Personal Data Protection Act B.E. 2562 (PDPA)
+description: How SAANHA collects, uses and protects your personal data under Thailand's Personal Data Protection Act B.E. 2562 (PDPA)
 ---
 
 > Draft — TODO: have a lawyer review before publishing, and fill in the TODO items. The Thai version prevails.
 
 Last updated: TODO
 
-**TODO: company legal name** ("SANHA", "we") is committed to protecting our customers' personal data. This policy explains how we collect, use and disclose your information.
+**TODO: company legal name** ("SAANHA", "we") is committed to protecting our customers' personal data. This policy explains how we collect, use and disclose your information.
 
 ## 1. Data we collect
 

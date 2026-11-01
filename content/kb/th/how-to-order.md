@@ -1,5 +1,5 @@
 ---
-title: วิธีสั่งซื้อสินค้าจากจีนกับ SANHA
+title: วิธีสั่งซื้อสินค้าจากจีนกับ SAANHA
 description: ขั้นตอนตั้งแต่ส่งลิงก์สินค้าจนได้รับของ
 category: getting-started
 order: 1

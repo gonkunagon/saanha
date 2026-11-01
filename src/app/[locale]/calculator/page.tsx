@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   const t = getDictionary(locale).calculator;
-  return { title: `${t.title} | SANHA`, description: t.note };
+  return { title: `${t.title} | SAANHA`, description: t.note };
 }
 
 export default async function CalculatorPage({ params }: Props) {

@@ -32,7 +32,7 @@ export function TruckScene({ className }: Props) {
       <rect x="72" y="95" width="172" height="74" rx="5" className="fill-brand-600" />
       <rect x="72" y="95" width="172" height="10" rx="5" className="fill-brand-700" />
       <text x="158" y="145" textAnchor="middle" className="fill-white" fontSize="26" fontWeight="800" fontFamily="sans-serif">
-        SANHA
+        SAANHA
       </text>
       {/* หัวรถ */}
       <path d="M248 112h40l26 28v29h-66z" className="fill-brand-700" />

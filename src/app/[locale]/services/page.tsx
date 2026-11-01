@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   const t = getDictionary(locale).services;
-  return { title: `${t.title} | SANHA`, description: t.subtitle };
+  return { title: `${t.title} | SAANHA`, description: t.subtitle };
 }
 
 export default async function ServicesPage({ params }: Props) {

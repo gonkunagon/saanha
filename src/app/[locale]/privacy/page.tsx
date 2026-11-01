@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   const page = await getPage(locale, "privacy");
-  return page ? { title: `${page.title} | SANHA`, description: page.description } : {};
+  return page ? { title: `${page.title} | SAANHA`, description: page.description } : {};
 }
 
 export default async function PrivacyPage({ params }: Props) {

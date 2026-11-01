@@ -1,6 +1,6 @@
 // ข้อมูลติดต่อของบริษัท — แก้ไขที่นี่ที่เดียว แล้วจะแสดงทั่วทั้งเว็บ
 export const site = {
-  name: "SANHA",
+  name: "SAANHA",
   url: "https://example.com", // TODO: ใส่โดเมนจริง (ใช้กับ sitemap และรูปตอนแชร์ลิงก์)
   phone: "0X-XXX-XXXX", // TODO: ใส่เบอร์จริง
   lineId: "@sanha", // TODO: ใส่ LINE OA จริง

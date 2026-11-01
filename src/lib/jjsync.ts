@@ -5,7 +5,7 @@ import { calcCbm } from "./cbm";
 import { nextOrderCode } from "./orders";
 import { fetchJjSnapshot, type JjSnapshot, type JjSnapshotParcel } from "./jjcargo";
 
-// ซิงค์ข้อมูลจาก JJ Cargo เข้าหลังบ้าน SANHA
+// ซิงค์ข้อมูลจาก JJ Cargo เข้าหลังบ้าน SAANHA
 // - ลูกค้าเดียวกัน + ออเดอร์ JJ เดียวกัน + รับเข้าโกดังจีนวันเดียวกัน = 1 ออเดอร์
 // - 1 เลขแทรคต่อ 1 รอบขนส่ง = 1 รายการ (ออเดอร์เดียวจึงกระจายหลายตู้ได้)
 // - 1 PackingList ของ JJ = 1 พัสดุ (1 กล่อง)

@@ -5,7 +5,7 @@ import "../globals.css";
 const notoThai = Noto_Sans_Thai({ subsets: ["thai", "latin"], variable: "--font-noto-thai" });
 
 export const metadata: Metadata = {
-  title: "SANHA หลังบ้าน",
+  title: "SAANHA หลังบ้าน",
   robots: { index: false, follow: false },
 };
 

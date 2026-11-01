@@ -242,6 +242,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
               defaultAt={nowLocalInputValue()}
               containerOptions={containerOptions}
               sharedContainerNote={sharedContainerNote}
+              hasItemsInContainer={order.items.some((i) => i.containerId)}
             />
           </>
         )}

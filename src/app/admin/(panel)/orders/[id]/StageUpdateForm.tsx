@@ -13,12 +13,21 @@ type Props = {
   defaultAt: string;
   containerOptions: ContainerOption[];
   sharedContainerNote: string | null; // เตือนเมื่อตู้มีออเดอร์อื่นอยู่ด้วย
+  hasItemsInContainer: boolean; // มีรายการในออเดอร์นี้ที่อยู่ในตู้แล้ว (แสดงคำอธิบายตอนย้อนสถานะ)
 };
 
 const NEW = "__new__";
 
 // แถบอัปเดตสถานะ: เลือกรายการ (checkbox ในรายการด้านบน) → เลือกสถานะ → บันทึก
-export function StageUpdateForm({ formId, orderId, defaultStage, defaultAt, containerOptions, sharedContainerNote }: Props) {
+export function StageUpdateForm({
+  formId,
+  orderId,
+  defaultStage,
+  defaultAt,
+  containerOptions,
+  sharedContainerNote,
+  hasItemsInContainer,
+}: Props) {
   const [error, action, pending] = useActionState(applyStage, null);
   const [stage, setStage] = useState<ItemStage>(defaultStage);
   const [container, setContainer] = useState(""); // "" = ใช้ตู้เดิมของรายการ
@@ -102,6 +111,11 @@ export function StageUpdateForm({ formId, orderId, defaultStage, defaultAt, cont
 
       {isContainerStage && sharedContainerNote && (
         <p className="mt-3 text-sm text-amber-800">⚠️ {sharedContainerNote}</p>
+      )}
+      {!needsContainer && hasItemsInContainer && (
+        <p className="mt-3 text-sm text-gray-600">
+          ℹ️ รายการที่เลือกซึ่งอยู่ในตู้แล้ว จะถูกนำออกจากตู้ (กลับไปรอเข้าตู้) — ใช้เมื่อต้องการย้อนสถานะ
+        </p>
       )}
       {error && <p className="mt-3 text-sm font-medium text-brand-700">{error}</p>}
     </form>

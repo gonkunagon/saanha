@@ -7,7 +7,7 @@ import { db } from "@/db";
 import { containers, ignoredImports, itemPackages, orderItems, orders, shippingMethods, type ShippingMethod } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { parseLocalDateTime } from "@/lib/datetime";
-import { nextOrderCode } from "@/lib/orders";
+import { nextOrderCode, stageOfItem } from "@/lib/orders";
 import { calcCbm } from "@/lib/cbm";
 import { containerStageFields, itemStages, optionalStages, stageIndex, type ContainerStage, type ItemStage } from "@/lib/stages";
 
@@ -250,7 +250,10 @@ export async function deleteItem(fd: FormData) {
 // - ขั้นก่อนหน้าที่ยังไม่มีวันที่ จะใส่วันที่เดียวกันให้
 // - ถ้าใส่เลขตู้ จะย้ายรายการเข้าตู้นั้น (ไม่มีตู้นี้ = สร้างใหม่)
 // - ขั้นของตู้ (ปิดตู้ → ถึงโกดังไทย) บันทึกที่ตู้ ออเดอร์อื่นในตู้เดียวกันจึงเปลี่ยนตามด้วย
-// - ถ้าย้อนสถานะ วันที่ของขั้นหลังจากนั้นที่อยู่ในรายการจะถูกล้าง (ขั้นของตู้ต้องแก้ที่หน้าตู้)
+// - ย้อนสถานะได้: วันที่ของขั้นหลังจากนั้นถูกล้าง
+//   · ย้อนไปก่อนขึ้นตู้ (ผลิต / ถึงโกดังจีน) = นำรายการออกจากตู้
+//   · ย้อนขั้นของตู้ = ล้างวันที่ของตู้ขั้นหลังจากนั้น (เฉพาะเมื่อรายการที่เลือกทุกรายการในตู้นั้นอยู่เลยขั้นที่เลือกไปแล้ว
+//     กันกรณีเพิ่มรายการใหม่เข้าตู้ที่ไปไกลกว่าแล้วทำให้ตู้ถอยหลังโดยไม่ตั้งใจ)
 
 export async function applyStage(_prev: string | null, fd: FormData): Promise<string | null> {
   await requireUser();
@@ -268,13 +271,23 @@ export async function applyStage(_prev: string | null, fd: FormData): Promise<st
 
   const order = await db.query.orders.findFirst({
     where: eq(orders.id, orderId),
-    with: { items: true },
+    with: { items: { with: { container: true } } },
   });
   if (!order) return "ไม่พบออเดอร์";
   const items = order.items.filter((i) => itemIds.includes(i.id));
+  const beforeContainer = !reached("loaded");
 
-  if (reached("loaded") && !containerCode && items.some((i) => !i.containerId)) {
+  if (!beforeContainer && !containerCode && items.some((i) => !i.containerId)) {
     return "มีรายการที่ยังไม่เข้าตู้ กรุณาใส่เลขตู้";
+  }
+
+  // ตู้ที่จะถูกย้อนสถานะ: ทุกรายการที่เลือกในตู้นั้นอยู่เลยขั้นที่เลือกไปแล้ว
+  const rewindContainers = new Set<number>();
+  if (!beforeContainer && !containerCode) {
+    for (const cid of new Set(items.map((i) => i.containerId).filter((v): v is number => Boolean(v)))) {
+      const inside = items.filter((i) => i.containerId === cid);
+      if (inside.every((i) => stageIndex(stageOfItem(i)) > idx)) rewindContainers.add(cid);
+    }
   }
 
   await db.transaction(async (tx) => {
@@ -287,7 +300,8 @@ export async function applyStage(_prev: string | null, fd: FormData): Promise<st
       await tx
         .update(orderItems)
         .set({
-          containerId: target?.id ?? item.containerId,
+          // ย้อนไปก่อนขึ้นตู้ = ยังไม่ได้อยู่ในตู้ไหน
+          containerId: beforeContainer ? null : target?.id ?? item.containerId,
           productionAt: set("in_production", item.productionAt),
           receivedAt: set("china_warehouse", item.receivedAt),
           outForDeliveryAt: set("out_for_delivery", item.outForDeliveryAt),
@@ -303,10 +317,11 @@ export async function applyStage(_prev: string | null, fd: FormData): Promise<st
       for (const cid of containerIds) {
         const c = await tx.query.containers.findFirst({ where: eq(containers.id, cid) });
         if (!c) continue;
-        const update: Partial<Record<(typeof containerStageFields)[ContainerStage], Date>> = {};
+        const update: Partial<Record<(typeof containerStageFields)[ContainerStage], Date | null>> = {};
         for (const [s, field] of Object.entries(containerStageFields) as [ContainerStage, (typeof containerStageFields)[ContainerStage]][]) {
           if (s === stage) update[field] = at;
           else if (reached(s) && !c[field]) update[field] = at;
+          else if (!reached(s) && c[field] && rewindContainers.has(cid)) update[field] = null; // ย้อนสถานะตู้
         }
         if (Object.keys(update).length) await tx.update(containers).set(update).where(eq(containers.id, cid));
       }

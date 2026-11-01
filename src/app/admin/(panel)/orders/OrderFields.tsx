@@ -5,6 +5,9 @@ import { Field, MethodSelect } from "@/components/admin/ui";
 export function OrderFields({ order }: { order?: Order }) {
   return (
     <>
+      <Field label="เลขคำสั่งซื้อ (เช่น เลขออเดอร์ 1688 / Taobao)" className="sm:col-span-2">
+        <input name="purchaseOrderNo" defaultValue={order?.purchaseOrderNo ?? ""} className="input" autoComplete="off" />
+      </Field>
       <Field label="ชื่อลูกค้า *">
         <input name="customerName" required defaultValue={order?.customerName} className="input" />
       </Field>

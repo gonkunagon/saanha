@@ -106,6 +106,7 @@ function orderFields(fd: FormData) {
     customerName: text(fd, "customerName") ?? "",
     customerPhone: text(fd, "customerPhone") ?? "",
     customerLineId: text(fd, "customerLineId"),
+    purchaseOrderNo: text(fd, "purchaseOrderNo"),
     method: method(fd),
     provider: text(fd, "provider"),
     externalId: text(fd, "externalId"),

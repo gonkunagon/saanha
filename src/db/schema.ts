@@ -54,6 +54,7 @@ export const orders = sqliteTable("orders", {
   customerPhone: text("customer_phone").notNull(),
   customerLineId: text("customer_line_id"),
   method: text("method", { enum: shippingMethods }).notNull(),
+  purchaseOrderNo: text("purchase_order_no"), // เลขคำสั่งซื้อ เช่น เลขออเดอร์จากร้านค้า 1688 / Taobao หรือเลข PO ของลูกค้า
   provider: text("provider"),
   externalId: text("external_id"),
   note: text("note"), // หมายเหตุที่ลูกค้าเห็นในหน้าติดตามพัสดุ

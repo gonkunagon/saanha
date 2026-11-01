@@ -43,6 +43,13 @@
       "when": 1793517692897,
       "tag": "0005_vengeful_jigsaw",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1793517963313,
+      "tag": "0006_woozy_monster_badoon",
+      "breakpoints": true
     }
   ]
 }

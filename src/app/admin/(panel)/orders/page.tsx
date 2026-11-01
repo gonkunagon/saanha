@@ -25,6 +25,7 @@ export default async function OrdersPage({ searchParams }: Props) {
           like(orders.customerName, `%${term}%`),
           like(orders.customerPhone, `%${term}%`),
           like(orders.externalId, `%${term}%`),
+          like(orders.purchaseOrderNo, `%${term}%`),
         )
       : undefined,
     orderBy: desc(orders.createdAt),
@@ -51,7 +52,7 @@ export default async function OrdersPage({ searchParams }: Props) {
           <input
             name="q"
             defaultValue={q}
-            placeholder="ค้นหา เลขออเดอร์ / ชื่อ / เบอร์ / External ID"
+            placeholder="ค้นหา เลขออเดอร์ / เลขคำสั่งซื้อ / ชื่อ / เบอร์ / External ID"
             className="input max-w-sm flex-1"
           />
           <select name="stage" defaultValue={stage} className="input w-auto">
@@ -82,6 +83,7 @@ export default async function OrdersPage({ searchParams }: Props) {
                 <tr key={o.id} className="border-t border-gray-100">
                   <td className="py-2 pr-4">
                     <Link href={`/admin/orders/${o.id}`} className="font-semibold text-brand-600 hover:underline">{o.code}</Link>
+                    {o.purchaseOrderNo && <span className="block text-xs text-gray-500">คำสั่งซื้อ {o.purchaseOrderNo}</span>}
                   </td>
                   <td className="py-2 pr-4">
                     {o.customerName}

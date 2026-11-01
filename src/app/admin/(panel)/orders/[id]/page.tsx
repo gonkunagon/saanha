@@ -134,6 +134,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
         )}
         <p className="mt-1 text-sm text-gray-600">
           {order.customerName} · {order.customerPhone || "ไม่มีเบอร์"} · {methodLabel(order.method)}
+          {order.purchaseOrderNo && ` · คำสั่งซื้อ: ${order.purchaseOrderNo}`}
           {order.externalId && ` · External ID: ${order.externalId}`}
           {" · "}ส่งแล้ว {summary.deliveredCount}/{summary.itemCount}
         </p>

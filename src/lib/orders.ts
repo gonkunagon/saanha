@@ -73,7 +73,9 @@ export async function getTrackingView(code: string, phoneLast4: string): Promise
     with: { items: { with: { container: true } } },
   });
   // เทียบเบอร์ 4 ตัวท้าย เพื่อไม่ให้คนอื่นดูข้อมูลได้จากเลขออเดอร์อย่างเดียว
-  if (!order || last4(order.customerPhone) !== phoneLast4) return null;
+  // ออเดอร์ที่ยังไม่มีเบอร์ (เช่น นำเข้าจาก JJ) ดูไม่ได้เลยจนกว่าจะใส่เบอร์
+  const phone4 = order ? last4(order.customerPhone) : "";
+  if (!order || phone4.length < 4 || phone4 !== phoneLast4) return null;
 
   // จัดกลุ่มรายการตามตู้ ขั้นใดจะถือว่าเสร็จเมื่อทุกรายการในกลุ่มผ่านขั้นนั้นแล้ว
   const byContainer = new Map<number | null, ItemWithContainer[]>();

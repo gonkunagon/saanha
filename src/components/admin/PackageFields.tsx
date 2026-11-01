@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { calcCbm } from "@/lib/cbm";
+import { lookupJjParcels } from "@/app/admin/(panel)/orders/jj-actions";
 
 export type PackageInput = {
   chinaTrackingNo?: string | null;
@@ -56,6 +57,37 @@ export function PackageFields({ prefix = "pkg_", defaults = [] }: { prefix?: str
   };
   const removeRow = (key: number) => setRows((rs) => (rs.length > 1 ? autoNumber(rs.filter((r) => r.key !== key)) : rs));
 
+  // ดึงข้อมูลจาก JJ Cargo: แทนแถวนี้ด้วยพัสดุทุกกล่องของเลขนั้น (1 กล่อง = 1 แถว)
+  const [fetchingKey, setFetchingKey] = useState<number | null>(null);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const fetchFromJj = async (row: Row) => {
+    setFetchingKey(row.key);
+    setMessage(null);
+    const result = await lookupJjParcels(row.tracking);
+    setFetchingKey(null);
+    if (!result.ok) return setMessage({ ok: false, text: result.error });
+
+    const base = row.tracking.trim();
+    const fetched: Row[] = result.parcels.map((p, i) => ({
+      ...toRow({ boxes: 1, weightKg: p.weightKg, widthCm: p.widthCm, lengthCm: p.lengthCm, heightCm: p.heightCm }, nextKey + i),
+      tracking: i === 0 ? base : `${base}-${i}`,
+      auto: false,
+    }));
+    setNextKey((k) => k + fetched.length);
+    setRows((rs) => {
+      const at = rs.findIndex((r) => r.key === row.key);
+      return autoNumber([...rs.slice(0, at), ...fetched, ...rs.slice(at + 1)]);
+    });
+    const first = result.parcels[0];
+    setMessage({
+      ok: true,
+      text:
+        `ดึงข้อมูล ${base} จาก JJ Cargo แล้ว ${fetched.length} กล่อง` +
+        (first.shipmentCode ? ` · รอบขนส่ง ${first.shipmentCode}` : "") +
+        (first.offChinaDate ? ` · ออกจากจีน ${first.offChinaDate}` : ""),
+    });
+  };
+
   const totalBoxes = rows.reduce((s, r) => s + (Number(r.boxes) || 0), 0);
   const totalWeight = rows.reduce((s, r) => s + (Number(r.weight) || 0), 0);
   const totalCbm = rows.reduce((s, r) => s + (rowCbm(r) ?? 0), 0);
@@ -63,7 +95,7 @@ export function PackageFields({ prefix = "pkg_", defaults = [] }: { prefix?: str
   const cell = "input px-2 text-center";
   return (
     <div className="rounded-lg border border-dashed border-gray-300 p-3">
-      <div className="mb-1 hidden gap-2 text-xs text-gray-500 md:grid md:grid-cols-[10rem_4.5rem_5.5rem_auto_6rem_1.5rem]">
+      <div className="mb-1 hidden gap-2 text-xs text-gray-500 md:grid md:grid-cols-[13rem_4.5rem_5.5rem_auto_6rem_1.5rem]">
         <span>เลขพัสดุจีน</span>
         <span>กล่อง</span>
         <span>น้ำหนัก (กก.)</span>
@@ -75,8 +107,19 @@ export function PackageFields({ prefix = "pkg_", defaults = [] }: { prefix?: str
         {rows.map((r, i) => {
           const cbm = rowCbm(r);
           return (
-            <div key={r.key} className="grid grid-cols-2 items-center gap-2 md:grid-cols-[10rem_4.5rem_5.5rem_auto_6rem_1.5rem]">
-              <input name={`${prefix}chinaTrackingNo`} value={r.tracking} onChange={(e) => update(r.key, "tracking", e.target.value)} placeholder={`พัสดุจีน ${i + 1}`} className="input col-span-2 md:col-span-1" />
+            <div key={r.key} className="grid grid-cols-2 items-center gap-2 md:grid-cols-[13rem_4.5rem_5.5rem_auto_6rem_1.5rem]">
+              <div className="col-span-2 flex gap-1 md:col-span-1">
+                <input name={`${prefix}chinaTrackingNo`} value={r.tracking} onChange={(e) => update(r.key, "tracking", e.target.value)} placeholder={`พัสดุจีน ${i + 1}`} className="input" />
+                <button
+                  type="button"
+                  onClick={() => fetchFromJj(r)}
+                  disabled={!r.tracking.trim() || fetchingKey !== null}
+                  title="ดึงกล่อง น้ำหนัก ขนาด จาก JJ Cargo"
+                  className="shrink-0 rounded-lg border border-brand-200 px-2 text-xs font-medium text-brand-700 hover:bg-brand-50 disabled:opacity-40"
+                >
+                  {fetchingKey === r.key ? "…" : "ดึง"}
+                </button>
+              </div>
               <input name={`${prefix}boxes`} type="number" min={0} value={r.boxes} onChange={(e) => update(r.key, "boxes", e.target.value)} placeholder="กล่อง" className={cell} aria-label="จำนวนกล่อง" />
               <input name={`${prefix}weightKg`} type="number" step="0.01" min={0} value={r.weight} onChange={(e) => update(r.key, "weight", e.target.value)} placeholder="กก." className={cell} aria-label="น้ำหนัก (กก.)" />
               {/* .input กว้างเต็มช่องเสมอ จึงคุมความกว้างด้วย span ที่ครอบ */}
@@ -101,6 +144,9 @@ export function PackageFields({ prefix = "pkg_", defaults = [] }: { prefix?: str
           );
         })}
       </div>
+      {message && (
+        <p className={`mt-2 text-sm ${message.ok ? "text-emerald-700" : "text-brand-700"}`}>{message.text}</p>
+      )}
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm">
         <button type="button" onClick={addRow} className="font-medium text-brand-600 hover:underline">
           + เพิ่มพัสดุ / ขนาดอื่น

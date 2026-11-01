@@ -58,6 +58,8 @@ export const orders = sqliteTable("orders", {
   externalId: text("external_id"),
   note: text("note"), // หมายเหตุที่ลูกค้าเห็นในหน้าติดตามพัสดุ
   internalNote: text("internal_note"), // หมายเหตุภายใน ลูกค้าไม่เห็น
+  // คีย์ของข้อมูลที่ซิงค์มาจากระบบอื่น (เช่น JJ Cargo) กันนำเข้าซ้ำ — ออเดอร์ที่สร้างเองเป็นค่าว่าง
+  importKey: text("import_key").unique(),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
@@ -78,6 +80,7 @@ export const orderItems = sqliteTable("order_items", {
   outForDeliveryAt: timestamp("out_for_delivery_at"),
   deliveredAt: timestamp("delivered_at"),
   domesticTracking: text("domestic_tracking"),
+  importKey: text("import_key").unique(),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
@@ -96,6 +99,7 @@ export const itemPackages = sqliteTable("item_packages", {
   lengthCm: real("length_cm"),
   heightCm: real("height_cm"),
   cbm: real("cbm"),
+  importKey: text("import_key").unique(), // เช่น "jj:12" = PackingList id 12 ของ JJ Cargo
   createdAt: createdAt(),
 });
 

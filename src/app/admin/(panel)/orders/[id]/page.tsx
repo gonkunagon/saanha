@@ -117,8 +117,13 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           <h1 className="text-2xl font-bold">{order.code}</h1>
           <StageBadge stage={summary.stage} />
         </div>
+        {!order.customerPhone && (
+          <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            ⚠️ ยังไม่มีเบอร์โทรลูกค้า ลูกค้าจะเช็คสถานะเองไม่ได้ — เพิ่มได้ที่ &quot;ข้อมูลลูกค้าและออเดอร์&quot; ด้านล่าง
+          </p>
+        )}
         <p className="mt-1 text-sm text-gray-600">
-          {order.customerName} · {order.customerPhone} · {methodLabel(order.method)}
+          {order.customerName} · {order.customerPhone || "ไม่มีเบอร์"} · {methodLabel(order.method)}
           {order.externalId && ` · External ID: ${order.externalId}`}
           {" · "}ส่งแล้ว {summary.deliveredCount}/{summary.itemCount}
         </p>

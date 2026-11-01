@@ -7,6 +7,7 @@ import { summarizeOrder } from "@/lib/orders";
 import { formatThaiDateTime } from "@/lib/datetime";
 import { itemStages, stageLabelsTh, type ItemStage } from "@/lib/stages";
 import { Card, StageBadge, methodLabel } from "@/components/admin/ui";
+import { SyncJjButton } from "./SyncJjButton";
 
 type Props = { searchParams: Promise<{ q?: string; stage?: string }> };
 
@@ -37,7 +38,10 @@ export default async function OrdersPage({ searchParams }: Props) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">ออเดอร์</h1>
-        <Link href="/admin/orders/new" className="btn-primary">+ สร้างออเดอร์</Link>
+        <div className="flex flex-wrap items-start gap-2">
+          <SyncJjButton />
+          <Link href="/admin/orders/new" className="btn-primary">+ สร้างออเดอร์</Link>
+        </div>
       </div>
 
       <Card>
@@ -78,7 +82,11 @@ export default async function OrdersPage({ searchParams }: Props) {
                   </td>
                   <td className="py-2 pr-4">
                     {o.customerName}
-                    <span className="block text-xs text-gray-500">{o.customerPhone}</span>
+                    {o.customerPhone ? (
+                      <span className="block text-xs text-gray-500">{o.customerPhone}</span>
+                    ) : (
+                      <span className="block text-xs font-medium text-amber-700">ยังไม่มีเบอร์ (ลูกค้าเช็คสถานะไม่ได้)</span>
+                    )}
                   </td>
                   <td className="py-2 pr-4">{methodLabel(o.method)}</td>
                   <td className="py-2 pr-4">{s.itemCount} / {s.containerCount} ตู้</td>

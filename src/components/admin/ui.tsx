@@ -1,5 +1,15 @@
 // ชิ้นส่วน UI ที่ใช้ซ้ำในหลังบ้าน
 import { stageIndex, stageLabelsTh, type ItemStage } from "@/lib/stages";
+import { balanceOf, formatMoney, type CurrencyCode } from "@/lib/money";
+
+// ยอดค้างชำระ: แดง = ยังค้าง · เขียว = ชำระครบ · เหลือง = มัดจำเกินยอด
+export function BalanceText({ total, deposit, currency }: { total: number | null; deposit: number | null; currency: CurrencyCode }) {
+  const balance = balanceOf(total, deposit);
+  if (balance == null) return <span className="text-gray-400">-</span>;
+  if (balance === 0) return <span className="font-medium text-emerald-700">ชำระครบ</span>;
+  if (balance < 0) return <span className="font-medium text-amber-700">มัดจำเกิน {formatMoney(-balance, currency)}</span>;
+  return <span className="font-semibold text-brand-700">ค้างชำระ {formatMoney(balance, currency)}</span>;
+}
 
 const stageColors = [
   "bg-gray-100 text-gray-700", // ordered

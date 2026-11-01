@@ -12,6 +12,8 @@ import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { OrderFields } from "../OrderFields";
 import { addItem, deleteItem, updateItem, updateOrder } from "../actions";
 import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
+import { BalanceText } from "@/components/admin/ui";
+import { formatMoney } from "@/lib/money";
 import { StageUpdateForm, type ContainerOption } from "./StageUpdateForm";
 import { PackageFields } from "@/components/admin/PackageFields";
 import type { ItemPackage } from "@/db/schema";
@@ -138,6 +140,18 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           {order.externalId && ` · External ID: ${order.externalId}`}
           {" · "}ส่งแล้ว {summary.deliveredCount}/{summary.itemCount}
         </p>
+        {(order.shopName || order.totalAmount != null) && (
+          <p className="mt-1 text-sm text-gray-600">
+            {order.shopName && <>ร้าน {order.shopName}</>}
+            {order.totalAmount != null && (
+              <>
+                {order.shopName && " · "}ยอดเต็ม {formatMoney(order.totalAmount, order.currency)} · มัดจำ{" "}
+                {formatMoney(order.depositAmount ?? 0, order.currency)} ·{" "}
+                <BalanceText total={order.totalAmount} deposit={order.depositAmount} currency={order.currency} />
+              </>
+            )}
+          </p>
+        )}
       </div>
 
       <Card title={`รายการสินค้า (${order.items.length})`}>

@@ -1,5 +1,6 @@
 import type { Order } from "@/db/schema";
 import { Field, MethodSelect } from "@/components/admin/ui";
+import { PaymentFields } from "@/components/admin/PaymentFields";
 
 // ช่องข้อมูลออเดอร์ ใช้ทั้งตอนสร้างและแก้ไข
 export function OrderFields({ order }: { order?: Order }) {
@@ -8,6 +9,12 @@ export function OrderFields({ order }: { order?: Order }) {
       <Field label="เลขคำสั่งซื้อ (เช่น เลขออเดอร์ 1688 / Taobao)" className="sm:col-span-2">
         <input name="purchaseOrderNo" defaultValue={order?.purchaseOrderNo ?? ""} className="input" autoComplete="off" />
       </Field>
+      <PaymentFields
+        shopName={order?.shopName}
+        currency={order?.currency}
+        totalAmount={order?.totalAmount}
+        depositAmount={order?.depositAmount}
+      />
       <Field label="ชื่อลูกค้า *">
         <input name="customerName" required defaultValue={order?.customerName} className="input" />
       </Field>

@@ -18,6 +18,9 @@ const updatedAt = () =>
 export const shippingMethods = ["truck", "sea"] as const;
 export type ShippingMethod = (typeof shippingMethods)[number];
 
+export const currencies = ["THB", "CNY"] as const;
+export type Currency = (typeof currencies)[number];
+
 // admin = จัดการบัญชีพนักงานได้ / staff = ใช้งานออเดอร์และตู้ได้อย่างเดียว
 export const userRoles = ["admin", "staff"] as const;
 export type UserRole = (typeof userRoles)[number];
@@ -55,6 +58,11 @@ export const orders = sqliteTable("orders", {
   customerLineId: text("customer_line_id"),
   method: text("method", { enum: shippingMethods }).notNull(),
   purchaseOrderNo: text("purchase_order_no"), // เลขคำสั่งซื้อ เช่น เลขออเดอร์จากร้านค้า 1688 / Taobao หรือเลข PO ของลูกค้า
+  shopName: text("shop_name"), // ร้านค้าที่สั่งซื้อ
+  // ยอดเงินของคำสั่งซื้อ — ยอดค้างชำระ = ยอดเต็ม − มัดจำ (คำนวณตอนแสดงผล ไม่เก็บซ้ำ)
+  currency: text("currency", { enum: currencies }).notNull().default("THB"),
+  totalAmount: real("total_amount"),
+  depositAmount: real("deposit_amount"),
   provider: text("provider"),
   externalId: text("external_id"),
   note: text("note"), // หมายเหตุที่ลูกค้าเห็นในหน้าติดตามพัสดุ

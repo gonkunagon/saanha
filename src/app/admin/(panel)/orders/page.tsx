@@ -6,7 +6,8 @@ import { requireUser } from "@/lib/auth";
 import { summarizeOrder } from "@/lib/orders";
 import { formatThaiDateTime } from "@/lib/datetime";
 import { itemStages, stageLabelsTh, type ItemStage } from "@/lib/stages";
-import { Card, StageBadge, methodLabel } from "@/components/admin/ui";
+import { BalanceText, Card, StageBadge, methodLabel } from "@/components/admin/ui";
+import { formatMoney } from "@/lib/money";
 import { SyncJjButton } from "./SyncJjButton";
 import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
 import { getSyncStatus } from "@/lib/jjsync";
@@ -26,6 +27,7 @@ export default async function OrdersPage({ searchParams }: Props) {
           like(orders.customerPhone, `%${term}%`),
           like(orders.externalId, `%${term}%`),
           like(orders.purchaseOrderNo, `%${term}%`),
+          like(orders.shopName, `%${term}%`),
         )
       : undefined,
     orderBy: desc(orders.createdAt),
@@ -52,7 +54,7 @@ export default async function OrdersPage({ searchParams }: Props) {
           <input
             name="q"
             defaultValue={q}
-            placeholder="ค้นหา เลขออเดอร์ / เลขคำสั่งซื้อ / ชื่อ / เบอร์ / External ID"
+            placeholder="ค้นหา เลขออเดอร์ / เลขคำสั่งซื้อ / ร้านค้า / ชื่อ / เบอร์ / External ID"
             className="input max-w-sm flex-1"
           />
           <select name="stage" defaultValue={stage} className="input w-auto">
@@ -73,6 +75,7 @@ export default async function OrdersPage({ searchParams }: Props) {
                 <th className="py-2 pr-4">วิธีขนส่ง</th>
                 <th className="py-2 pr-4">รายการ / ตู้</th>
                 <th className="py-2 pr-4">สถานะ</th>
+                <th className="py-2 pr-4">ยอดเงิน</th>
                 <th className="py-2 pr-4">External ID</th>
                 <th className="py-2 pr-4">สร้างเมื่อ</th>
                 <th className="py-2" aria-label="ลบ" />
@@ -84,6 +87,7 @@ export default async function OrdersPage({ searchParams }: Props) {
                   <td className="py-2 pr-4">
                     <Link href={`/admin/orders/${o.id}`} className="font-semibold text-brand-600 hover:underline">{o.code}</Link>
                     {o.purchaseOrderNo && <span className="block text-xs text-gray-500">คำสั่งซื้อ {o.purchaseOrderNo}</span>}
+                    {o.shopName && <span className="block text-xs text-gray-500">ร้าน {o.shopName}</span>}
                   </td>
                   <td className="py-2 pr-4">
                     {o.customerName}
@@ -101,6 +105,16 @@ export default async function OrdersPage({ searchParams }: Props) {
                       suffix={s.deliveredCount > 0 && s.stage !== "delivered" ? ` · ส่งแล้ว ${s.deliveredCount}/${s.itemCount}` : ""}
                     />
                   </td>
+                  <td className="py-2 pr-4 whitespace-nowrap">
+                    {o.totalAmount != null ? (
+                      <>
+                        <span className="block text-xs text-gray-500">เต็ม {formatMoney(o.totalAmount, o.currency)}</span>
+                        <BalanceText total={o.totalAmount} deposit={o.depositAmount} currency={o.currency} />
+                      </>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </td>
                   <td className="py-2 pr-4 text-gray-600">{o.externalId ?? "-"}</td>
                   <td className="py-2 pr-4 text-gray-500">{formatThaiDateTime(o.createdAt)}</td>
                   <td className="py-2 text-right">
@@ -115,7 +129,7 @@ export default async function OrdersPage({ searchParams }: Props) {
                 </tr>
               ))}
               {rows.length === 0 && (
-                <tr><td colSpan={8} className="py-6 text-center text-gray-400">ไม่พบออเดอร์</td></tr>
+                <tr><td colSpan={9} className="py-6 text-center text-gray-400">ไม่พบออเดอร์</td></tr>
               )}
             </tbody>
           </table>

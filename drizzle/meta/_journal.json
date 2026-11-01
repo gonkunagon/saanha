@@ -50,6 +50,13 @@
       "when": 1793517963313,
       "tag": "0006_woozy_monster_badoon",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1793518103786,
+      "tag": "0007_striped_omega_flight",
+      "breakpoints": true
     }
   ]
 }

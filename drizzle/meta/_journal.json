@@ -64,6 +64,13 @@
       "when": 1793518494044,
       "tag": "0008_broken_roughhouse",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1793520230479,
+      "tag": "0009_wise_thor",
+      "breakpoints": true
     }
   ]
 }

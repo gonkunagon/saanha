@@ -107,6 +107,7 @@ function orderFields(fd: FormData) {
     customerPhone: text(fd, "customerPhone") ?? "",
     customerLineId: text(fd, "customerLineId"),
     purchaseOrderNo: text(fd, "purchaseOrderNo"),
+    intlTrackingNo: text(fd, "intlTrackingNo"),
     shopName: text(fd, "shopName"),
     currency: fd.get("currency") === "CNY" ? ("CNY" as const) : ("THB" as const),
     totalAmount: toNum(fd.get("totalAmount")),

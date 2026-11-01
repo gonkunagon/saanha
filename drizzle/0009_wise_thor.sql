@@ -1,0 +1,1 @@
+ALTER TABLE `orders` ADD `intl_tracking_no` text;

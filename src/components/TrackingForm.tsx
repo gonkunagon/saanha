@@ -133,6 +133,12 @@ export function TrackingForm({ locale, t, cal }: Props) {
                 <dd className="font-semibold">{order.deliveredCount}/{order.itemCount}</dd>
               </div>
             </dl>
+            {order.intlTrackingNo && (
+              <p className="border-t border-gray-100 px-6 py-4 text-sm">
+                <span className="text-gray-500">{t.intlTracking}: </span>
+                <span className="font-semibold">{order.intlTrackingNo}</span>
+              </p>
+            )}
             {order.note && (
               <p className="border-t border-gray-100 px-6 py-4 text-sm">
                 <span className="text-gray-500">{t.note}: </span>{order.note}

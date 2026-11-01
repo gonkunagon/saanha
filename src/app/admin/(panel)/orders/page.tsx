@@ -28,6 +28,7 @@ export default async function OrdersPage({ searchParams }: Props) {
           like(orders.externalId, `%${term}%`),
           like(orders.purchaseOrderNo, `%${term}%`),
           like(orders.shopName, `%${term}%`),
+          like(orders.intlTrackingNo, `%${term}%`),
         )
       : undefined,
     orderBy: desc(orders.createdAt),
@@ -54,7 +55,7 @@ export default async function OrdersPage({ searchParams }: Props) {
           <input
             name="q"
             defaultValue={q}
-            placeholder="ค้นหา เลขออเดอร์ / เลขคำสั่งซื้อ / ร้านค้า / ชื่อ / เบอร์ / External ID"
+            placeholder="ค้นหา เลขออเดอร์ / เลขคำสั่งซื้อ / Tracking / ร้านค้า / ชื่อ / เบอร์ / External ID"
             className="input max-w-sm flex-1"
           />
           <select name="stage" defaultValue={stage} className="input w-auto">
@@ -97,7 +98,10 @@ export default async function OrdersPage({ searchParams }: Props) {
                       <span className="block text-xs font-medium text-amber-700">ยังไม่มีเบอร์ (ลูกค้าเช็คสถานะไม่ได้)</span>
                     )}
                   </td>
-                  <td className="py-2 pr-4">{methodLabel(o.method)}</td>
+                  <td className="py-2 pr-4">
+                    {methodLabel(o.method)}
+                    {o.intlTrackingNo && <span className="block text-xs text-gray-500">{o.intlTrackingNo}</span>}
+                  </td>
                   <td className="py-2 pr-4">{s.itemCount} / {s.containerCount} ตู้</td>
                   <td className="py-2 pr-4">
                     <StageBadge

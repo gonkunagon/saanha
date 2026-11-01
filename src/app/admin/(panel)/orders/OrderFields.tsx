@@ -27,6 +27,9 @@ export function OrderFields({ order }: { order?: Order }) {
       <Field label="วิธีขนส่ง">
         <MethodSelect defaultValue={order?.method} />
       </Field>
+      <Field label="Tracking no. จากจีนมาไทย (ลูกค้าเห็นในหน้าติดตามพัสดุ)" className="sm:col-span-2">
+        <input name="intlTrackingNo" defaultValue={order?.intlTrackingNo ?? ""} className="input" autoComplete="off" />
+      </Field>
       <Field label="บริษัทขนส่งที่รับงานต่อ">
         <input name="provider" defaultValue={order?.provider ?? ""} className="input" />
       </Field>

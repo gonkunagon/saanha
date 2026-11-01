@@ -9,7 +9,7 @@ import { requireUser } from "@/lib/auth";
 import { parseLocalDateTime } from "@/lib/datetime";
 import { nextOrderCode } from "@/lib/orders";
 import { calcCbm } from "@/lib/cbm";
-import { containerStageFields, itemStages, stageIndex, type ContainerStage, type ItemStage } from "@/lib/stages";
+import { containerStageFields, itemStages, optionalStages, stageIndex, type ContainerStage, type ItemStage } from "@/lib/stages";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -223,6 +223,7 @@ export async function updateItem(fd: FormData) {
         quantity: toInt(fd.get("quantity")),
         ...packageTotals(packages),
         containerId: container?.id ?? null,
+        productionAt: parseLocalDateTime(fd.get("productionAt")),
         receivedAt: parseLocalDateTime(fd.get("receivedAt")),
         outForDeliveryAt: parseLocalDateTime(fd.get("outForDeliveryAt")),
         deliveredAt: parseLocalDateTime(fd.get("deliveredAt")),
@@ -280,12 +281,14 @@ export async function applyStage(_prev: string | null, fd: FormData): Promise<st
     const target = containerCode ? await findOrCreateContainer(tx, containerCode, order.method) : null;
 
     for (const item of items) {
+      // ขั้นที่เลือก = วันที่ใหม่ · ขั้นก่อนหน้าที่ว่าง = เติมให้ (ยกเว้นขั้นที่ข้ามได้) · ขั้นหลังจากนั้น = ล้าง
       const set = (s: ItemStage, current: Date | null) =>
-        s === stage ? at : reached(s) ? current ?? at : null;
+        s === stage ? at : reached(s) ? current ?? (optionalStages.has(s) ? null : at) : null;
       await tx
         .update(orderItems)
         .set({
           containerId: target?.id ?? item.containerId,
+          productionAt: set("in_production", item.productionAt),
           receivedAt: set("china_warehouse", item.receivedAt),
           outForDeliveryAt: set("out_for_delivery", item.outForDeliveryAt),
           deliveredAt: set("delivered", item.deliveredAt),

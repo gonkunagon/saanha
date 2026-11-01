@@ -1,9 +1,11 @@
 // ขั้นตอนสถานะของรายการสินค้า ตั้งแต่สั่งซื้อจนถึงมือลูกค้า (ใช้ได้ทั้งฝั่งเซิร์ฟเวอร์และหน้าเว็บ)
-// - ordered, china_warehouse, out_for_delivery, delivered : อัปเดตที่รายการสินค้า
+// - ordered, in_production, china_warehouse, out_for_delivery, delivered : อัปเดตที่รายการสินค้า
 // - loaded, departed, customs, thai_warehouse : มาจากตู้ที่รายการนั้นอยู่
+// - in_production เป็นขั้นที่ไม่บังคับ (เฉพาะสินค้าสั่งผลิต) ข้ามได้ และไม่ถูกเติมวันที่ให้อัตโนมัติ
 
 export const itemStages = [
   "ordered",
+  "in_production",
   "china_warehouse",
   "loaded",
   "departed",
@@ -13,6 +15,9 @@ export const itemStages = [
   "delivered",
 ] as const;
 export type ItemStage = (typeof itemStages)[number];
+
+// ขั้นที่ข้ามได้: ไม่เติมวันที่ให้เมื่อข้ามไปขั้นถัดไป และไม่แสดงในหน้าติดตามพัสดุถ้าไม่ได้ใช้
+export const optionalStages: ReadonlySet<ItemStage> = new Set(["in_production"]);
 
 export const containerStageFields = {
   loaded: "loadedAt",
@@ -25,6 +30,7 @@ export const containerStages = Object.keys(containerStageFields) as ContainerSta
 
 export const stageLabelsTh: Record<ItemStage, string> = {
   ordered: "สร้างออเดอร์แล้ว",
+  in_production: "อยู่ระหว่างการผลิต",
   china_warehouse: "ถึงโกดังจีน",
   loaded: "ปิดตู้ / โหลดสินค้าที่จีน",
   departed: "ออกจากจีน",
@@ -36,6 +42,7 @@ export const stageLabelsTh: Record<ItemStage, string> = {
 
 type ItemDates = {
   createdAt: Date;
+  productionAt: Date | null;
   receivedAt: Date | null;
   outForDeliveryAt: Date | null;
   deliveredAt: Date | null;
@@ -50,6 +57,7 @@ type ContainerDates = {
 export function itemStageDates(item: ItemDates, container: ContainerDates): Record<ItemStage, Date | null> {
   return {
     ordered: item.createdAt,
+    in_production: item.productionAt,
     china_warehouse: item.receivedAt,
     loaded: container?.loadedAt ?? null,
     departed: container?.departedAt ?? null,

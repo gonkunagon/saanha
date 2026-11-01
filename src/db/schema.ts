@@ -85,6 +85,7 @@ export const orderItems = sqliteTable("order_items", {
   boxes: integer("boxes"),
   weightKg: real("weight_kg"),
   cbm: real("cbm"),
+  productionAt: timestamp("production_at"), // อยู่ระหว่างการผลิต (เฉพาะสินค้าที่สั่งผลิต)
   receivedAt: timestamp("received_at"), // ถึงโกดังจีน
   outForDeliveryAt: timestamp("out_for_delivery_at"),
   deliveredAt: timestamp("delivered_at"),

@@ -6,7 +6,7 @@ import { containers, orderItems, orders } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { containerStageOf, stageOfItem, summarizeOrder, type ItemWithContainer } from "@/lib/orders";
 import { formatThaiDateTime, nowLocalInputValue, toLocalInputValue } from "@/lib/datetime";
-import { itemStageDates, itemStages, stageIndex, stageLabelsTh, type ItemStage } from "@/lib/stages";
+import { itemStageDates, itemStages, optionalStages, stageIndex, stageLabelsTh, type ItemStage } from "@/lib/stages";
 import { Card, Field, StageBadge, methodLabel } from "@/components/admin/ui";
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { OrderFields } from "../OrderFields";
@@ -48,6 +48,9 @@ function ItemEditForm({ item, containerOptions }: { item: ItemWithPackages; cont
               <option key={c.code} value={c.code}>{c.label}</option>
             ))}
           </select>
+        </Field>
+        <Field label="อยู่ระหว่างการผลิต">
+          <input name="productionAt" type="datetime-local" defaultValue={toLocalInputValue(item.productionAt)} className="input bg-white" />
         </Field>
         <Field label="ถึงโกดังจีน">
           <input name="receivedAt" type="datetime-local" defaultValue={toLocalInputValue(item.receivedAt)} className="input bg-white" />
@@ -109,8 +112,9 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
 
   const summary = summarizeOrder(order.items);
   const stages = order.items.map(stageOfItem);
-  // ค่าเริ่มต้นของแถบอัปเดต = ขั้นถัดไปของรายการที่ช้าที่สุด
-  const nextStage: ItemStage = itemStages[Math.min(stageIndex(summary.stage) + 1, itemStages.length - 1)];
+  // ค่าเริ่มต้นของแถบอัปเดต = ขั้นถัดไปของรายการที่ช้าที่สุด (ข้ามขั้นที่ไม่บังคับ เช่น อยู่ระหว่างการผลิต)
+  let nextStage: ItemStage = itemStages[Math.min(stageIndex(summary.stage) + 1, itemStages.length - 1)];
+  if (optionalStages.has(nextStage)) nextStage = itemStages[stageIndex(nextStage) + 1];
 
   return (
     <div className="space-y-6">
@@ -234,7 +238,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
               key={summary.stage} // บันทึกแล้ว ขยับค่าเริ่มต้นไปขั้นถัดไปเอง
               formId={STAGE_FORM}
               orderId={order.id}
-              defaultStage={nextStage === "ordered" ? "china_warehouse" : nextStage}
+              defaultStage={nextStage}
               defaultAt={nowLocalInputValue()}
               containerOptions={containerOptions}
               sharedContainerNote={sharedContainerNote}

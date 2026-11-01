@@ -6,6 +6,7 @@ import {
   containerStages,
   currentStage,
   itemStageDates,
+  optionalStages,
   slowestStage,
   type ContainerStage,
   type ItemStage,
@@ -86,12 +87,16 @@ export async function getTrackingView(code: string, phoneLast4: string): Promise
 
   const groups: TrackingGroup[] = [...byContainer.values()].map((items) => {
     const allDates = items.map((i) => itemStageDates(i, i.container));
-    const stages = (Object.keys(allDates[0]) as ItemStage[]).map((stage) => {
-      const dates = allDates.map((d) => d[stage]);
-      const done = dates.every(Boolean);
-      const latest = done ? new Date(Math.max(...dates.map((d) => d!.getTime()))) : null;
-      return { stage, at: latest?.toISOString() ?? null };
-    });
+    const stages = (Object.keys(allDates[0]) as ItemStage[])
+      // ขั้นที่ข้ามได้ (อยู่ระหว่างการผลิต) แสดงเฉพาะกลุ่มที่ใช้ขั้นนั้นจริง
+      .filter((stage) => !optionalStages.has(stage) || allDates.some((d) => d[stage]))
+      .map((stage) => {
+        // ขั้นที่ข้ามได้: นับว่าผ่านเมื่อมีรายการใดใช้ขั้นนั้น (สินค้าสำเร็จรูปในกลุ่มเดียวกันไม่ต้องผลิต)
+        const dates = allDates.map((d) => d[stage]).filter((d) => optionalStages.has(stage) ? d : true);
+        const done = dates.length > 0 && dates.every(Boolean);
+        const latest = done ? new Date(Math.max(...dates.map((d) => d!.getTime()))) : null;
+        return { stage, at: latest?.toISOString() ?? null };
+      });
     const container = items[0].container;
     return {
       container: container ? { code: container.code, method: container.method } : null,

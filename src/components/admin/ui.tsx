@@ -13,6 +13,7 @@ export function BalanceText({ total, deposit, currency }: { total: number | null
 
 const stageColors = [
   "bg-gray-100 text-gray-700", // ordered
+  "bg-pink-100 text-pink-800", // in_production
   "bg-amber-100 text-amber-800", // china_warehouse
   "bg-sky-100 text-sky-800", // loaded
   "bg-sky-100 text-sky-800", // departed

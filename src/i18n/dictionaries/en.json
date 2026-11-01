@@ -107,6 +107,7 @@
     "waiting": "Pending",
     "stages": {
       "ordered": "Order received",
+      "in_production": "In production",
       "china_warehouse": "Arrived at China warehouse",
       "loaded": "Loaded into container",
       "departed": "Left China, in transit to Thailand",

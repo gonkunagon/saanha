@@ -57,7 +57,7 @@ export const orders = sqliteTable("orders", {
   customerPhone: text("customer_phone").notNull(),
   customerLineId: text("customer_line_id"),
   method: text("method", { enum: shippingMethods }).notNull(),
-  intlTrackingNo: text("intl_tracking_no"), // Tracking no. ขนส่งจีน → ไทย (ลูกค้าเห็นในหน้าติดตามพัสดุ)
+  intlTrackingNo: text("intl_tracking_no"), // Tracking no. ขนส่งจีน → ไทย (ใช้ภายใน ไม่ส่งไปหน้าติดตามพัสดุของลูกค้า)
   purchaseOrderNo: text("purchase_order_no"), // เลขคำสั่งซื้อ เช่น เลขออเดอร์จากร้านค้า 1688 / Taobao หรือเลข PO ของลูกค้า
   shopName: text("shop_name"), // ร้านค้าที่สั่งซื้อ
   // ยอดเงินของคำสั่งซื้อ — ยอดค้างชำระ = ยอดเต็ม − มัดจำ (คำนวณตอนแสดงผล ไม่เก็บซ้ำ)

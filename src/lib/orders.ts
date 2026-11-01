@@ -63,7 +63,6 @@ export type TrackingView = {
   itemCount: number;
   deliveredCount: number;
   note: string | null;
-  intlTrackingNo: string | null;
   groups: TrackingGroup[];
 };
 
@@ -117,7 +116,6 @@ export async function getTrackingView(code: string, phoneLast4: string): Promise
     itemCount: summary.itemCount,
     deliveredCount: summary.deliveredCount,
     note: order.note,
-    intlTrackingNo: order.intlTrackingNo,
     groups,
   };
 }

@@ -27,11 +27,44 @@ const utc = (s: string) => new Date(`${s.replace(" ", "T")}Z`);
 const bkkDay = (s: string) => new Date(utc(s).getTime() + 7 * 3600_000).toISOString().slice(0, 10);
 const bkkMidnight = (day: string) => new Date(`${day}T00:00:00+07:00`);
 
-// ดึงข้อมูลจาก JJ แล้วนำเข้า — ใช้ทั้งปุ่มในหลังบ้านและการซิงค์ตามเวลา
-export async function runJjSync(): Promise<SyncResult> {
-  const snapshot = await fetchJjSnapshot(await knownJjParcelIds());
-  const method: ShippingMethod = process.env.JJ_CARGO_METHOD === "sea" ? "sea" : "truck";
-  return applyJjSnapshot(snapshot, { method });
+// สถานะการซิงค์ล่าสุด (เก็บในหน่วยความจำของเซิร์ฟเวอร์ แสดงในหน้าออเดอร์)
+export type SyncStatus = {
+  running: boolean;
+  lastAt: string | null;
+  lastResult: SyncResult | null;
+  lastError: string | null;
+  autoEveryMinutes: number | null;
+};
+const g = globalThis as unknown as { jjSync?: { status: SyncStatus; current: Promise<SyncResult> | null } };
+g.jjSync ??= {
+  status: { running: false, lastAt: null, lastResult: null, lastError: null, autoEveryMinutes: null },
+  current: null,
+};
+export const getSyncStatus = (): SyncStatus => ({ ...g.jjSync!.status });
+export const setAutoSyncMinutes = (m: number | null) => (g.jjSync!.status.autoEveryMinutes = m);
+
+// ดึงข้อมูลจาก JJ แล้วนำเข้า — ใช้ทั้งปุ่มในหลังบ้าน ซิงค์อัตโนมัติ และ cron
+// ถ้ามีการซิงค์ค้างอยู่ (เช่น กดปุ่มตอนระบบกำลังซิงค์อัตโนมัติ) จะรอผลรอบเดิม ไม่รันซ้อน
+export function runJjSync(): Promise<SyncResult> {
+  const state = g.jjSync!;
+  if (state.current) return state.current;
+  state.status.running = true;
+  state.current = (async () => {
+    try {
+      const snapshot = await fetchJjSnapshot(await knownJjParcelIds());
+      const method: ShippingMethod = process.env.JJ_CARGO_METHOD === "sea" ? "sea" : "truck";
+      const result = await applyJjSnapshot(snapshot, { method });
+      Object.assign(state.status, { lastResult: result, lastError: null });
+      return result;
+    } catch (err) {
+      state.status.lastError = err instanceof Error ? err.message : String(err);
+      throw err;
+    } finally {
+      Object.assign(state.status, { running: false, lastAt: new Date().toISOString() });
+      state.current = null;
+    }
+  })();
+  return state.current;
 }
 
 export async function knownJjParcelIds(): Promise<Set<number>> {

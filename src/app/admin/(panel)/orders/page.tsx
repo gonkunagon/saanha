@@ -8,6 +8,7 @@ import { formatThaiDateTime } from "@/lib/datetime";
 import { itemStages, stageLabelsTh, type ItemStage } from "@/lib/stages";
 import { Card, StageBadge, methodLabel } from "@/components/admin/ui";
 import { SyncJjButton } from "./SyncJjButton";
+import { getSyncStatus } from "@/lib/jjsync";
 
 type Props = { searchParams: Promise<{ q?: string; stage?: string }> };
 
@@ -39,7 +40,7 @@ export default async function OrdersPage({ searchParams }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">ออเดอร์</h1>
         <div className="flex flex-wrap items-start gap-2">
-          <SyncJjButton />
+          <SyncJjButton status={getSyncStatus()} />
           <Link href="/admin/orders/new" className="btn-primary">+ สร้างออเดอร์</Link>
         </div>
       </div>

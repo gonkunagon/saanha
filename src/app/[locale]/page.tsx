@@ -53,7 +53,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               {dict.home.trackLink}
             </Link>
           </div>
-          <HeroIllustration className="mx-auto w-full max-w-[260px] md:max-w-md" />
+          <HeroIllustration className="mx-auto w-full max-w-[320px] md:max-w-lg" />
         </div>
       </section>
 

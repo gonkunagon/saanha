@@ -7,7 +7,6 @@ import { transitDays, type ShippingMethod } from "@/config/rates";
 import { site } from "@/config/site";
 import { ServiceGrid } from "@/components/ServiceGrid";
 import heroImage from "@/assets/hero.webp";
-import { ShipScene, TruckScene } from "@/components/TransportScenes";
 import {
   HomeIcon,
   ListIcon,
@@ -20,7 +19,11 @@ import {
 
 const stepIcons = [ListIcon, ReceiptIcon, WalletIcon, PackageIcon];
 const featureIcons = [PackageIcon, SearchIcon, ReceiptIcon, HomeIcon];
-const methodScenes = { truck: TruckScene, sea: ShipScene };
+// รูปการ์ดวิธีขนส่ง = ซูมเข้าไปที่รถบรรทุก / เรือ ในรูปหน้าแรก
+const methodCrops: Record<ShippingMethod, string> = {
+  truck: "scale-[1.9] origin-[4%_62%]",
+  sea: "scale-[2.4] origin-[92%_50%]",
+};
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -39,7 +42,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           priority
           sizes="100vw"
           placeholder="blur"
-          className="object-cover object-[6%_center] md:object-center"
+          className="object-cover object-[6%_center] md:object-top"
         />
         {/* ไล่เงาทับภาพ ให้ตัวหนังสืออ่านง่าย */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-950/50 to-transparent md:bg-transparent md:bg-gradient-to-l md:from-slate-950/85 md:via-slate-950/45 md:to-transparent" />
@@ -100,10 +103,18 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <p className="mt-2 mb-10 text-center text-gray-600">{dict.home.methodsSubtitle}</p>
           <div className="grid gap-6 md:grid-cols-2">
             {dict.home.methods.map((m) => {
-              const Scene = methodScenes[m.key as ShippingMethod];
               return (
                 <div key={m.key} className="overflow-hidden rounded-2xl bg-white shadow-sm">
-                  <Scene className="block h-auto w-full" />
+                  <div className="relative aspect-[16/9] overflow-hidden">
+                    <Image
+                      src={heroImage}
+                      alt=""
+                      fill
+                      sizes="(min-width: 768px) 50vw, 100vw"
+                      placeholder="blur"
+                      className={`object-cover ${methodCrops[m.key as ShippingMethod]}`}
+                    />
+                  </div>
                   <div className="p-6">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <h3 className="text-xl font-bold text-brand-700">{m.title}</h3>

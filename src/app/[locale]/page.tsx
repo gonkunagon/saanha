@@ -5,7 +5,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { transitDays, type ShippingMethod } from "@/config/rates";
 import { site } from "@/config/site";
 import { ServiceGrid } from "@/components/ServiceGrid";
-import { HeroIllustration } from "@/components/HeroIllustration";
+import { HeroScene } from "@/components/HeroScene";
 import { ShipScene, TruckScene } from "@/components/TransportScenes";
 import {
   HomeIcon,
@@ -29,10 +29,11 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   return (
     <>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-brand-800 via-brand-700 to-brand-500 text-white">
-        <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-white/10" />
-        <div className="pointer-events-none absolute -right-10 bottom-0 h-48 w-48 rounded-full bg-accent-400/20" />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-4 py-14 md:grid-cols-2 md:py-20">
+      <section className="relative overflow-hidden bg-slate-950 text-white">
+        <HeroScene className="absolute inset-0 h-full w-full" />
+        {/* ไล่เงาทับภาพ ให้ตัวหนังสืออ่านง่าย */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/50 to-transparent md:bg-transparent md:bg-gradient-to-r md:from-slate-950/90 md:via-slate-950/55 md:to-transparent" />
+        <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-4 pt-14 pb-48 md:grid-cols-2 md:py-32">
           <div className="text-center md:text-left">
             {/* ภาษาไทยไม่มีช่องว่างระหว่างคำ จึงห่อแต่ละวลีไว้ไม่ให้ตัดกลางวลี */}
             <h1 className="text-3xl leading-tight font-bold md:text-5xl">
@@ -40,7 +41,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 <span key={i} className="inline-block">{part}&nbsp;</span>
               ))}
             </h1>
-            <p className="mt-4 max-w-xl text-lg text-brand-100">{dict.home.heroSubtitle}</p>
+            <p className="mt-4 max-w-xl text-lg text-white/85">{dict.home.heroSubtitle}</p>
             <div className="mt-8 flex flex-wrap justify-center gap-3 md:justify-start">
               <Link href={`/${locale}/quote`} className="btn-light">{dict.home.ctaQuote}</Link>
               <Link href={`/${locale}/calculator`} className="btn-outline-light">{dict.home.ctaCalc}</Link>
@@ -53,7 +54,6 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               {dict.home.trackLink}
             </Link>
           </div>
-          <HeroIllustration className="mx-auto w-full max-w-[320px] md:max-w-lg" />
         </div>
       </section>
 

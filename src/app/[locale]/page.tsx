@@ -8,6 +8,7 @@ import { site } from "@/config/site";
 import { ServiceGrid } from "@/components/ServiceGrid";
 import heroImage from "@/assets/hero.webp";
 import seaImage from "@/assets/sea.webp";
+import truckImage from "@/assets/truck.webp";
 import {
   HomeIcon,
   ListIcon,
@@ -20,9 +21,9 @@ import {
 
 const stepIcons = [ListIcon, ReceiptIcon, WalletIcon, PackageIcon];
 const featureIcons = [PackageIcon, SearchIcon, ReceiptIcon, HomeIcon];
-// รูปการ์ดวิธีขนส่ง (ทางรถ = ซูมเข้าไปที่รถบรรทุกในรูปหน้าแรก)
+// รูปการ์ดวิธีขนส่ง
 const methodPhotos: Record<ShippingMethod, { src: StaticImageData; className: string }> = {
-  truck: { src: heroImage, className: "scale-[1.9] origin-[4%_62%]" },
+  truck: { src: truckImage, className: "object-center" },
   sea: { src: seaImage, className: "object-[70%_center]" },
 };
 

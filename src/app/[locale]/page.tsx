@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isLocale } from "@/i18n/config";
@@ -7,6 +7,7 @@ import { transitDays, type ShippingMethod } from "@/config/rates";
 import { site } from "@/config/site";
 import { ServiceGrid } from "@/components/ServiceGrid";
 import heroImage from "@/assets/hero.webp";
+import seaImage from "@/assets/sea.webp";
 import {
   HomeIcon,
   ListIcon,
@@ -19,10 +20,10 @@ import {
 
 const stepIcons = [ListIcon, ReceiptIcon, WalletIcon, PackageIcon];
 const featureIcons = [PackageIcon, SearchIcon, ReceiptIcon, HomeIcon];
-// รูปการ์ดวิธีขนส่ง = ซูมเข้าไปที่รถบรรทุก / เรือ ในรูปหน้าแรก
-const methodCrops: Record<ShippingMethod, string> = {
-  truck: "scale-[1.9] origin-[4%_62%]",
-  sea: "scale-[2.4] origin-[92%_50%]",
+// รูปการ์ดวิธีขนส่ง (ทางรถ = ซูมเข้าไปที่รถบรรทุกในรูปหน้าแรก)
+const methodPhotos: Record<ShippingMethod, { src: StaticImageData; className: string }> = {
+  truck: { src: heroImage, className: "scale-[1.9] origin-[4%_62%]" },
+  sea: { src: seaImage, className: "object-[70%_center]" },
 };
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
@@ -107,12 +108,12 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 <div key={m.key} className="overflow-hidden rounded-2xl bg-white shadow-sm">
                   <div className="relative aspect-[16/9] overflow-hidden">
                     <Image
-                      src={heroImage}
+                      src={methodPhotos[m.key as ShippingMethod].src}
                       alt=""
                       fill
                       sizes="(min-width: 768px) 50vw, 100vw"
                       placeholder="blur"
-                      className={`object-cover ${methodCrops[m.key as ShippingMethod]}`}
+                      className={`object-cover ${methodPhotos[m.key as ShippingMethod].className}`}
                     />
                   </div>
                   <div className="p-6">

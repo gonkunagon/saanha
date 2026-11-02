@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isLocale } from "@/i18n/config";
@@ -5,7 +6,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { transitDays, type ShippingMethod } from "@/config/rates";
 import { site } from "@/config/site";
 import { ServiceGrid } from "@/components/ServiceGrid";
-import { HeroScene } from "@/components/HeroScene";
+import heroImage from "@/assets/hero.webp";
 import { ShipScene, TruckScene } from "@/components/TransportScenes";
 import {
   HomeIcon,
@@ -30,11 +31,20 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     <>
       {/* Hero */}
       <section className="relative overflow-hidden bg-slate-950 text-white">
-        <HeroScene className="absolute inset-0 h-full w-full" />
+        {/* รถบรรทุก SAANHA อยู่ซ้ายของภาพ ตัวหนังสือจึงวางฝั่งขวา (มือถือ: ตัวหนังสือด้านบน รถด้านล่าง) */}
+        <Image
+          src={heroImage}
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          placeholder="blur"
+          className="object-cover object-[6%_center] md:object-center"
+        />
         {/* ไล่เงาทับภาพ ให้ตัวหนังสืออ่านง่าย */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/50 to-transparent md:bg-transparent md:bg-gradient-to-r md:from-slate-950/90 md:via-slate-950/55 md:to-transparent" />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-4 pt-14 pb-48 md:grid-cols-2 md:py-32">
-          <div className="text-center md:text-left">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-950/50 to-transparent md:bg-transparent md:bg-gradient-to-l md:from-slate-950/85 md:via-slate-950/45 md:to-transparent" />
+        <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-4 pt-14 pb-56 md:grid-cols-2 md:py-32">
+          <div className="text-center md:col-start-2 md:text-left [text-shadow:0_2px_12px_rgb(0_0_0/0.45)]">
             {/* ภาษาไทยไม่มีช่องว่างระหว่างคำ จึงห่อแต่ละวลีไว้ไม่ให้ตัดกลางวลี */}
             <h1 className="text-3xl leading-tight font-bold md:text-5xl">
               {dict.home.heroTitle.split(" ").map((part, i) => (

@@ -1,4 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
+import signature from "@/assets/signature.png";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
@@ -10,8 +12,8 @@ import { amountInThaiWords } from "@/lib/thaiText";
 import { methodLabel } from "@/components/admin/ui";
 import { LogoMark } from "@/components/Logo";
 import { PrintButton } from "./PrintButton";
-import { getCnyRate, sameBangkokDay } from "@/lib/settings";
-import { saveCnyRate } from "./actions";
+import { getQuoteRate } from "@/lib/settings";
+import { RateBox } from "./RateBox";
 
 // ใบเสนอราคาของออเดอร์ (หน้าพิมพ์ A4) — อยู่นอกเมนูหลังบ้าน จะได้พิมพ์ / บันทึก PDF ได้สะอาด
 // เลขที่ใบเสนอราคา = QT-<เลขออเดอร์> · ยืนราคา 7 วันนับจากวันที่ออก
@@ -43,8 +45,8 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
   const issued = new Date();
   const isCny = order.currency === "CNY";
   const validUntil = isCny ? issued : new Date(issued.getTime() + VALID_DAYS * 86_400_000);
-  const cny = isCny ? await getCnyRate() : null;
-  const rateIsToday = cny != null && sameBangkokDay(cny.updatedAt, issued);
+  const q = isCny ? await getQuoteRate(issued) : null;
+  const rate = q?.rate ?? null;
   const c = order.customer;
   const fullName = c && [c.firstName, c.lastName].filter(Boolean).join(" ");
   // ลูกค้าไม่เห็นค่าดำเนินการแยก: บวก % ค่าดำเนินการเข้าไปในราคาต่อหน่วยเลย
@@ -67,7 +69,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
     ? round2(lines.reduce((s, l) => s + l.amount!, 0))
     : grandTotalOf(order.totalAmount, order.handlingFeePct);
   // ยอดเงินบาท (เฉพาะออเดอร์หยวน และตั้งเรทของวันนี้แล้ว)
-  const thbTotal = cny && rateIsToday && grandTotal != null ? round2(grandTotal * cny.rate) : null;
+  const thbTotal = rate != null && grandTotal != null ? round2(grandTotal * rate) : null;
 
   const meta = [
     ["เลขที่ / No.", `QT-${order.code}`],
@@ -83,29 +85,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
         <PrintButton />
       </div>
 
-      {isCny && (
-        <form
-          action={saveCnyRate}
-          className={`mb-4 flex flex-wrap items-center gap-3 rounded-lg px-4 py-3 text-sm ring-1 print:hidden ${
-            rateIsToday ? "bg-emerald-50 ring-emerald-200" : "bg-amber-50 ring-amber-300"
-          }`}
-        >
-          <span className="font-semibold">เรทหยวนวันนี้</span>
-          <span>1 หยวน =</span>
-          <span className="w-28">
-            <input name="rate" type="number" step="0.0001" min={0} required defaultValue={cny?.rate ?? ""} className="input bg-white py-1" />
-          </span>
-          <span>บาท</span>
-          <button className="btn-primary py-1.5 text-sm">บันทึกเรท</button>
-          <span className={rateIsToday ? "text-emerald-700" : "text-amber-800"}>
-            {rateIsToday
-              ? "✓ ตั้งเรทของวันนี้แล้ว (ใช้กับทุกใบเสนอราคาเงินหยวนของวันนี้)"
-              : cny
-                ? `⚠️ เรทล่าสุดตั้งเมื่อ ${thaiDate(cny.updatedAt)} — ใส่เรทของวันนี้ก่อน ใบเสนอราคาจึงจะแสดงยอดเงินบาท`
-                : "⚠️ ยังไม่ได้ตั้งเรท — ใส่เรทของวันนี้ ใบเสนอราคาจึงจะแสดงยอดเงินบาท"}
-          </span>
-        </form>
-      )}
+      {q && <RateBox q={q} />}
 
       <article className="flex min-h-[297mm] flex-col bg-white text-[13px] text-gray-800 shadow-lg ring-1 ring-gray-200 [print-color-adjust:exact] print:min-h-0 print:shadow-none print:ring-0">
         {/* หัวกระดาษ */}
@@ -197,19 +177,19 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
           {/* ตัวหนังสือ + ยอดเงิน */}
           <div className="mt-6 grid grid-cols-[1fr_18rem] gap-6">
             <div className="space-y-4">
-              {grandTotal != null && (
-                <div className="space-y-2 rounded-lg border border-accent-400 bg-accent-300/15 px-4 py-3">
-                  <div>
-                    <p className="text-[10px] text-gray-500">รวมเป็นเงินทั้งสิ้น (ตัวอักษร)</p>
-                    <p className="font-semibold text-gray-900">({amountInThaiWords(grandTotal, order.currency)})</p>
-                  </div>
-                  {thbTotal != null && (
-                    <div>
-                      <p className="text-[10px] text-gray-500">คิดเป็นเงินบาท (ตัวอักษร)</p>
-                      <p className="font-semibold text-gray-900">({amountInThaiWords(thbTotal, "THB")})</p>
-                    </div>
-                  )}
+              {/* ตัวอักษรเป็นเงินบาทเสมอ: ออเดอร์หยวนใช้ยอดที่แปลงด้วยเรทวันนี้ (ยังไม่ตั้งเรท = แสดงคำเตือนบนจอ ไม่พิมพ์) */}
+              {(isCny ? thbTotal : grandTotal) != null ? (
+                <div className="rounded-lg border border-accent-400 bg-accent-300/15 px-4 py-3">
+                  <p className="text-[10px] text-gray-500">รวมเป็นเงินบาท (ตัวอักษร)</p>
+                  <p className="font-semibold text-gray-900">({amountInThaiWords((isCny ? thbTotal : grandTotal)!, "THB")})</p>
                 </div>
+              ) : (
+                isCny &&
+                grandTotal != null && (
+                  <p className="rounded-lg bg-amber-50 px-4 py-3 text-xs text-amber-800 ring-1 ring-amber-300 print:hidden">
+                    ⚠️ ยังไม่มีเรทหยวน — ตั้งเรทที่กล่องด้านบนก่อน ยอดเงินบาทและตัวอักษรจึงจะแสดง
+                  </p>
+                )
               )}
               <div>
                 <p className="mb-1 text-[11px] font-semibold tracking-wide text-brand-700 uppercase">เงื่อนไข / Terms</p>
@@ -231,11 +211,11 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
                 <dt className="font-semibold">รวมเป็นเงินทั้งสิ้น</dt>
                 <dd className="text-lg font-bold">{formatMoney(grandTotal, order.currency)}</dd>
               </div>
-              {isCny && cny && rateIsToday && (
+              {isCny && rate != null && (
                 <>
                   <div className="flex justify-between border-t border-gray-100 px-4 py-2 text-[12px] text-gray-600">
-                    <dt>อัตราแลกเปลี่ยนวันนี้</dt>
-                    <dd>1 หยวน = {cny.rate.toLocaleString("th-TH", { maximumFractionDigits: 4 })} บาท</dd>
+                    <dt>อัตราแลกเปลี่ยน</dt>
+                    <dd>1 หยวน = {rate.toLocaleString("th-TH", { maximumFractionDigits: 4 })} บาท</dd>
                   </div>
                   <div className="flex items-center justify-between border-t-2 border-brand-600 px-4 py-3.5 text-brand-700">
                     <dt className="font-semibold">คิดเป็นเงินบาท</dt>
@@ -249,15 +229,21 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
           {/* ลายเซ็น */}
           <div className="mt-auto grid grid-cols-2 gap-10 pt-14 text-center text-[12px] text-gray-600">
             {[
-              ["ผู้เสนอราคา", "", site.name],
-              ["ผู้อนุมัติ / ลูกค้า", "(.................................................)", order.customerName],
-            ].map(([role, name, org]) => (
+              // ฝั่งร้านใส่วันที่ออกใบให้อัตโนมัติ · ฝั่งลูกค้าเว้นให้เขียนเอง
+              ["ผู้เสนอราคา", "", site.name, thaiDate(issued)],
+              ["ผู้อนุมัติ / ลูกค้า", "(.................................................)", order.customerName, ""],
+            ].map(([role, name, org, date]) => (
               <div key={role}>
-                <div className="mx-auto h-12 w-56 border-b border-gray-400" />
+                <div className="relative mx-auto h-12 w-56 border-b border-gray-400">
+                  {/* ลายเซ็นของร้าน ทับเส้นเซ็นชื่อเล็กน้อยให้ดูเหมือนเซ็นจริง */}
+                  {role === "ผู้เสนอราคา" && (
+                    <Image src={signature} alt="ลายเซ็นผู้เสนอราคา" className="absolute bottom-[-3px] left-1/2 h-[68px] w-auto -translate-x-1/2" />
+                  )}
+                </div>
                 <p className="mt-2 font-semibold text-gray-800">{role}</p>
                 {name && <p>{name}</p>}
                 <p className="text-gray-400">{org}</p>
-                <p className="mt-2">วันที่ ......../......../........</p>
+                <p className="mt-2">วันที่ {date || "......../......../........"}</p>
               </div>
             ))}
           </div>

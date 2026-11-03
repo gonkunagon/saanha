@@ -96,7 +96,7 @@ export function PaymentFields({ shopName, currency: initialCurrency = "THB", tot
         <span className="mb-1 block text-sm text-gray-600">ค่าดำเนินการ (บวกในราคาสินค้า)</span>
         <select name="handlingFeePct" value={pct} onChange={(e) => setPct(Number(e.target.value))} className="input">
           {handlingFeeOptions.map((p) => (
-            <option key={p} value={p}>{p}% ของค่าสินค้า</option>
+            <option key={p} value={p}>{p === 0 ? "0% (ไม่คิดค่าดำเนินการ)" : `${p}% ของค่าสินค้า`}</option>
           ))}
         </select>
       </label>

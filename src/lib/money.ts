@@ -14,11 +14,11 @@ export function formatMoney(n: number | null | undefined, currency: CurrencyCode
   return `${n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currencyLabel[currency]}`;
 }
 
-// ค่าดำเนินการของร้าน = % ของยอดรวมค่าสินค้า (เลือกได้ 3–6%) · รวมเป็นเงินทั้งสิ้น = ค่าสินค้า + ค่าดำเนินการ
-export const handlingFeeOptions = [3, 4, 5, 6] as const;
+// ค่าดำเนินการของร้าน = % ของยอดรวมค่าสินค้า (เลือกได้ 0–8%) · รวมเป็นเงินทั้งสิ้น = ค่าสินค้า + ค่าดำเนินการ
+export const handlingFeeOptions = [0, 1, 2, 3, 4, 5, 6, 7, 8] as const;
 export const clampHandlingPct = (v: unknown) => {
   const n = Math.round(Number(v));
-  return Number.isFinite(n) ? Math.min(6, Math.max(3, n)) : 5;
+  return Number.isFinite(n) ? Math.min(8, Math.max(0, n)) : 5;
 };
 export function handlingFeeOf(goodsTotal: number | null | undefined, pct: number): number | null {
   if (goodsTotal == null) return null;

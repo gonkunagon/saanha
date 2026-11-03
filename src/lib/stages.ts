@@ -29,7 +29,7 @@ export type ContainerStage = keyof typeof containerStageFields;
 export const containerStages = Object.keys(containerStageFields) as ContainerStage[];
 
 export const stageLabelsTh: Record<ItemStage, string> = {
-  ordered: "สร้างออเดอร์แล้ว",
+  ordered: "รับออเดอร์แล้ว",
   in_production: "อยู่ระหว่างการผลิต",
   china_warehouse: "ถึงโกดังจีน",
   loaded: "ปิดตู้ / โหลดสินค้าที่จีน",

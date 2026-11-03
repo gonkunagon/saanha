@@ -82,7 +82,7 @@ export const orders = sqliteTable("orders", {
   totalAmount: real("total_amount"),
   depositAmount: real("deposit_amount"),
   serviceFee: real("service_fee"), // เลิกใช้แล้ว (ค่าบริการเป็นบาท) — แทนด้วย handlingFeePct ด้านล่าง
-  // ค่าดำเนินการของร้าน คิดเป็น % ของยอดรวมค่าสินค้า (เลือกได้ 3–6%) — สกุลเงินเดียวกับค่าสินค้า
+  // ค่าดำเนินการของร้าน คิดเป็น % ของยอดรวมค่าสินค้า (เลือกได้ 0–8%) — สกุลเงินเดียวกับค่าสินค้า
   handlingFeePct: integer("handling_fee_pct").notNull().default(5),
   provider: text("provider"),
   externalId: text("external_id"),

@@ -81,7 +81,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
   return (
     <div className="mx-auto max-w-[210mm] px-4 py-6 print:p-0">
       <div className="mb-4 flex items-center justify-between print:hidden">
-        <Link href={`/admin/orders/${order.id}`} className="text-sm text-gray-500 hover:underline">← กลับไปหน้าออเดอร์</Link>
+        <Link href="/admin/orders" className="text-sm text-gray-500 hover:underline">← กลับไปหน้าออเดอร์</Link>
         <PrintButton />
       </div>
 

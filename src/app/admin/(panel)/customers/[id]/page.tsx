@@ -8,6 +8,7 @@ import { summarizeOrder } from "@/lib/orders";
 import { formatThaiDateTime } from "@/lib/datetime";
 import { BalanceText, Card, StageBadge, methodLabel } from "@/components/admin/ui";
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
+import { balanceOf, formatMoney, type CurrencyCode } from "@/lib/money";
 import { CustomerForm } from "../CustomerForm";
 import { deleteCustomer } from "../actions";
 
@@ -22,6 +23,17 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
     orderBy: desc(orders.createdAt),
     with: { items: { with: { container: true } } },
   });
+
+  // ยอดสั่งซื้อรวม / ค้างชำระรวม แยกตามสกุลเงิน
+  const byCurrency = new Map<CurrencyCode, { total: number; balance: number }>();
+  for (const o of list) {
+    if (o.totalAmount == null) continue;
+    const t = byCurrency.get(o.currency) ?? { total: 0, balance: 0 };
+    t.total += o.totalAmount;
+    t.balance += Math.max(0, balanceOf(o.totalAmount, o.depositAmount) ?? 0);
+    byCurrency.set(o.currency, t);
+  }
+  const totals = [...byCurrency.entries()];
 
   return (
     <div className="space-y-6">
@@ -47,38 +59,68 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         </form>
       </Card>
 
-      <Card title={`ออเดอร์ของลูกค้า (${list.length})`}>
+      <Card title="ประวัติการสั่งซื้อ">
         {list.length === 0 ? (
-          <p className="text-sm text-gray-500">ยังไม่มีออเดอร์</p>
+          <p className="text-sm text-gray-500">ยังไม่มีประวัติการสั่งซื้อ</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-left text-gray-500">
-                <tr>
-                  <th className="py-2 pr-4">เลขออเดอร์</th>
-                  <th className="py-2 pr-4">วันที่</th>
-                  <th className="py-2 pr-4">วิธีขนส่ง</th>
-                  <th className="py-2 pr-4">สถานะ</th>
-                  <th className="py-2">ยอดชำระ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {list.map((o) => (
-                  <tr key={o.id} className="border-t border-gray-100">
-                    <td className="py-2 pr-4">
-                      <Link href={`/admin/orders/${o.id}`} className="font-medium text-brand-700 hover:underline">{o.code}</Link>
-                    </td>
-                    <td className="py-2 pr-4 text-gray-600">{formatThaiDateTime(o.createdAt)}</td>
-                    <td className="py-2 pr-4">{methodLabel(o.method)}</td>
-                    <td className="py-2 pr-4"><StageBadge stage={summarizeOrder(o.items).stage} /></td>
-                    <td className="py-2">
+          <>
+            {/* สรุปภาพรวมของลูกค้า (ยอดแยกตามสกุลเงิน เพราะรวมหยวนกับบาทไม่ได้) */}
+            <dl className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-lg bg-gray-50 px-4 py-3">
+                <dt className="text-xs text-gray-500">ออเดอร์ทั้งหมด</dt>
+                <dd className="text-xl font-semibold">{list.length}</dd>
+              </div>
+              <div className="rounded-lg bg-gray-50 px-4 py-3">
+                <dt className="text-xs text-gray-500">รายการสินค้าทั้งหมด</dt>
+                <dd className="text-xl font-semibold">{list.reduce((n, o) => n + o.items.length, 0)}</dd>
+              </div>
+              <div className="rounded-lg bg-gray-50 px-4 py-3">
+                <dt className="text-xs text-gray-500">ยอดสั่งซื้อรวม</dt>
+                <dd className="font-semibold">
+                  {totals.length ? totals.map(([cur, t]) => <span key={cur} className="block">{formatMoney(t.total, cur)}</span>) : "-"}
+                </dd>
+              </div>
+              <div className="rounded-lg bg-gray-50 px-4 py-3">
+                <dt className="text-xs text-gray-500">ค้างชำระรวม</dt>
+                <dd className="font-semibold text-brand-700">
+                  {totals.some(([, t]) => t.balance > 0)
+                    ? totals.filter(([, t]) => t.balance > 0).map(([cur, t]) => <span key={cur} className="block">{formatMoney(t.balance, cur)}</span>)
+                    : <span className="text-emerald-700">ไม่มียอดค้าง</span>}
+                </dd>
+              </div>
+            </dl>
+
+            {/* ไล่ตามวันที่ ล่าสุดก่อน: ออเดอร์ + สินค้าในออเดอร์ */}
+            <ol className="space-y-3">
+              {list.map((o) => (
+                <li key={o.id} className="rounded-lg border border-gray-200">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-gray-100 bg-gray-50 px-4 py-2.5 text-sm">
+                    <Link href={`/admin/orders/${o.id}`} className="font-semibold text-brand-700 hover:underline">{o.code}</Link>
+                    <span className="text-gray-500">{formatThaiDateTime(o.createdAt)}</span>
+                    {o.shopName && <span className="text-gray-600">ร้าน {o.shopName}</span>}
+                    <span className="text-gray-600">{methodLabel(o.method)}</span>
+                    <StageBadge stage={summarizeOrder(o.items).stage} />
+                    <span className="ml-auto flex items-center gap-4">
+                      {o.totalAmount != null && <span className="font-medium">{formatMoney(o.totalAmount, o.currency)}</span>}
                       <BalanceText total={o.totalAmount} deposit={o.depositAmount} currency={o.currency} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      <Link href={`/admin/quote/${o.id}`} target="_blank" className="text-xs text-brand-700 hover:underline">ใบเสนอราคา</Link>
+                    </span>
+                  </div>
+                  <ul className="divide-y divide-gray-50 px-4 text-sm">
+                    {o.items.map((i) => (
+                      <li key={i.id} className="flex flex-wrap items-center gap-x-4 py-2">
+                        <span className="flex-1">{i.description}</span>
+                        <span className="w-20 text-right text-gray-600">{i.quantity != null ? `× ${i.quantity}` : "-"}</span>
+                        <span className="w-36 text-right text-gray-600">{i.unitPrice != null ? `@ ${formatMoney(i.unitPrice, o.currency)}` : ""}</span>
+                        <span className="w-28 text-right text-xs text-gray-500">{i.container ? `ตู้ ${i.container.code}` : "ยังไม่เข้าตู้"}</span>
+                      </li>
+                    ))}
+                    {o.items.length === 0 && <li className="py-2 text-gray-400">ไม่มีรายการสินค้า</li>}
+                  </ul>
+                </li>
+              ))}
+            </ol>
+          </>
         )}
       </Card>
     </div>

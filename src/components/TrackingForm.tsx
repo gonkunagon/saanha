@@ -158,12 +158,6 @@ export function TrackingForm({ locale, t, cal }: Props) {
                 </ul>
               </div>
               <Timeline group={g} locale={locale} t={t} />
-              {g.domesticTracking.length > 0 && (
-                <p className="mt-4 border-t border-gray-100 pt-4 text-sm">
-                  <span className="text-gray-500">{t.domestic}: </span>
-                  <span className="font-semibold">{g.domesticTracking.join(", ")}</span>
-                </p>
-              )}
             </div>
           ))}
         </div>

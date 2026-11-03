@@ -8,7 +8,7 @@ order: 31
 | Service | Minimum |
 |---|---|
 | China–Thailand shipping | TODO e.g. 1 kg or 0.1 CBM |
-| Supplier payment / CNY | TODO e.g. ¥100 per transaction |
+| Supplier payment | TODO e.g. ¥100 per transaction |
 | Purchasing | The Chinese shop's minimum order quantity (MOQ) |
 
 ## What is MOQ?

@@ -1,18 +1,22 @@
 @import "tailwindcss";
 
 @theme {
+  /* สีหลักของเว็บ: แดงจีน — สื่อถึงธุรกิจจีน สีมงคล */
   --color-brand-50: #fef2f2;
   --color-brand-100: #fee2e2;
   --color-brand-200: #fecaca;
   --color-brand-300: #fca5a5;
-  --color-brand-500: #dc2626;
+  --color-brand-500: #d71920;
   --color-brand-600: #b91c1c;
-  --color-brand-700: #991b1b;
-  --color-brand-800: #7f1d1d;
+  --color-brand-700: #8f1418;
+  --color-brand-800: #5f0f14;
   --color-navy-700: #1e3a8a; /* สีน้ำเงินของโลโก้ */
+  /* สีเน้น: ทอง ใช้กับปุ่มที่อยากให้ลูกค้ากด เช่น ขอใบเสนอราคา (ตัวหนังสือบนทองใช้สีน้ำตาลเข้ม) */
   --color-accent-300: #fcd34d;
   --color-accent-400: #fbbf24;
-  --color-accent-500: #f59e0b;
+  --color-accent-500: #f5b301;
+  --color-accent-600: #dc9d00;
+  --color-accent-ink: #3b2300;
   --color-ink: #1f2937;
   --font-sans: var(--font-noto-thai), ui-sans-serif, system-ui, sans-serif;
 }
@@ -34,7 +38,12 @@ body {
   @apply inline-flex items-center justify-center rounded-lg border border-brand-600 px-5 py-2.5 font-medium text-brand-600 hover:bg-brand-50;
 }
 
-/* ปุ่มบนพื้นสีแดง */
+/* ปุ่มหลักที่อยากให้ลูกค้ากด (ขอใบเสนอราคา / ฝากหาสินค้า) */
+.btn-cta {
+  @apply inline-flex items-center justify-center rounded-lg bg-accent-500 px-5 py-2.5 font-semibold text-accent-ink shadow-sm hover:bg-accent-600 disabled:opacity-60;
+}
+
+/* ปุ่มบนพื้นสีเข้ม */
 .btn-light {
   @apply inline-flex items-center justify-center rounded-lg bg-white px-5 py-2.5 font-semibold text-brand-700 shadow-sm hover:bg-brand-50;
 }
@@ -56,3 +65,9 @@ body {
 .prose-kb a { @apply text-brand-600 underline; }
 .prose-kb pre { @apply my-4 overflow-x-auto rounded-lg bg-gray-100 p-4 text-sm; }
 .prose-kb blockquote { @apply my-4 border-l-4 border-brand-500 bg-brand-50 px-4 py-2; }
+
+/* หน้าพิมพ์ (เช่น ใบเสนอราคา) */
+@media print {
+  @page { size: A4; margin: 12mm; }
+  body { background: #ffffff !important; }
+}

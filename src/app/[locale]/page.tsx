@@ -58,7 +58,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             </h1>
             <p className="mt-4 max-w-xl text-lg text-white/85">{dict.home.heroSubtitle}</p>
             <div className="mt-8 flex flex-wrap justify-center gap-3 md:justify-start">
-              <Link href={`/${locale}/quote`} className="btn-light">{dict.home.ctaQuote}</Link>
+              <Link href={`/${locale}/quote`} className="btn-cta">{dict.home.ctaQuote}</Link>
               <Link href={`/${locale}/calculator`} className="btn-outline-light">{dict.home.ctaCalc}</Link>
             </div>
             <Link
@@ -165,7 +165,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <h2 className="relative text-2xl font-bold md:text-3xl">{dict.home.ctaTitle}</h2>
           <p className="relative mt-2 text-brand-100">{dict.home.ctaBody}</p>
           <div className="relative mt-6 flex flex-wrap justify-center gap-3">
-            <Link href={`/${locale}/quote`} className="btn-light">{dict.home.ctaQuote}</Link>
+            <Link href={`/${locale}/quote`} className="btn-cta">{dict.home.ctaQuote}</Link>
             <a href={site.lineUrl} target="_blank" rel="noopener noreferrer" className="btn-outline-light">
               {dict.home.ctaLine}
             </a>

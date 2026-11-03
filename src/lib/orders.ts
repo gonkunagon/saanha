@@ -49,11 +49,11 @@ export async function nextOrderCode() {
 
 // ---- ข้อมูลสำหรับหน้าติดตามพัสดุของลูกค้า ----
 
+// เลขพัสดุขนส่งในไทย (domesticTracking) ใช้ภายในเท่านั้น ไม่ส่งให้หน้าติดตามพัสดุของลูกค้า
 export type TrackingGroup = {
   container: { code: string; method: string } | null; // null = ยังไม่ได้เข้าตู้
   items: { description: string; quantity: number | null; boxes: number | null }[];
   stages: { stage: ItemStage; at: string | null }[];
-  domesticTracking: string[];
 };
 
 export type TrackingView = {
@@ -102,7 +102,6 @@ export async function getTrackingView(code: string, phoneLast4: string): Promise
       container: container ? { code: container.code, method: container.method } : null,
       items: items.map((i) => ({ description: i.description, quantity: i.quantity, boxes: i.boxes })),
       stages,
-      domesticTracking: [...new Set(items.map((i) => i.domesticTracking).filter((t): t is string => Boolean(t)))],
     };
   });
   // กลุ่มที่ยังไม่เข้าตู้ไว้ท้ายสุด

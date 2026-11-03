@@ -10,10 +10,11 @@ import { itemStageDates, itemStages, optionalStages, stageIndex, stageLabelsTh, 
 import { Card, Field, StageBadge, methodLabel } from "@/components/admin/ui";
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { OrderFields } from "../OrderFields";
-import { addItem, deleteItem, updateItem, updateOrder } from "../actions";
+import { listCustomersForPicker } from "@/lib/customers";
+import { addItem, deleteItem, updateItem, updateItemPrice, updateOrder } from "../actions";
 import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
 import { BalanceText } from "@/components/admin/ui";
-import { formatMoney } from "@/lib/money";
+import { currencyLabel, formatMoney, handlingFeeOf, type CurrencyCode } from "@/lib/money";
 import { StageUpdateForm, type ContainerOption } from "./StageUpdateForm";
 import { PackageFields } from "@/components/admin/PackageFields";
 import type { ItemPackage } from "@/db/schema";
@@ -33,6 +34,9 @@ function ItemEditForm({ item, containerOptions }: { item: ItemWithPackages; cont
         </Field>
         <Field label="จำนวน">
           <input name="quantity" type="number" min={0} defaultValue={item.quantity ?? ""} className="input bg-white" />
+        </Field>
+        <Field label="ราคาต่อหน่วย">
+          <input name="unitPrice" type="number" step="0.01" min={0} defaultValue={item.unitPrice ?? ""} className="input bg-white" />
         </Field>
         <div className="sm:col-span-2 lg:col-span-4 [&_input]:bg-white">
           <span className="mb-1 block text-sm text-gray-600">พัสดุ</span>
@@ -74,14 +78,84 @@ function ItemEditForm({ item, containerOptions }: { item: ItemWithPackages; cont
   );
 }
 
-export default async function OrderPage({ params }: { params: Promise<{ id: string }> }) {
+// แสดงข้อมูล 1 ช่อง (ไม่มีค่า = ขีด)
+function Info({ label, children, wide }: { label: string; children: React.ReactNode; wide?: boolean }) {
+  const empty = children == null || children === "" || children === false;
+  return (
+    <div className={wide ? "sm:col-span-2 lg:col-span-3" : ""}>
+      <dt className="text-xs text-gray-500">{label}</dt>
+      <dd className="mt-0.5 break-words whitespace-pre-line">{empty ? <span className="text-gray-400">-</span> : children}</dd>
+    </div>
+  );
+}
+
+// รายละเอียดสินค้า: ยอดรวม + พัสดุแต่ละแถว
+function ItemDetails({ item, currency, showPrice = true }: { item: ItemWithPackages; currency: CurrencyCode; showPrice?: boolean }) {
+  return (
+    <>
+      <p className="font-medium">
+        {item.description}
+        {item.quantity ? <span className="text-gray-500"> × {item.quantity}</span> : null}
+        {showPrice && item.unitPrice != null && (
+          <span className="ml-2 text-sm font-normal text-gray-600">@ {formatMoney(item.unitPrice, currency)}</span>
+        )}
+      </p>
+      <p className="text-xs text-gray-500">
+        {[
+          item.packages.length > 1 && `${item.packages.length} พัสดุ`,
+          item.boxes != null && `${item.boxes} กล่อง`,
+          item.weightKg != null && `${item.weightKg} กก.`,
+          item.cbm != null && `${item.cbm} คิว`,
+        ]
+          .filter(Boolean)
+          .join(" · ") || "ยังไม่มีขนาด/น้ำหนัก"}
+      </p>
+      {item.packages.length > 0 && (
+        <ul className="mt-1 space-y-0.5 text-xs text-gray-500">
+          {item.packages.map((p) => (
+            <li key={p.id}>
+              └{" "}
+              {[
+                p.chinaTrackingNo && `พัสดุจีน ${p.chinaTrackingNo}`,
+                p.boxes != null && `${p.boxes} กล่อง`,
+                p.widthCm && p.lengthCm && p.heightCm && `${p.widthCm}×${p.lengthCm}×${p.heightCm} ซม.`,
+                p.weightKg != null && `${p.weightKg} กก.`,
+                p.cbm != null && `${p.cbm} คิว`,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </li>
+          ))}
+        </ul>
+      )}
+      {item.domesticTracking && <p className="mt-1 text-xs text-gray-500">เลขพัสดุในไทย: {item.domesticTracking}</p>}
+    </>
+  );
+}
+
+function ContainerLink({ item }: { item: ItemWithPackages }) {
+  return item.container ? (
+    <Link href={`/admin/containers/${item.container.id}`} className="text-brand-600 hover:underline">
+      ตู้ {item.container.code}
+    </Link>
+  ) : (
+    <span className="text-gray-400">ยังไม่เข้าตู้</span>
+  );
+}
+
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ edit?: string }> };
+
+// ปกติแสดงข้อมูลอย่างเดียว · กด "แก้ไข" (?edit=1) จึงเปิดฟอร์มอัปเดตสถานะ / เพิ่ม-แก้รายการ / แก้ข้อมูลออเดอร์
+export default async function OrderPage({ params, searchParams }: Props) {
   await requireUser();
   const { id } = await params;
+  const editing = (await searchParams).edit === "1";
   const order = await db.query.orders.findFirst({
     where: eq(orders.id, Number(id)),
     with: { items: { with: { container: true, packages: true } } },
   });
   if (!order) notFound();
+  const customers = await listCustomersForPicker();
 
   // ตู้ที่ยังไม่ถึงไทย ให้เลือกในรายการตู้ (ตู้ของวิธีขนส่งเดียวกันขึ้นก่อน)
   const openContainers = await db.query.containers.findMany({
@@ -116,48 +190,113 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   let nextStage: ItemStage = itemStages[Math.min(stageIndex(summary.stage) + 1, itemStages.length - 1)];
   if (optionalStages.has(nextStage)) nextStage = itemStages[stageIndex(nextStage) + 1];
 
+  const header = (
+    <div>
+      <Link href="/admin/orders" className="text-sm text-gray-500 hover:underline">← ออเดอร์ทั้งหมด</Link>
+      <div className="mt-1 flex flex-wrap items-center gap-3">
+        <h1 className="text-2xl font-bold">{order.code}</h1>
+        <StageBadge stage={summary.stage} />
+        <span className="ml-auto flex items-center gap-3">
+          {editing ? (
+            <Link href={`/admin/orders/${order.id}`} className="btn-secondary">✓ เสร็จแล้ว</Link>
+          ) : (
+            <Link href={`/admin/orders/${order.id}?edit=1`} className="btn-primary">✏️ แก้ไข / อัปเดตสถานะ</Link>
+          )}
+          <DeleteOrderButton
+            orderId={order.id}
+            code={order.code}
+            customerName={order.customerName}
+            itemCount={summary.itemCount}
+            fromJj={Boolean(order.importKey?.startsWith("jj:"))}
+          />
+        </span>
+      </div>
+      {!order.customerPhone && (
+        <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          ⚠️ ยังไม่มีเบอร์โทรลูกค้า ลูกค้าจะเช็คสถานะเองไม่ได้ — กด &quot;แก้ไข&quot; แล้วเลือกลูกค้าจากทะเบียน
+        </p>
+      )}
+    </div>
+  );
+
+  if (!editing) {
+    return (
+      <div className="space-y-6">
+        {header}
+
+        <Card title="ข้อมูลออเดอร์">
+          <dl className="grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
+            <Info label="ลูกค้า">
+              {order.customerId ? (
+                <Link href={`/admin/customers/${order.customerId}`} className="font-medium text-brand-700 hover:underline">
+                  {order.customerName}
+                </Link>
+              ) : (
+                order.customerName
+              )}
+            </Info>
+            <Info label="เบอร์โทร">{order.customerPhone}</Info>
+            <Info label="LINE ID">{order.customerLineId}</Info>
+            <Info label="วิธีขนส่ง">{methodLabel(order.method)}</Info>
+            <Info label="ตู้">
+              {[...new Map(order.items.filter((i) => i.container).map((i) => [i.container!.id, i.container!])).values()].map(
+                (c, n) => (
+                  <span key={c.id}>
+                    {n > 0 && ", "}
+                    <Link href={`/admin/containers/${c.id}`} className="text-brand-700 hover:underline">{c.code}</Link>
+                  </span>
+                ),
+              )}
+              {order.items.length > 0 && order.items.every((i) => !i.container) && <span className="text-gray-400">ยังไม่เข้าตู้</span>}
+            </Info>
+            <Info label="เลขคำสั่งซื้อ">{order.purchaseOrderNo}</Info>
+            <Info label="ร้านค้า">{order.shopName}</Info>
+            <Info label="ค่าสินค้า (ยอดเต็ม)">{order.totalAmount != null && formatMoney(order.totalAmount, order.currency)}</Info>
+            <Info label="มัดจำค่าสินค้า">{order.depositAmount != null && formatMoney(order.depositAmount, order.currency)}</Info>
+            <Info label={`ค่าดำเนินการ ${order.handlingFeePct}%`}>{order.totalAmount != null && formatMoney(handlingFeeOf(order.totalAmount, order.handlingFeePct), order.currency)}</Info>
+            <Info label="ค่าสินค้าค้างชำระ">
+              <BalanceText total={order.totalAmount} deposit={order.depositAmount} currency={order.currency} />
+            </Info>
+            <Info label="Tracking no. จีน → ไทย">{order.intlTrackingNo}</Info>
+            <Info label="บริษัทขนส่งที่รับงานต่อ">{order.provider}</Info>
+            <Info label="External ID">{order.externalId}</Info>
+            <Info label="หมายเหตุถึงลูกค้า" wide>{order.note}</Info>
+            <Info label="หมายเหตุภายใน" wide>{order.internalNote}</Info>
+          </dl>
+        </Card>
+
+        <Card title={`รายการสินค้า (${order.items.length}) · ส่งแล้ว ${summary.deliveredCount}/${summary.itemCount}`}>
+          {order.items.length === 0 ? (
+            <p className="text-sm text-gray-500">ยังไม่มีรายการสินค้า — กด &quot;แก้ไข&quot; เพื่อเพิ่ม</p>
+          ) : (
+            <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200">
+              {order.items.map((item, idx) => {
+                const stage = stages[idx];
+                return (
+                  <li key={item.id} className="flex flex-wrap items-center gap-3 p-3">
+                    <div className="min-w-48 flex-1"><ItemDetails item={item} currency={order.currency} /></div>
+                    <div className="w-32 text-sm"><ContainerLink item={item} /></div>
+                    <div className="w-56 text-right">
+                      <StageBadge stage={stage} />
+                      <p className="mt-0.5 text-xs text-gray-500">{formatThaiDateTime(itemStageDates(item, item.container)[stage])}</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Card>
+
+        <p className="text-xs text-gray-400">
+          สร้างเมื่อ {formatThaiDateTime(order.createdAt)} · แก้ไขล่าสุด {formatThaiDateTime(order.updatedAt)}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <Link href="/admin/orders" className="text-sm text-gray-500 hover:underline">← ออเดอร์ทั้งหมด</Link>
-        <div className="mt-1 flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-bold">{order.code}</h1>
-          <StageBadge stage={summary.stage} />
-          <span className="ml-auto">
-            <DeleteOrderButton
-              orderId={order.id}
-              code={order.code}
-              customerName={order.customerName}
-              itemCount={summary.itemCount}
-              fromJj={Boolean(order.importKey?.startsWith("jj:"))}
-            />
-          </span>
-        </div>
-        {!order.customerPhone && (
-          <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-            ⚠️ ยังไม่มีเบอร์โทรลูกค้า ลูกค้าจะเช็คสถานะเองไม่ได้ — เพิ่มได้ที่ &quot;ข้อมูลลูกค้าและออเดอร์&quot; ด้านล่าง
-          </p>
-        )}
-        <p className="mt-1 text-sm text-gray-600">
-          {order.customerName} · {order.customerPhone || "ไม่มีเบอร์"} · {methodLabel(order.method)}
-          {order.purchaseOrderNo && ` · คำสั่งซื้อ: ${order.purchaseOrderNo}`}
-          {order.intlTrackingNo && ` · Tracking จีน→ไทย: ${order.intlTrackingNo}`}
-          {order.externalId && ` · External ID: ${order.externalId}`}
-          {" · "}ส่งแล้ว {summary.deliveredCount}/{summary.itemCount}
-        </p>
-        {(order.shopName || order.totalAmount != null) && (
-          <p className="mt-1 text-sm text-gray-600">
-            {order.shopName && <>ร้าน {order.shopName}</>}
-            {order.totalAmount != null && (
-              <>
-                {order.shopName && " · "}ยอดเต็ม {formatMoney(order.totalAmount, order.currency)} · มัดจำ{" "}
-                {formatMoney(order.depositAmount ?? 0, order.currency)} ·{" "}
-                <BalanceText total={order.totalAmount} deposit={order.depositAmount} currency={order.currency} />
-              </>
-            )}
-          </p>
-        )}
-      </div>
+      {header}
 
       <Card title={`รายการสินค้า (${order.items.length})`}>
         {order.items.length > 0 && (
@@ -178,49 +317,26 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                         className="h-5 w-5 accent-brand-600"
                         aria-label={`เลือก ${item.description}`}
                       />
-                      <div className="min-w-48 flex-1">
-                        <p className="font-medium">
-                          {item.description}
-                          {item.quantity ? <span className="text-gray-500"> × {item.quantity}</span> : null}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {[
-                            item.packages.length > 1 && `${item.packages.length} พัสดุ`,
-                            item.boxes != null && `${item.boxes} กล่อง`,
-                            item.weightKg != null && `${item.weightKg} กก.`,
-                            item.cbm != null && `${item.cbm} คิว`,
-                          ]
-                            .filter(Boolean)
-                            .join(" · ") || "ยังไม่มีขนาด/น้ำหนัก"}
-                        </p>
-                        {item.packages.length > 0 && (
-                          <ul className="mt-1 space-y-0.5 text-xs text-gray-500">
-                            {item.packages.map((p) => (
-                              <li key={p.id}>
-                                └{" "}
-                                {[
-                                  p.chinaTrackingNo && `พัสดุจีน ${p.chinaTrackingNo}`,
-                                  p.boxes != null && `${p.boxes} กล่อง`,
-                                  p.widthCm && p.lengthCm && p.heightCm && `${p.widthCm}×${p.lengthCm}×${p.heightCm} ซม.`,
-                                  p.weightKg != null && `${p.weightKg} กก.`,
-                                  p.cbm != null && `${p.cbm} คิว`,
-                                ]
-                                  .filter(Boolean)
-                                  .join(" · ")}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                      <div className="w-32 text-sm">
-                        {item.container ? (
-                          <Link href={`/admin/containers/${item.container.id}`} className="text-brand-600 hover:underline">
-                            ตู้ {item.container.code}
-                          </Link>
-                        ) : (
-                          <span className="text-gray-400">ยังไม่เข้าตู้</span>
-                        )}
-                      </div>
+                      <div className="min-w-48 flex-1"><ItemDetails item={item} currency={order.currency} showPrice={false} /></div>
+                      {/* แก้ราคาต่อหน่วยได้ตรงนี้เลย ไม่ต้องเปิด "แก้ไขรายละเอียด" */}
+                      <form action={updateItemPrice} className="flex items-center gap-1.5">
+                        <input type="hidden" name="itemId" value={item.id} />
+                        <label className="text-xs text-gray-500" htmlFor={`price-${item.id}`}>ราคา/หน่วย</label>
+                        <span className="w-28">
+                          <input
+                            id={`price-${item.id}`}
+                            name="unitPrice"
+                            type="number"
+                            step="0.01"
+                            min={0}
+                            defaultValue={item.unitPrice ?? ""}
+                            placeholder={currencyLabel[order.currency]}
+                            className="input py-1 text-sm"
+                          />
+                        </span>
+                        <button className="rounded border border-brand-600 px-2 py-1 text-xs font-medium text-brand-600 hover:bg-brand-50">บันทึก</button>
+                      </form>
+                      <div className="w-32 text-sm"><ContainerLink item={item} /></div>
                       <div className="w-56 text-right">
                         <StageBadge stage={stage} />
                         <p className="mt-0.5 text-xs text-gray-500">{formatThaiDateTime(at)}</p>
@@ -252,9 +368,10 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           <input type="hidden" name="orderId" value={order.id} />
           <p className="mb-2 text-sm font-medium">+ เพิ่มรายการสินค้า</p>
           <div className="space-y-2">
-            <div className="grid gap-2 sm:grid-cols-[3fr_1fr]">
+            <div className="grid gap-2 sm:grid-cols-[3fr_1fr_1fr]">
               <input name="description" required placeholder="ชื่อสินค้า *" className="input" />
               <input name="quantity" type="number" min={0} placeholder="จำนวน" className="input" />
+              <input name="unitPrice" type="number" step="0.01" min={0} placeholder="ราคาต่อหน่วย" className="input" />
             </div>
             <PackageFields />
             <button className="btn-primary">เพิ่มรายการ</button>
@@ -263,17 +380,15 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
         </form>
       </Card>
 
-      <Card>
-        <details>
-          <summary className="cursor-pointer font-semibold">ข้อมูลลูกค้าและออเดอร์ (กดเพื่อแก้ไข)</summary>
-          <form action={updateOrder} className="mt-4 grid gap-4 sm:grid-cols-2">
-            <input type="hidden" name="id" value={order.id} />
-            <OrderFields order={order} />
-            <div className="sm:col-span-2">
-              <button className="btn-primary">บันทึก</button>
-            </div>
-          </form>
-        </details>
+      <Card title="แก้ไขข้อมูลลูกค้าและออเดอร์">
+        <form action={updateOrder} className="grid gap-4 sm:grid-cols-2">
+          <input type="hidden" name="id" value={order.id} />
+          <OrderFields order={order} customers={customers} />
+          <div className="flex items-center gap-3 sm:col-span-2">
+            <button className="btn-primary">บันทึก</button>
+            <Link href={`/admin/orders/${order.id}`} className="text-sm text-gray-500 hover:underline">ยกเลิก</Link>
+          </div>
+        </form>
         <p className="mt-3 text-xs text-gray-400">
           สร้างเมื่อ {formatThaiDateTime(order.createdAt)} · แก้ไขล่าสุด {formatThaiDateTime(order.updatedAt)}
         </p>

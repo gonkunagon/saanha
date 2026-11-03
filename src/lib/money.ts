@@ -13,3 +13,18 @@ export function formatMoney(n: number | null | undefined, currency: CurrencyCode
   if (n == null) return "-";
   return `${n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currencyLabel[currency]}`;
 }
+
+// ค่าดำเนินการของร้าน = % ของยอดรวมค่าสินค้า (เลือกได้ 3–6%) · รวมเป็นเงินทั้งสิ้น = ค่าสินค้า + ค่าดำเนินการ
+export const handlingFeeOptions = [3, 4, 5, 6] as const;
+export const clampHandlingPct = (v: unknown) => {
+  const n = Math.round(Number(v));
+  return Number.isFinite(n) ? Math.min(6, Math.max(3, n)) : 5;
+};
+export function handlingFeeOf(goodsTotal: number | null | undefined, pct: number): number | null {
+  if (goodsTotal == null) return null;
+  return Math.round(goodsTotal * pct) / 100;
+}
+export function grandTotalOf(goodsTotal: number | null | undefined, pct: number): number | null {
+  const fee = handlingFeeOf(goodsTotal, pct);
+  return goodsTotal == null || fee == null ? null : Math.round((goodsTotal + fee) * 100) / 100;
+}

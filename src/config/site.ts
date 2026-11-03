@@ -1,13 +1,16 @@
 // ข้อมูลติดต่อของบริษัท — แก้ไขที่นี่ที่เดียว แล้วจะแสดงทั่วทั้งเว็บ
 export const site = {
   name: "SAANHA",
-  url: "https://example.com", // TODO: ใส่โดเมนจริง (ใช้กับ sitemap และรูปตอนแชร์ลิงก์)
-  phone: "0X-XXX-XXXX", // TODO: ใส่เบอร์จริง
-  lineId: "@sanha", // TODO: ใส่ LINE OA จริง
-  lineUrl: "https://line.me/R/ti/p/%40sanha", // ลิงก์เพิ่มเพื่อน — แก้ให้ตรงกับ lineId
+  url: "https://saanha.com", // ใช้กับ sitemap และรูปตอนแชร์ลิงก์
+  phone: "061-545-2358",
+  lineId: "@saanha", // LINE OA "SAANHA สรรหา" (basic ID @540tsqtl)
+  lineUrl: "https://line.me/R/ti/p/%40saanha", // ลิงก์เพิ่มเพื่อน — แก้ให้ตรงกับ lineId
   email: "contact@example.com", // TODO: ใส่อีเมลจริง
+  // ซ่อนไว้ก่อน (ไม่แสดงบนเว็บและใบเสนอราคา) — เปลี่ยนเป็น true เมื่อพร้อมแสดง
+  showEmail: false,
+  showAddress: false,
   address: {
-    th: "TODO: ที่อยู่โกดังไทย",
-    en: "TODO: Thailand warehouse address",
+    th: "199/23 ถนนกัลปพฤกษ์ แขวงบางขุนเทียน เขตจอมทอง กรุงเทพมหานคร 10150",
+    en: "199/23 Kanlapaphruek Rd., Bang Khun Thian, Chom Thong, Bangkok 10150",
   },
 };

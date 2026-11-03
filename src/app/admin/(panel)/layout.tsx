@@ -7,6 +7,7 @@ const nav = [
   { href: "/admin", label: "ภาพรวม" },
   { href: "/admin/orders", label: "ออเดอร์" },
   { href: "/admin/containers", label: "ตู้" },
+  { href: "/admin/customers", label: "ลูกค้า" },
   { href: "/admin/users", label: "พนักงาน", adminOnly: true },
 ];
 

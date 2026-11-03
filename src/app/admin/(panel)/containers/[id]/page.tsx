@@ -1,24 +1,28 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { and, eq, isNotNull, isNull } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { containers, orderItems } from "@/db/schema";
+import { containers, orders } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
-import { containerStageOf } from "@/lib/orders";
-import { formatThaiDateTime, nowLocalInputValue, toLocalInputValue } from "@/lib/datetime";
-import { containerStageFields, containerStages, stageLabelsTh } from "@/lib/stages";
+import { containerStageOf, summarizeOrder } from "@/lib/orders";
+import { formatThaiDateTime, nowLocalInputValue } from "@/lib/datetime";
+import { containerStageFields, containerStages, stageLabelsTh, type ItemStage } from "@/lib/stages";
 import { Card, Field, MethodSelect, StageBadge, methodLabel } from "@/components/admin/ui";
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { CheckIcon } from "@/components/icons";
 import {
-  addItemsToContainer,
+  addOrdersToContainer,
   deleteContainer,
-  removeItemFromContainer,
+  removeOrderFromContainer,
   setContainerStage,
+  setContainerStatus,
   updateContainer,
 } from "../actions";
 
 const sum = (values: (number | null)[]) => values.reduce<number>((a, v) => a + (v ?? 0), 0);
+
+// สถานะที่อัปเดตจากหน้าตู้ได้: ขั้นของตู้ 4 ขั้น + ส่งต่อให้ลูกค้า (ใส่ให้ทุกรายการในตู้)
+const statusOptions: ItemStage[] = [...containerStages, "out_for_delivery", "delivered"];
 
 export default async function ContainerPage({ params }: { params: Promise<{ id: string }> }) {
   await requireUser();
@@ -29,13 +33,25 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
   });
   if (!container) notFound();
 
-  // รายการที่ถึงโกดังจีนแล้วแต่ยังไม่ได้เข้าตู้ใด
-  const waiting = await db.query.orderItems.findMany({
-    where: and(isNull(orderItems.containerId), isNotNull(orderItems.receivedAt)),
-    with: { order: true },
-  });
   const stage = containerStageOf(container);
   const items = container.items;
+
+  // ออเดอร์ในตู้ (1 ออเดอร์อาจมีหลายรายการในตู้นี้)
+  const inside = [...new Map(items.map((i) => [i.orderId, i.order])).values()].map((order) => {
+    const own = items.filter((i) => i.orderId === order.id).map((i) => ({ ...i, container }));
+    return { order, items: own, summary: summarizeOrder(own) };
+  });
+
+  // ออเดอร์ที่ยังมีรายการไม่อยู่ตู้ไหนและยังไม่ส่งถึงลูกค้า → เลือกเพิ่มเข้าตู้นี้ได้
+  const candidates = (
+    await db.query.orders.findMany({ orderBy: desc(orders.createdAt), with: { items: { with: { container: true } } } })
+  )
+    .map((o) => ({ order: o, free: o.items.filter((i) => !i.containerId && !i.deliveredAt), summary: summarizeOrder(o.items) }))
+    .filter((o) => o.free.length > 0);
+
+  // ค่าเริ่มต้นของสถานะ = ขั้นถัดไปของตู้
+  const nextStatus =
+    statusOptions[Math.min(stage ? statusOptions.indexOf(stage) + 1 : 0, statusOptions.length - 1)] ?? statusOptions[0];
 
   return (
     <div className="space-y-6">
@@ -43,52 +59,95 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
         <Link href="/admin/containers" className="text-sm text-gray-500 hover:underline">← ตู้ทั้งหมด</Link>
         <h1 className="text-2xl font-bold">ตู้ {container.code}</h1>
         {stage ? <StageBadge stage={stage} /> : <span className="text-sm text-gray-500">เปิดตู้ รอโหลดสินค้า</span>}
+        <span className="text-sm text-gray-500">· {methodLabel(container.method)} · {inside.length} ออเดอร์</span>
+        {/* ลบได้เฉพาะตู้ว่าง กันลบผิดแล้วออเดอร์หลุดจากตู้ */}
+        <span className="ml-auto">
+          {items.length === 0 ? (
+            <form action={deleteContainer}>
+              <input type="hidden" name="id" value={container.id} />
+              <ConfirmButton
+                message={`ลบตู้ ${container.code}? ลบแล้วกู้คืนไม่ได้`}
+                className="rounded-lg border border-brand-600 px-4 py-2 text-sm font-medium text-brand-600 hover:bg-brand-50"
+              >
+                ลบตู้
+              </ConfirmButton>
+            </form>
+          ) : (
+            <span
+              title="ตู้ที่มีออเดอร์อยู่ลบไม่ได้"
+              className="cursor-not-allowed rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-400"
+            >
+              ลบตู้ (เอาออเดอร์ออกจากตู้ก่อน)
+            </span>
+          )}
+        </span>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card title="อัปเดตสถานะตู้">
-          <p className="mb-4 text-sm text-gray-500">
-            อัปเดตแล้ว ทุกออเดอร์ในตู้นี้ ({new Set(items.map((i) => i.orderId)).size} ออเดอร์) จะเปลี่ยนสถานะตามอัตโนมัติ
-          </p>
-          <ol className="space-y-4">
+          <form
+            key={nextStatus} // บันทึกแล้ว ขยับค่าเริ่มต้นไปขั้นถัดไปเอง
+            action={setContainerStatus}
+            className="rounded-lg bg-brand-50 p-4 ring-1 ring-brand-100"
+          >
+            <input type="hidden" name="id" value={container.id} />
+            <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+              <Field label="สถานะใหม่">
+                <select name="stage" defaultValue={nextStatus} className="input bg-white">
+                  {statusOptions.map((s) => (
+                    <option key={s} value={s}>
+                      {stageLabelsTh[s]}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="วันเวลา">
+                <input type="datetime-local" name="at" required defaultValue={nowLocalInputValue()} className="input bg-white" />
+              </Field>
+            </div>
+            <button disabled={inside.length === 0} className="btn-primary mt-3 w-full disabled:opacity-50">
+              บันทึกสถานะ ({inside.length} ออเดอร์ในตู้เปลี่ยนตาม)
+            </button>
+            {inside.length === 0 && <p className="mt-2 text-xs text-gray-500">เพิ่มออเดอร์เข้าตู้ก่อน (ด้านล่าง)</p>}
+          </form>
+
+          <ol className="mt-5 space-y-3">
             {containerStages.map((s) => {
               const at = container[containerStageFields[s]];
               return (
-                <li key={s} className="flex gap-3">
+                <li key={s} className="flex items-center gap-3">
                   <span
-                    className={`mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
-                      at ? "bg-brand-600 text-white" : "border-2 border-gray-200 text-gray-300"
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+                      at ? "bg-brand-600 text-white" : "border-2 border-gray-200"
                     }`}
                   >
-                    {at && <CheckIcon className="h-4 w-4" />}
+                    {at && <CheckIcon className="h-3.5 w-3.5" />}
                   </span>
                   <div className="flex-1">
-                    <p className="font-medium">{stageLabelsTh[s]}</p>
-                    <p className="text-sm text-gray-500">{at ? formatThaiDateTime(at) : "ยังไม่ถึงขั้นนี้"}</p>
-                    <form action={setContainerStage} className="mt-2 flex flex-wrap gap-2">
+                    <p className={`text-sm font-medium ${at ? "" : "text-gray-400"}`}>{stageLabelsTh[s]}</p>
+                    {at && <p className="text-xs text-gray-500">{formatThaiDateTime(at)}</p>}
+                  </div>
+                  {at && (
+                    <form action={setContainerStage}>
                       <input type="hidden" name="id" value={container.id} />
                       <input type="hidden" name="stage" value={s} />
-                      <input
-                        type="datetime-local"
-                        name="at"
-                        required
-                        defaultValue={at ? toLocalInputValue(at) : nowLocalInputValue()}
-                        className="input w-auto py-1 text-sm"
-                      />
-                      <button className="rounded bg-brand-600 px-3 py-1 text-sm text-white hover:bg-brand-700">
-                        {at ? "แก้วันที่" : "บันทึก"}
-                      </button>
-                      {at && (
-                        <button name="clear" value="1" formNoValidate className="px-2 text-sm text-gray-500 hover:underline">
-                          ล้าง
-                        </button>
-                      )}
+                      <input type="hidden" name="clear" value="1" />
+                      <ConfirmButton
+                        message={`ล้างวันที่ "${stageLabelsTh[s]}" ของตู้นี้?`}
+                        className="text-xs text-gray-400 hover:text-brand-600 hover:underline"
+                      >
+                        ล้าง
+                      </ConfirmButton>
                     </form>
-                  </div>
+                  )}
                 </li>
               );
             })}
           </ol>
+          <p className="mt-4 text-xs text-gray-500">
+            &quot;กำลังจัดส่ง&quot; / &quot;จัดส่งสำเร็จ&quot; จะใส่ให้ทุกรายการในตู้ที่ยังไม่มีวันที่ — ถ้าส่งลูกค้าไม่พร้อมกัน
+            ให้อัปเดตทีละออเดอร์ในหน้าออเดอร์แทน
+          </p>
         </Card>
 
         <Card title="ข้อมูลตู้">
@@ -109,11 +168,8 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
             <Field label="หมายเหตุภายใน" className="sm:col-span-2">
               <textarea name="note" rows={2} defaultValue={container.note ?? ""} className="input" />
             </Field>
-            <div className="flex items-center justify-between sm:col-span-2">
+            <div className="sm:col-span-2">
               <button className="btn-primary">บันทึก</button>
-              {items.length === 0 && (
-                <ConfirmButton formAction={deleteContainer} message={`ลบตู้ ${container.code}?`}>ลบตู้</ConfirmButton>
-              )}
             </div>
           </form>
           <dl className="mt-5 grid grid-cols-3 gap-3 border-t border-gray-100 pt-4 text-sm">
@@ -124,7 +180,7 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
         </Card>
       </div>
 
-      <Card title={`สินค้าในตู้ (${items.length} รายการ)`}>
+      <Card title={`ออเดอร์ในตู้ (${inside.length})`}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-left text-gray-500">
@@ -135,41 +191,53 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
                 <th className="py-2 pr-4">กล่อง</th>
                 <th className="py-2 pr-4">กก.</th>
                 <th className="py-2 pr-4">คิว</th>
+                <th className="py-2 pr-4">สถานะ</th>
                 <th className="py-2" />
               </tr>
             </thead>
             <tbody>
-              {items.map((i) => (
-                <tr key={i.id} className="border-t border-gray-100">
+              {inside.map(({ order, items: own, summary }) => (
+                <tr key={order.id} className="border-t border-gray-100 align-top">
                   <td className="py-2 pr-4">
-                    <Link href={`/admin/orders/${i.orderId}`} className="text-brand-600 hover:underline">{i.order.code}</Link>
+                    <Link href={`/admin/orders/${order.id}`} className="font-medium text-brand-600 hover:underline">{order.code}</Link>
                   </td>
-                  <td className="py-2 pr-4">{i.order.customerName}</td>
-                  <td className="py-2 pr-4">{i.description}{i.quantity ? ` × ${i.quantity}` : ""}</td>
-                  <td className="py-2 pr-4">{i.boxes ?? "-"}</td>
-                  <td className="py-2 pr-4">{i.weightKg ?? "-"}</td>
-                  <td className="py-2 pr-4">{i.cbm ?? "-"}</td>
+                  <td className="py-2 pr-4">{order.customerName}</td>
+                  <td className="py-2 pr-4">
+                    {own.map((i) => (
+                      <span key={i.id} className="block">{i.description}{i.quantity ? ` × ${i.quantity}` : ""}</span>
+                    ))}
+                  </td>
+                  <td className="py-2 pr-4">{sum(own.map((i) => i.boxes)) || "-"}</td>
+                  <td className="py-2 pr-4">{sum(own.map((i) => i.weightKg)) || "-"}</td>
+                  <td className="py-2 pr-4">{sum(own.map((i) => i.cbm)) || "-"}</td>
+                  <td className="py-2 pr-4"><StageBadge stage={summary.stage} /></td>
                   <td className="py-2 text-right">
-                    <form action={removeItemFromContainer}>
-                      <input type="hidden" name="itemId" value={i.id} />
-                      <button className="text-sm text-gray-500 hover:text-brand-600 hover:underline">เอาออกจากตู้</button>
+                    <form action={removeOrderFromContainer}>
+                      <input type="hidden" name="id" value={container.id} />
+                      <input type="hidden" name="orderId" value={order.id} />
+                      <ConfirmButton
+                        message={`เอาออเดอร์ ${order.code} ออกจากตู้ ${container.code}?`}
+                        className="text-sm whitespace-nowrap text-gray-500 hover:text-brand-600 hover:underline"
+                      >
+                        เอาออกจากตู้
+                      </ConfirmButton>
                     </form>
                   </td>
                 </tr>
               ))}
-              {items.length === 0 && (
-                <tr><td colSpan={7} className="py-6 text-center text-gray-400">ยังไม่มีสินค้าในตู้ — เลือกจากรายการด้านล่าง</td></tr>
+              {inside.length === 0 && (
+                <tr><td colSpan={8} className="py-6 text-center text-gray-400">ยังไม่มีออเดอร์ในตู้ — เลือกจากรายการด้านล่าง</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </Card>
 
-      <Card title={`สินค้าที่ถึงโกดังจีนแล้ว รอเข้าตู้ (${waiting.length})`}>
-        {waiting.length === 0 ? (
-          <p className="text-sm text-gray-400">ไม่มีสินค้ารอเข้าตู้ (ต้องบันทึกวันที่ "ถึงโกดังจีน" ในหน้าออเดอร์ก่อน)</p>
+      <Card title={`เพิ่มออเดอร์เข้าตู้ (${candidates.length} ออเดอร์ยังไม่เข้าตู้)`}>
+        {candidates.length === 0 ? (
+          <p className="text-sm text-gray-400">ทุกออเดอร์อยู่ในตู้แล้ว</p>
         ) : (
-          <form action={addItemsToContainer}>
+          <form action={addOrdersToContainer}>
             <input type="hidden" name="id" value={container.id} />
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -178,32 +246,36 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
                     <th className="py-2 pr-2" />
                     <th className="py-2 pr-4">ออเดอร์</th>
                     <th className="py-2 pr-4">ลูกค้า</th>
-                    <th className="py-2 pr-4">สินค้า</th>
+                    <th className="py-2 pr-4">สินค้าที่ยังไม่เข้าตู้</th>
                     <th className="py-2 pr-4">วิธีขนส่ง</th>
-                    <th className="py-2 pr-4">กล่อง</th>
-                    <th className="py-2">ถึงโกดังจีน</th>
+                    <th className="py-2">สถานะ</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {waiting.map((i) => (
-                    <tr key={i.id} className="border-t border-gray-100">
+                  {candidates.map(({ order, free, summary }) => (
+                    <tr key={order.id} className="border-t border-gray-100 align-top">
                       <td className="py-2 pr-2">
-                        <input type="checkbox" name="itemId" value={i.id} className="h-4 w-4 accent-brand-600" />
+                        <input type="checkbox" name="orderId" value={order.id} className="h-4 w-4 accent-brand-600" aria-label={`เลือก ${order.code}`} />
                       </td>
-                      <td className="py-2 pr-4">{i.order.code}</td>
-                      <td className="py-2 pr-4">{i.order.customerName}</td>
-                      <td className="py-2 pr-4">{i.description}</td>
-                      <td className={`py-2 pr-4 ${i.order.method !== container.method ? "text-amber-700" : ""}`}>
-                        {methodLabel(i.order.method)}
+                      <td className="py-2 pr-4 font-medium">{order.code}</td>
+                      <td className="py-2 pr-4">{order.customerName}</td>
+                      <td className="py-2 pr-4">
+                        {free.map((i) => (
+                          <span key={i.id} className="block">{i.description}{i.boxes ? ` · ${i.boxes} กล่อง` : ""}</span>
+                        ))}
                       </td>
-                      <td className="py-2 pr-4">{i.boxes ?? "-"}</td>
-                      <td className="py-2 text-gray-500">{formatThaiDateTime(i.receivedAt)}</td>
+                      <td className={`py-2 pr-4 ${order.method !== container.method ? "font-medium text-amber-700" : ""}`}>
+                        {methodLabel(order.method)}
+                        {order.method !== container.method && " ⚠️"}
+                      </td>
+                      <td className="py-2"><StageBadge stage={summary.stage} /></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <button className="btn-primary mt-4">เพิ่มรายการที่เลือกเข้าตู้</button>
+            <button className="btn-primary mt-4">เพิ่มออเดอร์ที่เลือกเข้าตู้</button>
+            <p className="mt-2 text-xs text-gray-500">⚠️ = วิธีขนส่งของออเดอร์ไม่ตรงกับตู้</p>
           </form>
         )}
       </Card>

@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "SAANHA — China Sourcing, Payment, CNY Exchange & Shipping",
-    "description": "One-stop China import service: product sourcing, purchasing, supplier payment, CNY exchange, and truck or sea freight delivered to your door in Thailand."
+    "title": "SAANHA — China Sourcing, Supplier Payment & Shipping",
+    "description": "One-stop China import service: product sourcing, purchasing, supplier payment, and truck or sea freight delivered to your door in Thailand."
   },
   "nav": {
     "home": "Home",
@@ -13,7 +13,7 @@
   },
   "home": {
     "heroTitle": "Import from China, all in one place",
-    "heroSubtitle": "Sourcing, purchasing, supplier payment, CNY exchange and door-to-door delivery — we handle every step.",
+    "heroSubtitle": "Sourcing, purchasing, supplier payment and door-to-door delivery — we handle every step.",
     "ctaQuote": "Request sourcing",
     "ctaCalc": "Estimate shipping",
     "trackLink": "Have a tracking number? Track it here →",
@@ -48,7 +48,7 @@
     "items": [
       { "key": "sourcing", "title": "Product sourcing", "body": "We find the right factories and shops, compare prices and check quality before ordering." },
       { "key": "order", "title": "Purchasing agent", "body": "We order from 1688, Taobao, Tmall and Chinese suppliers, and negotiate for you." },
-      { "key": "payment", "title": "Supplier payment & CNY", "body": "Transfer baht and we pay your Chinese shop or supplier in yuan." },
+      { "key": "payment", "title": "Supplier payment", "body": "Transfer baht and we pay your Chinese shop or supplier in yuan." },
       { "key": "shipping", "title": "Truck / sea freight", "body": "Choose by speed and budget, charged by weight or volume." },
       { "key": "customs", "title": "Customs clearance", "body": "We handle import formalities so you don't have to." },
       { "key": "delivery", "title": "Door-to-door", "body": "Domestic delivery to your address anywhere in Thailand." }
@@ -102,7 +102,6 @@
     "container": "Container",
     "notInContainer": "Awaiting container",
     "boxes": "boxes",
-    "domestic": "Thailand courier tracking no.",
     "note": "Note",
     "waiting": "Pending",
     "stages": {
@@ -125,7 +124,7 @@
     "categories": {
       "getting-started": "Getting started",
       "shipping": "Shipping",
-      "payment": "Payment & exchange",
+      "payment": "Payment",
       "policies": "Policies & prohibited items"
     }
   },

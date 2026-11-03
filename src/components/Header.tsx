@@ -34,7 +34,7 @@ export function Header({ locale, nav }: Props) {
         </nav>
         <div className="ml-auto flex items-center gap-3">
           <LanguageSwitcher locale={locale} />
-          <Link href={`/${locale}/quote`} className="btn-primary px-4 py-2 text-sm">
+          <Link href={`/${locale}/quote`} className="btn-cta px-4 py-2 text-sm">
             {nav.quote}
           </Link>
         </div>

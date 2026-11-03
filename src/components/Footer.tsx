@@ -12,14 +12,14 @@ export function Footer({ locale, dict }: Props) {
       <div className="mx-auto grid max-w-6xl gap-6 px-4 py-10 text-sm md:grid-cols-2">
         <div>
           <Logo markClassName="text-accent-400" textClassName="text-white" />
-          <p className="mt-2">{site.address[locale]}</p>
+          {site.showAddress && <p className="mt-2">{site.address[locale]}</p>}
         </div>
         <div>
           <p className="font-semibold text-white">{dict.contact}</p>
           <ul className="mt-2 space-y-1">
             <li>LINE: {site.lineId}</li>
             <li>Tel: {site.phone}</li>
-            <li>Email: {site.email}</li>
+            {site.showEmail && <li>Email: {site.email}</li>}
           </ul>
         </div>
       </div>

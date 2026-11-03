@@ -1,11 +1,17 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
+import { listCustomersForPicker } from "@/lib/customers";
 import { Card } from "@/components/admin/ui";
 import { OrderFields } from "../OrderFields";
 import { CreateOrderForm } from "./CreateOrderForm";
 
-export default async function NewOrderPage() {
+type Props = { searchParams: Promise<{ customer?: string }> };
+
+export default async function NewOrderPage({ searchParams }: Props) {
   await requireUser();
+  const { customer } = await searchParams;
+  const customers = await listCustomersForPicker();
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -15,7 +21,7 @@ export default async function NewOrderPage() {
       <Card>
         <p className="mb-4 text-sm text-gray-500">ระบบจะออกเลขออเดอร์ให้อัตโนมัติ</p>
         <CreateOrderForm>
-          <OrderFields />
+          <OrderFields customers={customers} preselectId={Number(customer) || undefined} />
         </CreateOrderForm>
       </Card>
     </div>

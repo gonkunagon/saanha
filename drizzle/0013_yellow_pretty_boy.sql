@@ -1,0 +1,1 @@
+ALTER TABLE `orders` ADD `service_fee` real;

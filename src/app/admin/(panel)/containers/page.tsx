@@ -6,7 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { containerStageOf } from "@/lib/orders";
 import { formatThaiDateTime } from "@/lib/datetime";
 import { Card, StageBadge, methodLabel } from "@/components/admin/ui";
-import { CreateContainerForm } from "./CreateContainerForm";
+import { CreateContainerButton } from "./CreateContainerForm";
 
 export default async function ContainersPage() {
   await requireUser();
@@ -17,10 +17,10 @@ export default async function ContainersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">ตู้</h1>
-      <Card title="สร้างตู้ใหม่">
-        <CreateContainerForm />
-      </Card>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">ตู้</h1>
+        <CreateContainerButton />
+      </div>
       <Card title={`ตู้ทั้งหมด (${list.length})`}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

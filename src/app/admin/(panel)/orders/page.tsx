@@ -9,7 +9,6 @@ import { itemStages, stageLabelsTh, type ItemStage } from "@/lib/stages";
 import { BalanceText, Card, StageBadge, methodLabel } from "@/components/admin/ui";
 import { formatMoney } from "@/lib/money";
 import { SyncJjButton } from "./SyncJjButton";
-import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
 import { getSyncStatus } from "@/lib/jjsync";
 
 type Props = { searchParams: Promise<{ q?: string; stage?: string }> };
@@ -122,13 +121,13 @@ export default async function OrdersPage({ searchParams }: Props) {
                   <td className="py-2 pr-4 text-gray-600">{o.externalId ?? "-"}</td>
                   <td className="py-2 pr-4 text-gray-500">{formatThaiDateTime(o.createdAt)}</td>
                   <td className="py-2 text-right">
-                    <DeleteOrderButton
-                      orderId={o.id}
-                      code={o.code}
-                      customerName={o.customerName}
-                      itemCount={s.itemCount}
-                      fromJj={Boolean(o.importKey?.startsWith("jj:"))}
-                    />
+                    <Link
+                      href={`/admin/quote/${o.id}`}
+                      target="_blank"
+                      className="inline-flex items-center rounded-lg border border-brand-600 px-3 py-1.5 text-sm font-medium whitespace-nowrap text-brand-600 hover:bg-brand-50"
+                    >
+                      สร้างใบเสนอราคา
+                    </Link>
                   </td>
                 </tr>
               ))}

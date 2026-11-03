@@ -1,0 +1,1 @@
+ALTER TABLE `orders` ADD `handling_fee_pct` integer DEFAULT 5 NOT NULL;

@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { containers, ignoredImports, itemPackages, orderItems, orders, shippingMethods, type ShippingMethod } from "@/db/schema";
+import { findCustomerById } from "@/lib/customers";
+import { clampHandlingPct } from "@/lib/money";
 import { requireUser } from "@/lib/auth";
 import { parseLocalDateTime } from "@/lib/datetime";
 import { nextOrderCode, stageOfItem } from "@/lib/orders";
@@ -103,15 +105,13 @@ async function savePackages(tx: Tx, itemId: number, pkgs: PackageRow[]) {
 
 function orderFields(fd: FormData) {
   return {
-    customerName: text(fd, "customerName") ?? "",
-    customerPhone: text(fd, "customerPhone") ?? "",
-    customerLineId: text(fd, "customerLineId"),
     purchaseOrderNo: text(fd, "purchaseOrderNo"),
     intlTrackingNo: text(fd, "intlTrackingNo"),
     shopName: text(fd, "shopName"),
     currency: fd.get("currency") === "CNY" ? ("CNY" as const) : ("THB" as const),
     totalAmount: toNum(fd.get("totalAmount")),
     depositAmount: toNum(fd.get("depositAmount")),
+    handlingFeePct: clampHandlingPct(fd.get("handlingFeePct")),
     method: method(fd),
     provider: text(fd, "provider"),
     externalId: text(fd, "externalId"),
@@ -120,13 +120,19 @@ function orderFields(fd: FormData) {
   };
 }
 
+// ลูกค้าที่เลือกในฟอร์ม → ชื่อ / เบอร์ / LINE ของออเดอร์ (เก็บสำเนาไว้ในออเดอร์ให้หน้าติดตามพัสดุใช้)
+async function selectedCustomer(fd: FormData) {
+  const id = toInt(fd.get("customerId"));
+  const c = id ? await findCustomerById(id) : undefined;
+  return c ? { customerId: c.id, customerName: c.name, customerPhone: c.phone, customerLineId: c.lineId } : null;
+}
+
 // สร้างออเดอร์พร้อมรายการสินค้าในฟอร์มเดียว
 export async function createOrder(_prev: string | null, fd: FormData): Promise<string | null> {
   await requireUser();
-  const fields = orderFields(fd);
-  if (!fields.customerName || fields.customerPhone.replace(/\D/g, "").length < 4) {
-    return "กรุณาใส่ชื่อลูกค้าและเบอร์โทรให้ครบ";
-  }
+  const customer = await selectedCustomer(fd);
+  if (!customer) return "กรุณาเลือกลูกค้า (ยังไม่มีในทะเบียน กด \"+ เพิ่มลูกค้าใหม่\")";
+  const fields = { ...orderFields(fd), ...customer };
 
   // แต่ละแถวสินค้ามี itemKey ใช้จับคู่กับช่องพัสดุของแถวนั้น (pkg_<key>_...)
   const descriptions = fd.getAll("itemDescription");
@@ -135,7 +141,12 @@ export async function createOrder(_prev: string | null, fd: FormData): Promise<s
     .map((key, i) => {
       const packages = parsePackages(fd, `pkg_${key}_`);
       return {
-        item: { description: str(descriptions[i]) ?? "", quantity: toInt(fd.getAll("itemQuantity")[i]), ...packageTotals(packages) },
+        item: {
+          description: str(descriptions[i]) ?? "",
+          quantity: toInt(fd.getAll("itemQuantity")[i]),
+          unitPrice: toNum(fd.getAll("itemUnitPrice")[i]),
+          ...packageTotals(packages),
+        },
         packages,
       };
     })
@@ -167,10 +178,15 @@ export async function createOrder(_prev: string | null, fd: FormData): Promise<s
 
 export async function updateOrder(fd: FormData) {
   await requireUser();
-  const fields = orderFields(fd);
-  if (!fields.customerName || !fields.customerPhone) return;
-  await db.update(orders).set(fields).where(eq(orders.id, Number(fd.get("id"))));
+  // ไม่ได้เลือกลูกค้า (ออเดอร์เก่าที่ยังไม่ผูก) = คงชื่อ/เบอร์เดิมไว้
+  const customer = await selectedCustomer(fd);
+  const id = Number(fd.get("id"));
+  await db
+    .update(orders)
+    .set({ ...orderFields(fd), ...customer })
+    .where(eq(orders.id, id));
   refresh();
+  redirect(`/admin/orders/${id}`); // บันทึกแล้วกลับไปหน้าแสดงข้อมูล
 }
 
 export async function deleteOrder(fd: FormData) {
@@ -197,7 +213,13 @@ export async function addItem(fd: FormData) {
   await db.transaction(async (tx) => {
     const [created] = await tx
       .insert(orderItems)
-      .values({ orderId: Number(fd.get("orderId")), description, quantity: toInt(fd.get("quantity")), ...packageTotals(packages) })
+      .values({
+        orderId: Number(fd.get("orderId")),
+        description,
+        quantity: toInt(fd.get("quantity")),
+        unitPrice: toNum(fd.get("unitPrice")),
+        ...packageTotals(packages),
+      })
       .returning({ id: orderItems.id });
     await savePackages(tx, created.id, packages);
   });
@@ -205,6 +227,13 @@ export async function addItem(fd: FormData) {
 }
 
 // แก้ไขรายละเอียด/วันที่ของรายการ (ใช้แก้ข้อมูลผิด)
+// แก้แค่ราคาต่อหน่วย (ช่องในรายการสินค้าหน้าแก้ไขออเดอร์) — เว้นว่าง = ลบราคา
+export async function updateItemPrice(fd: FormData) {
+  await requireUser();
+  await db.update(orderItems).set({ unitPrice: toNum(fd.get("unitPrice")) }).where(eq(orderItems.id, Number(fd.get("itemId"))));
+  refresh();
+}
+
 export async function updateItem(fd: FormData) {
   await requireUser();
   const description = text(fd, "description");
@@ -222,6 +251,7 @@ export async function updateItem(fd: FormData) {
       .set({
         description,
         quantity: toInt(fd.get("quantity")),
+        unitPrice: toNum(fd.get("unitPrice")),
         ...packageTotals(packages),
         containerId: container?.id ?? null,
         productionAt: parseLocalDateTime(fd.get("productionAt")),

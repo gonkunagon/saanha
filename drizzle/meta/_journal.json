@@ -71,6 +71,55 @@
       "when": 1793520230479,
       "tag": "0009_wise_thor",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1793603577222,
+      "tag": "0010_loud_blur",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1793606647518,
+      "tag": "0011_boring_swordsman",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1793611010910,
+      "tag": "0012_rapid_toro",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1793693992708,
+      "tag": "0013_yellow_pretty_boy",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1793695355706,
+      "tag": "0014_fresh_vanisher",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1793695553669,
+      "tag": "0015_salty_blade",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1793696797379,
+      "tag": "0016_next_the_phantom",
+      "breakpoints": true
     }
   ]
 }

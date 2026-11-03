@@ -89,7 +89,7 @@ export function QuoteForm({ locale, t, cal }: Props) {
           </Link>
         </span>
       </label>
-      <button type="submit" disabled={status === "sending"} className="btn-primary w-full sm:w-auto">
+      <button type="submit" disabled={status === "sending"} className="btn-cta w-full sm:w-auto">
         {status === "sending" ? t.sending : t.submit}
       </button>
       {status === "success" && <p className="text-green-700">{t.success}</p>}

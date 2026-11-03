@@ -1,52 +1,55 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
-// รูปที่แสดงตอนแชร์ลิงก์ใน LINE / Facebook
+// รูปที่แสดงตอนแชร์ลิงก์ใน LINE / Facebook: รูปหน้าแรกเป็นพื้นหลัง + การ์ดโลโก้ SAANHA ฝั่งขวา
 // ใช้ข้อความภาษาอังกฤษ เพราะฟอนต์เริ่มต้นของ next/og ไม่มีตัวอักษรไทย
-export const alt = "SAANHA — China sourcing, payment & shipping to Thailand";
+// ไฟล์ใน src/assets/og/ ทำจาก logo/*.png (ตัดขอบ + พื้นโปร่งใส) และ src/assets/hero.webp (next/og อ่าน webp ไม่ได้ จึงแปลงเป็น jpg/png ไว้)
+export const alt = "SAANHA — China sourcing, supplier payment & shipping to Thailand";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-const red = "#b91c1c";
+const asset = async (name: string, mime: string) =>
+  `data:${mime};base64,${(await readFile(join(process.cwd(), "src/assets/og", name))).toString("base64")}`;
 
-export default function OgImage() {
+export default async function OgImage() {
+  const [bg, logo] = await Promise.all([asset("bg.jpg", "image/jpeg"), asset("logo.png", "image/png")]);
+
   return new ImageResponse(
     (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 96px",
-          background: "linear-gradient(180deg, #fef2f2 0%, #ffffff 100%)",
-          fontFamily: "sans-serif",
-        }}
-      >
-        <div style={{ display: "flex", flexDirection: "column", maxWidth: 640 }}>
-          <div style={{ fontSize: 96, fontWeight: 800, color: red }}>SAANHA</div>
-          <div style={{ fontSize: 44, fontWeight: 700, color: "#1f2937", marginTop: 12 }}>
-            China → Thailand, all in one place
-          </div>
-          <div style={{ fontSize: 30, color: "#4b5563", marginTop: 24 }}>
-            Sourcing · Supplier payment · CNY · Truck & sea freight
-          </div>
-        </div>
+      <div style={{ width: "100%", height: "100%", display: "flex", position: "relative", fontFamily: "sans-serif" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={bg} width={1200} height={630} style={{ position: "absolute", top: 0, left: 0 }} alt="" />
         <div
           style={{
-            width: 300,
-            height: 300,
-            borderRadius: 150,
-            background: "#fee2e2",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: 1200,
+            height: 630,
             display: "flex",
+            background: "linear-gradient(90deg, rgba(2,6,23,0) 30%, rgba(2,6,23,0.55) 100%)",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            right: 56,
+            top: 150,
+            width: 600,
+            display: "flex",
+            flexDirection: "column",
             alignItems: "center",
-            justifyContent: "center",
+            padding: "44px 40px 36px",
+            borderRadius: 32,
+            background: "#ffffff",
+            boxShadow: "0 20px 50px rgba(0,0,0,0.35)",
           }}
         >
-          <svg width="180" height="180" viewBox="0 0 24 24" fill="none" stroke={red} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z" />
-            <path d="M4 7.5l8 4.5 8-4.5M12 12v9" />
-          </svg>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={logo} width={520} height={116} alt="SAANHA" />
+          <div style={{ marginTop: 26, fontSize: 34, color: "#1f2937" }}>China → Thailand, all in one place</div>
+          <div style={{ marginTop: 12, fontSize: 22, color: "#4b5563" }}>Sourcing · Supplier payment · Shipping</div>
         </div>
       </div>
     ),

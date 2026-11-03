@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import { createOrder } from "../actions";
 import { PackageFields } from "@/components/admin/PackageFields";
 
@@ -17,7 +17,15 @@ export function CreateOrderForm({ children }: { children: React.ReactNode }) {
   const removeRow = (key: number) => setRows((r) => (r.length > 1 ? r.filter((k) => k !== key) : r));
 
   return (
-    <form action={action} className="space-y-6">
+    // ส่งผ่าน startTransition แทน action={...} — ถ้าบันทึกไม่ผ่าน (เช่น ลืมเลือกลูกค้า) ช่องที่กรอกไว้ไม่หาย
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const fd = new FormData(e.currentTarget);
+        startTransition(() => action(fd));
+      }}
+      className="space-y-6"
+    >
       <div className="grid gap-4 sm:grid-cols-2">{children}</div>
 
       <div>
@@ -26,9 +34,10 @@ export function CreateOrderForm({ children }: { children: React.ReactNode }) {
           {rows.map((key, i) => (
             <div key={key} className="space-y-2 rounded-lg border border-gray-200 p-3">
               <input type="hidden" name="itemKey" value={key} />
-              <div className="grid gap-2 sm:grid-cols-[3fr_1fr_auto]">
+              <div className="grid gap-2 sm:grid-cols-[3fr_1fr_1fr_auto]">
                 <input name="itemDescription" placeholder={`ชื่อสินค้า ${i + 1}`} className="input" required={i === 0} />
                 <input name="itemQuantity" type="number" min={0} placeholder="จำนวน" className="input" />
+                <input name="itemUnitPrice" type="number" step="0.01" min={0} placeholder="ราคาต่อหน่วย" className="input" />
                 <button
                   type="button"
                   onClick={() => removeRow(key)}

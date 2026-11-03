@@ -50,9 +50,26 @@ export const containers = sqliteTable("containers", {
   updatedAt: updatedAt(),
 });
 
+// ทะเบียนลูกค้า — ออเดอร์ผูกกับลูกค้าได้ (customer_id) แต่ยังเก็บชื่อ/เบอร์ไว้ในออเดอร์ด้วย
+// เพื่อให้หน้าติดตามพัสดุใช้เบอร์ตอนสร้างออเดอร์ และออเดอร์ที่ไม่ได้ผูกลูกค้า (เช่น นำเข้าจาก JJ) ยังใช้ได้
+export const customers = sqliteTable("customers", {
+  id: id(),
+  code: text("code").unique(), // รหัสลูกค้า เช่น C0001 (เว้นว่างตอนเพิ่ม = ระบบออกให้)
+  name: text("name").notNull(), // ชื่อที่ใช้เรียก / แสดงในออเดอร์ (เช่น ชื่อเล่น ชื่อร้าน)
+  firstName: text("first_name"), // ชื่อจริง
+  lastName: text("last_name"), // นามสกุล
+  phone: text("phone").notNull(),
+  lineId: text("line_id"),
+  address: text("address"),
+  note: text("note"),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
 export const orders = sqliteTable("orders", {
   id: id(),
   code: text("code").notNull().unique(),
+  customerId: integer("customer_id").references(() => customers.id, { onDelete: "set null" }),
   customerName: text("customer_name").notNull(),
   customerPhone: text("customer_phone").notNull(),
   customerLineId: text("customer_line_id"),
@@ -64,6 +81,9 @@ export const orders = sqliteTable("orders", {
   currency: text("currency", { enum: currencies }).notNull().default("THB"),
   totalAmount: real("total_amount"),
   depositAmount: real("deposit_amount"),
+  serviceFee: real("service_fee"), // เลิกใช้แล้ว (ค่าบริการเป็นบาท) — แทนด้วย handlingFeePct ด้านล่าง
+  // ค่าดำเนินการของร้าน คิดเป็น % ของยอดรวมค่าสินค้า (เลือกได้ 3–6%) — สกุลเงินเดียวกับค่าสินค้า
+  handlingFeePct: integer("handling_fee_pct").notNull().default(5),
   provider: text("provider"),
   externalId: text("external_id"),
   note: text("note"), // หมายเหตุที่ลูกค้าเห็นในหน้าติดตามพัสดุ
@@ -82,6 +102,7 @@ export const orderItems = sqliteTable("order_items", {
   containerId: integer("container_id").references(() => containers.id, { onDelete: "set null" }),
   description: text("description").notNull(),
   quantity: integer("quantity"),
+  unitPrice: real("unit_price"), // ราคาต่อหน่วย (สกุลเงินเดียวกับค่าสินค้าของออเดอร์) ใช้ในใบเสนอราคา
   // ยอดรวมจากพัสดุทุกแถวใน item_packages (คำนวณใหม่ทุกครั้งที่บันทึก)
   boxes: integer("boxes"),
   weightKg: real("weight_kg"),
@@ -114,13 +135,25 @@ export const itemPackages = sqliteTable("item_packages", {
   createdAt: createdAt(),
 });
 
+// ค่าตั้งค่าของระบบแบบ key/value เช่น "cny_rate" = เรทหยวน→บาทของวันนี้ (ใช้ในใบเสนอราคา)
+export const appSettings = sqliteTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: updatedAt(),
+});
+
 // พัสดุที่นำเข้าจากระบบอื่นแล้วถูกพนักงานลบทิ้ง — ซิงค์ครั้งต่อไปจะข้าม ไม่ดึงกลับมาอีก
 export const ignoredImports = sqliteTable("ignored_imports", {
   importKey: text("import_key").primaryKey(),
   createdAt: createdAt(),
 });
 
-export const ordersRelations = relations(orders, ({ many }) => ({ items: many(orderItems) }));
+export const ordersRelations = relations(orders, ({ one, many }) => ({
+  items: many(orderItems),
+  customer: one(customers, { fields: [orders.customerId], references: [customers.id] }),
+}));
+
+export const customersRelations = relations(customers, ({ many }) => ({ orders: many(orders) }));
 
 export const containersRelations = relations(containers, ({ many }) => ({ items: many(orderItems) }));
 
@@ -135,6 +168,7 @@ export const itemPackagesRelations = relations(itemPackages, ({ one }) => ({
 }));
 
 export type User = typeof users.$inferSelect;
+export type Customer = typeof customers.$inferSelect;
 export type Container = typeof containers.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;

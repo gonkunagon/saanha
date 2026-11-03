@@ -7,7 +7,7 @@ import { db } from "@/db";
 import { containers, orderItems, shippingMethods, type ShippingMethod } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { parseLocalDateTime } from "@/lib/datetime";
-import { containerStageFields, type ContainerStage } from "@/lib/stages";
+import { containerStageFields, containerStages, type ContainerStage } from "@/lib/stages";
 
 const text = (fd: FormData, key: string) => String(fd.get(key) ?? "").trim() || null;
 const method = (fd: FormData): ShippingMethod => {
@@ -54,21 +54,60 @@ export async function setContainerStage(fd: FormData) {
   refresh();
 }
 
-export async function addItemsToContainer(fd: FormData) {
+// อัปเดตสถานะทั้งตู้ในฟอร์มเดียว — ทุกออเดอร์ในตู้เปลี่ยนตาม
+// - ขั้นของตู้ (โหลด → ถึงโกดังไทย): บันทึกที่ตู้ ขั้นก่อนหน้าที่ยังว่างเติมวันเดียวกันให้
+// - กำลังจัดส่ง / จัดส่งสำเร็จ: บันทึกให้ทุกรายการในตู้ที่ยังไม่มีวันที่ (และเติมขั้นของตู้ที่ยังว่าง)
+const deliveryFields = { out_for_delivery: ["outForDeliveryAt"], delivered: ["outForDeliveryAt", "deliveredAt"] } as const;
+
+export async function setContainerStatus(fd: FormData) {
   await requireUser();
   const id = Number(fd.get("id"));
-  const itemIds = fd.getAll("itemId").map(Number).filter(Boolean);
-  if (itemIds.length === 0) return;
-  await db
-    .update(orderItems)
-    .set({ containerId: id })
-    .where(and(inArray(orderItems.id, itemIds), isNull(orderItems.containerId)));
+  const stage = String(fd.get("stage"));
+  const at = parseLocalDateTime(fd.get("at"));
+  if (!at) return;
+  const container = await db.query.containers.findFirst({ where: eq(containers.id, id) });
+  if (!container) return;
+
+  const upTo = stage in containerStageFields ? containerStages.indexOf(stage as ContainerStage) : containerStages.length - 1;
+  const fill: Partial<typeof containers.$inferInsert> = {};
+  containerStages.slice(0, upTo + 1).forEach((s) => {
+    const field = containerStageFields[s];
+    if (!container[field] || s === stage) fill[field] = at;
+  });
+
+  await db.transaction(async (tx) => {
+    await tx.update(containers).set(fill).where(eq(containers.id, id));
+    if (stage in deliveryFields) {
+      for (const field of deliveryFields[stage as keyof typeof deliveryFields]) {
+        await tx
+          .update(orderItems)
+          .set({ [field]: at })
+          .where(and(eq(orderItems.containerId, id), isNull(orderItems[field])));
+      }
+    }
+  });
   refresh();
 }
 
-export async function removeItemFromContainer(fd: FormData) {
+// เพิ่มทั้งออเดอร์เข้าตู้: รายการของออเดอร์ที่ยังไม่อยู่ตู้ไหนและยังไม่ส่งถึงลูกค้า
+export async function addOrdersToContainer(fd: FormData) {
   await requireUser();
-  await db.update(orderItems).set({ containerId: null }).where(eq(orderItems.id, Number(fd.get("itemId"))));
+  const id = Number(fd.get("id"));
+  const orderIds = fd.getAll("orderId").map(Number).filter(Boolean);
+  if (orderIds.length === 0) return;
+  await db
+    .update(orderItems)
+    .set({ containerId: id })
+    .where(and(inArray(orderItems.orderId, orderIds), isNull(orderItems.containerId), isNull(orderItems.deliveredAt)));
+  refresh();
+}
+
+export async function removeOrderFromContainer(fd: FormData) {
+  await requireUser();
+  await db
+    .update(orderItems)
+    .set({ containerId: null })
+    .where(and(eq(orderItems.orderId, Number(fd.get("orderId"))), eq(orderItems.containerId, Number(fd.get("id")))));
   refresh();
 }
 

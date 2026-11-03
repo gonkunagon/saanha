@@ -25,13 +25,13 @@ export async function saveManualCnyRate(fd: FormData) {
   refresh();
 }
 
-export async function useAutoCnyRate() {
+export async function resetToAutoCnyRate() {
   await requireUser();
   await clearManualCnyRate();
   refresh();
 }
 
-// ดึงเรทตลาดใหม่ทันที (ไม่รอครบ 1 ชม.)
+// ดึงเรทตลาดใหม่ทันที (ไม่รอครบ 15 นาที)
 export async function refreshMarketRate() {
   await requireUser();
   await getMarketRate(true);

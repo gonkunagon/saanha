@@ -3,12 +3,12 @@ import { db } from "@/db";
 import { appSettings } from "@/db/schema";
 
 // เรทเงินหยวน → บาท สำหรับใบเสนอราคา (ไม่แสดงบนเว็บสาธารณะ)
-// เรทที่ใช้ = เรทตลาด (ดึงอัตโนมัติ เก็บไว้ไม่เกิน 1 ชม.) + ส่วนบวกเพิ่มของร้าน
+// เรทที่ใช้ = เรทตลาด (ดึงอัตโนมัติ เก็บไว้ไม่เกิน 15 นาที) + ส่วนบวกเพิ่มของร้าน
 // ถ้าพนักงานตั้งเรทเองไว้ในวันนี้ ใช้เรทนั้นแทน (หมดอายุเมื่อขึ้นวันใหม่)
 const MANUAL = "cny_rate"; // เรทที่ตั้งเอง (เฉพาะวันที่ตั้ง)
 const MARKET = "cny_market"; // เรทตลาดล่าสุดที่ดึงมา
 const MARKUP = "cny_markup"; // บวกเพิ่ม บาท/หยวน (ค่าคงที่ ใช้ทุกวัน)
-const MARKET_TTL_MS = 60 * 60 * 1000;
+const MARKET_TTL_MS = 15 * 60 * 1000;
 
 async function getSetting(key: string) {
   return db.query.appSettings.findFirst({ where: eq(appSettings.key, key) });
@@ -49,7 +49,7 @@ async function fetchMarketRate(): Promise<{ rate: number; source: string } | nul
 
 export type MarketRate = { rate: number; source: string; fetchedAt: Date };
 
-// เรทตลาด (ใช้ค่าที่เก็บไว้ถ้ายังไม่เกิน 1 ชม. / ดึงไม่ได้ใช้ค่าล่าสุดที่มี)
+// เรทตลาด (ใช้ค่าที่เก็บไว้ถ้ายังไม่เกิน 15 นาที / ดึงไม่ได้ใช้ค่าล่าสุดที่มี)
 export async function getMarketRate(force = false): Promise<MarketRate | null> {
   const row = await getSetting(MARKET);
   const cached = row ? (JSON.parse(row.value) as { rate: number; source: string }) : null;

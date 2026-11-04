@@ -7,8 +7,8 @@ import { currencyLabel, formatMoney, grandTotalOf, orderBalance, paidOf } from "
 import { thaiBanks } from "@/lib/banks";
 import { addPayment, deletePayment } from "../actions";
 
-// ช่องทางที่ใช้บ่อย (พิมพ์อย่างอื่นเองได้)
-const METHOD_SUGGESTIONS = ["โอนธนาคาร", "พร้อมเพย์", "เงินสด", "Alipay", "WeChat Pay"];
+// ช่องทางการชำระ (เลือกจากรายการ)
+const PAYMENT_METHODS = ["โอนธนาคาร", "พร้อมเพย์", "เงินสด", "บัตรเครดิต / เดบิต", "Alipay", "WeChat Pay", "อื่นๆ"];
 
 type OrderMoney = Pick<Order, "id" | "currency" | "totalAmount" | "depositAmount" | "handlingFeePct">;
 
@@ -110,10 +110,9 @@ export function PaymentsCard({ order, payments, editing }: { order: OrderMoney; 
               <input name="paidAt" type="datetime-local" required defaultValue={nowLocalInputValue()} className="input bg-white" />
             </Field>
             <Field label="ช่องทางการชำระ *">
-              <input name="method" required list="payment-methods" placeholder="เช่น โอนธนาคาร, พร้อมเพย์" className="input bg-white" />
-              <datalist id="payment-methods">
-                {METHOD_SUGGESTIONS.map((m) => <option key={m} value={m} />)}
-              </datalist>
+              <select name="method" required defaultValue={PAYMENT_METHODS[0]} className="input bg-white">
+                {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
             </Field>
             <Field label="ธนาคาร">
               <select name="bank" defaultValue="" className="input bg-white">

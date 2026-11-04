@@ -2,9 +2,12 @@ import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import * as schema from "./schema";
 
-// ฐานข้อมูล Postgres บน Supabase — DATABASE_URL = connection string แบบ pooler (Session หรือ Transaction)
-const url = process.env.DATABASE_URL;
-if (!url) throw new Error("DATABASE_URL is not set (Supabase Postgres connection string in .env.local)");
+// ฐานข้อมูล Postgres บน Supabase — DATABASE_URL = connection string แบบ pooler
+if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not set (Supabase Postgres connection string in .env.local)");
+// pooler ของ Supabase พอร์ต 5432 = โหมด Session (เต็มที่ 15 clients) → บังคับใช้พอร์ต 6543 (โหมด Transaction) เสมอ
+// กันกรณีตั้งค่าใน Vercel / .env ยังเป็นพอร์ตเดิม
+export const databaseUrl = process.env.DATABASE_URL.replace(/(\.pooler\.supabase\.com):5432\//, "$1:6543/");
+const url = databaseUrl;
 
 const globalForDb = globalThis as unknown as { pg?: ReturnType<typeof postgres> };
 

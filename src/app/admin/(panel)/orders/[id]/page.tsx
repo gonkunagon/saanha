@@ -192,13 +192,16 @@ function ContainerLink({ item }: { item: ItemWithPackages }) {
   );
 }
 
-type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ edit?: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ edit?: string; pay?: string }> };
 
 // ปกติแสดงข้อมูลอย่างเดียว · กด "แก้ไข" (?edit=1) จึงเปิดฟอร์มอัปเดตสถานะ / เพิ่ม-แก้รายการ / แก้ข้อมูลออเดอร์
 export default async function OrderPage({ params, searchParams }: Props) {
   await requireUser();
   const { id } = await params;
-  const editing = (await searchParams).edit === "1";
+  const sp = await searchParams;
+  const editing = sp.edit === "1";
+  // ?pay=1 = เพิ่ม/ลบการชำระเงินในหน้าดูออเดอร์ (ไม่อยู่ในหน้าแก้ไขออเดอร์)
+  const editingPayments = sp.pay === "1";
   const order = await db.query.orders.findFirst({
     where: eq(orders.id, Number(id)),
     // รูปสินค้าโหลดแค่ id (ตัวรูปดึงผ่าน /admin/item-image/<id>)
@@ -328,7 +331,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
           </dl>
         </Card>
 
-        <PaymentsCard order={order} payments={order.payments} editing={false} />
+        <PaymentsCard order={order} payments={order.payments} editing={editingPayments} />
 
         <Card title={`รายการสินค้า (${order.items.length}) · ส่งแล้ว ${summary.deliveredCount}/${summary.itemCount}`}>
           {order.items.length === 0 ? (
@@ -417,8 +420,6 @@ export default async function OrderPage({ params, searchParams }: Props) {
           </>
         )}
       </Card>
-
-      <PaymentsCard order={order} payments={order.payments} editing />
 
       <Card title="แก้ไขข้อมูลออเดอร์">
         <form action={updateOrder} className="grid gap-4 sm:grid-cols-2">

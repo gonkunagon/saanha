@@ -11,7 +11,7 @@ const METHOD_SUGGESTIONS = ["โอนธนาคาร", "พร้อมเ�
 
 type OrderMoney = Pick<Order, "id" | "currency" | "totalAmount" | "depositAmount" | "handlingFeePct">;
 
-// การชำระเงินของออเดอร์: ยอดที่ลูกค้าโอน วันที่ชำระ ช่องทาง — หน้าแก้ไขเพิ่ม/ลบได้
+// การชำระเงินของออเดอร์: ยอดที่ลูกค้าโอน วันที่ชำระ ช่องทาง — กด "แก้ไขการชำระเงิน" (?pay=1) จึงเพิ่ม/ลบได้
 // ยอดที่โอนคนละสกุลกับออเดอร์ แสดง "คิดเป็น" สกุลออเดอร์ด้วย (ใช้หักยอดค้างชำระ)
 export function PaymentsCard({ order, payments, editing }: { order: OrderMoney; payments: Payment[]; editing: boolean }) {
   const sorted = [...payments].sort((a, b) => a.paidAt.getTime() - b.paidAt.getTime());
@@ -21,19 +21,17 @@ export function PaymentsCard({ order, payments, editing }: { order: OrderMoney; 
   const balance = orderBalance(order, payments);
 
   return (
-    // id="payments" ให้ปุ่มแก้ไขเลื่อนลงมาที่ส่วนนี้ในหน้าแก้ไขเลย
+    // id="payments" ให้กดปุ่มแล้วหน้าเลื่อนมาที่ส่วนนี้เลย
     <div id="payments" className="scroll-mt-4">
       <Card
         title={`การชำระเงิน (${sorted.length})`}
         actions={
-          !editing && (
-            <Link
-              href={`/admin/orders/${order.id}?edit=1#payments`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-brand-600 px-3 py-1.5 text-sm font-medium text-brand-600 hover:bg-brand-50"
-            >
-              ✏️ แก้ไขการชำระเงิน
-            </Link>
-          )
+          <Link
+            href={editing ? `/admin/orders/${order.id}#payments` : `/admin/orders/${order.id}?pay=1#payments`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-brand-600 px-3 py-1.5 text-sm font-medium text-brand-600 hover:bg-brand-50"
+          >
+            {editing ? "✓ เสร็จแล้ว" : "✏️ แก้ไขการชำระเงิน"}
+          </Link>
         }
       >
         {sorted.length === 0 ? (

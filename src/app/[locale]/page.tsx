@@ -44,11 +44,12 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           priority
           sizes="100vw"
           placeholder="blur"
-          className="object-cover object-[6%_center] md:object-top"
+          className="object-cover object-[6%_center] md:object-center"
         />
         {/* ไล่เงาทับภาพ ให้ตัวหนังสืออ่านง่าย */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-950/50 to-transparent md:bg-transparent md:bg-gradient-to-l md:from-slate-950/85 md:via-slate-950/45 md:to-transparent" />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-4 pt-14 pb-56 md:grid-cols-2 md:py-32">
+        {/* จอกว้าง: สูงตามสัดส่วนภาพ 16:9 (ไม่เกินความสูงจอ) ภาพจะไม่ถูกตัดเหลือครึ่งเดียว */}
+        <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-4 pt-14 pb-56 md:min-h-[min(56.25vw,calc(100svh-4rem))] md:grid-cols-2 md:content-center md:py-20">
           <div className="text-center md:col-start-2 md:text-left [text-shadow:0_2px_12px_rgb(0_0_0/0.45)]">
             {/* ภาษาไทยไม่มีช่องว่างระหว่างคำ จึงห่อแต่ละวลีไว้ไม่ให้ตัดกลางวลี */}
             <h1 className="text-3xl leading-tight font-bold md:text-5xl">

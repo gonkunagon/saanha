@@ -109,7 +109,12 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                   <ul className="divide-y divide-gray-50 px-4 text-sm">
                     {o.items.map((i) => (
                       <li key={i.id} className="flex flex-wrap items-center gap-x-4 py-2">
-                        <span className="flex-1">{i.description}</span>
+                        <span className="flex-1">
+                          {i.description}
+                          {i.productUrl && (
+                            <a href={i.productUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-xs text-brand-700 hover:underline">🔗 ลิงก์สินค้า</a>
+                          )}
+                        </span>
                         <span className="w-20 text-right text-gray-600">{i.quantity != null ? `× ${i.quantity}` : "-"}</span>
                         <span className="w-36 text-right text-gray-600">{i.unitPrice != null ? `@ ${formatMoney(i.unitPrice, o.currency)}` : ""}</span>
                         <span className="w-28 text-right text-xs text-gray-500">{i.container ? `ตู้ ${i.container.code}` : "ยังไม่เข้าตู้"}</span>

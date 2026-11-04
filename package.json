@@ -9,8 +9,9 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "user:create": "tsx scripts/create-user.ts",
-    "db:clear-orders": "tsx scripts/clear-orders.ts"
+    "user:create": "tsx --env-file=.env.local scripts/create-user.ts",
+    "db:clear-orders": "tsx scripts/clear-orders.ts",
+    "db:copy-from-sqlite": "tsx scripts/copy-sqlite-to-supabase.ts"
   },
   "dependencies": {
     "@libsql/client": "^0.18.0",
@@ -18,6 +19,7 @@
     "gray-matter": "^4.0.3",
     "marked": "^16.0.0",
     "next": "^16.0.0",
+    "postgres": "^3.4.9",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

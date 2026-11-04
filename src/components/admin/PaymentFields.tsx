@@ -5,6 +5,7 @@ import { balanceOf, currencyLabel, formatMoney, grandTotalOf, handlingFeeOf, han
 
 type Props = {
   shopName?: string | null;
+  hideShopOnQuote?: boolean;
   currency?: CurrencyCode;
   totalAmount?: number | null;
   depositAmount?: number | null;
@@ -12,7 +13,7 @@ type Props = {
 };
 
 // ร้านค้า ค่าสินค้า (ยอดเต็ม / มัดจำ / ค้างชำระ คำนวณให้ทันทีที่พิมพ์) และค่าดำเนินการของร้าน (% ของค่าสินค้า)
-export function PaymentFields({ shopName, currency: initialCurrency = "THB", totalAmount, depositAmount, handlingFeePct = 5 }: Props) {
+export function PaymentFields({ shopName, hideShopOnQuote = false, currency: initialCurrency = "THB", totalAmount, depositAmount, handlingFeePct = 5 }: Props) {
   const [currency, setCurrency] = useState<CurrencyCode>(initialCurrency);
   const [total, setTotal] = useState(totalAmount == null ? "" : String(totalAmount));
   const [deposit, setDeposit] = useState(depositAmount == null ? "" : String(depositAmount));
@@ -24,10 +25,23 @@ export function PaymentFields({ shopName, currency: initialCurrency = "THB", tot
 
   return (
     <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2 lg:grid-cols-4">
-      <label className="block sm:col-span-2 lg:col-span-4">
-        <span className="mb-1 block text-sm text-gray-600">ชื่อร้านค้า</span>
-        <input name="shopName" defaultValue={shopName ?? ""} className="input" autoComplete="off" />
-      </label>
+      <div className="sm:col-span-2 lg:col-span-4">
+        <label className="block">
+          <span className="mb-1 block text-sm text-gray-600">ชื่อร้านค้า</span>
+          <input name="shopName" defaultValue={shopName ?? ""} className="input" autoComplete="off" />
+        </label>
+        {/* ใช้ร้านที่เราหามาเอง: ซ่อนชื่อร้านในใบเสนอราคา กันลูกค้าไปติดต่อร้านตรง — ช่องติ๊กกรอบแดงให้เห็นชัด */}
+        <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-brand-600">
+          <input
+            type="checkbox"
+            name="hideShopOnQuote"
+            value="1"
+            defaultChecked={hideShopOnQuote}
+            className="h-4 w-4 shrink-0 cursor-pointer appearance-none rounded border-2 border-brand-600 bg-white bg-center bg-no-repeat checked:bg-brand-600 checked:bg-[url('data:image/svg+xml;utf8,<svg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2016%2016%22><path%20d=%22M3.5%208.5l3%203%206-7%22%20fill=%22none%22%20stroke=%22white%22%20stroke-width=%222.2%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22/></svg>')]"
+          />
+          ไม่แสดงร้านค้าในใบเสนอราคา
+        </label>
+      </div>
       <label className="block">
         <span className="mb-1 block text-sm text-gray-600">ค่าสินค้า (ยอดเต็ม)</span>
         {/* .input กว้างเต็มช่องเสมอ จึงคุมความกว้างด้วย span ที่ครอบ */}

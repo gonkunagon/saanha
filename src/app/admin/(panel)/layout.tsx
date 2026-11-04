@@ -23,7 +23,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
             <Logo markClassName="text-accent-400" textClassName="text-white" />
             <span className="text-sm text-accent-400">หลังบ้าน</span>
           </Link>
-          <nav className="order-3 flex w-full gap-4 overflow-x-auto text-sm md:order-none md:w-auto">
+          <nav className="order-3 flex w-full gap-4 overflow-x-auto text-sm [scrollbar-width:none] md:order-none md:w-auto [&::-webkit-scrollbar]:hidden">
             {links.map((n) => (
               <Link key={n.href} href={n.href} className="whitespace-nowrap hover:text-white">
                 {n.label}

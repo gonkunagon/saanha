@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { desc, like, or } from "drizzle-orm";
+import { desc, ilike, or } from "drizzle-orm";
 import { db } from "@/db";
 import { orders } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
@@ -21,13 +21,13 @@ export default async function OrdersPage({ searchParams }: Props) {
   const list = await db.query.orders.findMany({
     where: term
       ? or(
-          like(orders.code, `%${term}%`),
-          like(orders.customerName, `%${term}%`),
-          like(orders.customerPhone, `%${term}%`),
-          like(orders.externalId, `%${term}%`),
-          like(orders.purchaseOrderNo, `%${term}%`),
-          like(orders.shopName, `%${term}%`),
-          like(orders.intlTrackingNo, `%${term}%`),
+          ilike(orders.code, `%${term}%`),
+          ilike(orders.customerName, `%${term}%`),
+          ilike(orders.customerPhone, `%${term}%`),
+          ilike(orders.externalId, `%${term}%`),
+          ilike(orders.purchaseOrderNo, `%${term}%`),
+          ilike(orders.shopName, `%${term}%`),
+          ilike(orders.intlTrackingNo, `%${term}%`),
         )
       : undefined,
     orderBy: desc(orders.createdAt),
@@ -121,12 +121,18 @@ export default async function OrdersPage({ searchParams }: Props) {
                   <td className="py-2 pr-4 text-gray-600">{o.externalId ?? "-"}</td>
                   <td className="py-2 pr-4 text-gray-500">{formatThaiDateTime(o.createdAt)}</td>
                   <td className="py-2 text-right">
+                    {/* ไอคอนใบเสนอราคา (เอกสาร) — ชี้ค้างจะขึ้นชื่อปุ่ม */}
                     <Link
                       href={`/admin/quote/${o.id}`}
                       target="_blank"
-                      className="inline-flex items-center rounded-lg border border-brand-600 px-3 py-1.5 text-sm font-medium whitespace-nowrap text-brand-600 hover:bg-brand-50"
+                      title="สร้างใบเสนอราคา"
+                      aria-label={`สร้างใบเสนอราคา ${o.code}`}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-brand-600 hover:bg-brand-50"
                     >
-                      สร้างใบเสนอราคา
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-6 w-6">
+                        <path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z" />
+                        <path d="M14 3v5h5M9 9h1M9 13h6M9 17h6" />
+                      </svg>
                     </Link>
                   </td>
                 </tr>

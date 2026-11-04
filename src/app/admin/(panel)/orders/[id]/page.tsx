@@ -5,24 +5,26 @@ import { db } from "@/db";
 import { containers, orderItems, orders } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { containerStageOf, stageOfItem, summarizeOrder, type ItemWithContainer } from "@/lib/orders";
-import { formatThaiDateTime, nowLocalInputValue, toLocalInputValue } from "@/lib/datetime";
+import { formatThaiDateTime, nowLocalInputValue } from "@/lib/datetime";
 import { itemStageDates, itemStages, optionalStages, stageIndex, stageLabelsTh, type ItemStage } from "@/lib/stages";
 import { Card, Field, StageBadge, methodLabel } from "@/components/admin/ui";
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { OrderFields } from "../OrderFields";
 import { listCustomersForPicker } from "@/lib/customers";
-import { addItem, deleteItem, updateItem, updateItemPrice, updateOrder } from "../actions";
+import { deleteItem, updateItem, updateOrder } from "../actions";
+import { ItemPriceForm } from "./ItemPriceForm";
 import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
 import { BalanceText } from "@/components/admin/ui";
 import { currencyLabel, formatMoney, handlingFeeOf, type CurrencyCode } from "@/lib/money";
 import { StageUpdateForm, type ContainerOption } from "./StageUpdateForm";
 import { PackageFields } from "@/components/admin/PackageFields";
+import { deleteItemImage, uploadItemImages } from "../image-actions";
 import type { ItemPackage } from "@/db/schema";
 
 const STAGE_FORM = "stage-form";
 
 // ฟอร์มแก้ไขรายละเอียดรายการ (ซ่อนไว้ กดเปิดเมื่อต้องแก้ข้อมูลผิด)
-type ItemWithPackages = ItemWithContainer & { packages: ItemPackage[] };
+type ItemWithPackages = ItemWithContainer & { packages: ItemPackage[]; images: { id: number }[] };
 
 function ItemEditForm({ item, containerOptions }: { item: ItemWithPackages; containerOptions: ContainerOption[] }) {
   return (
@@ -34,6 +36,12 @@ function ItemEditForm({ item, containerOptions }: { item: ItemWithPackages; cont
         </Field>
         <Field label="จำนวน">
           <input name="quantity" type="number" min={0} defaultValue={item.quantity ?? ""} className="input bg-white" />
+        </Field>
+        <Field label="ลิงก์สินค้า (ใช้ภายใน ลูกค้าไม่เห็น)" className="sm:col-span-2 lg:col-span-4">
+          <input name="productUrl" type="url" defaultValue={item.productUrl ?? ""} className="input bg-white" placeholder="https://detail.1688.com/offer/..." />
+        </Field>
+        <Field label="รายละเอียด / ขนาด / สี (แสดงในหน้ารายละเอียดสินค้าของใบเสนอราคา)" className="sm:col-span-2 lg:col-span-4">
+          <textarea name="spec" rows={2} defaultValue={item.spec ?? ""} className="input bg-white" placeholder="เช่น ขนาด 30 ซม. · สีขาว · 220V" />
         </Field>
         <Field label="ราคาต่อหน่วย">
           <input name="unitPrice" type="number" step="0.01" min={0} defaultValue={item.unitPrice ?? ""} className="input bg-white" />
@@ -53,28 +61,58 @@ function ItemEditForm({ item, containerOptions }: { item: ItemWithPackages; cont
             ))}
           </select>
         </Field>
-        <Field label="อยู่ระหว่างการผลิต">
-          <input name="productionAt" type="datetime-local" defaultValue={toLocalInputValue(item.productionAt)} className="input bg-white" />
-        </Field>
-        <Field label="ถึงโกดังจีน">
-          <input name="receivedAt" type="datetime-local" defaultValue={toLocalInputValue(item.receivedAt)} className="input bg-white" />
-        </Field>
-        <Field label="ส่งออกให้ลูกค้า">
-          <input name="outForDeliveryAt" type="datetime-local" defaultValue={toLocalInputValue(item.outForDeliveryAt)} className="input bg-white" />
-        </Field>
-        <Field label="จัดส่งสำเร็จ">
-          <input name="deliveredAt" type="datetime-local" defaultValue={toLocalInputValue(item.deliveredAt)} className="input bg-white" />
-        </Field>
-        <Field label="เลขพัสดุขนส่งในไทย">
-          <input name="domesticTracking" defaultValue={item.domesticTracking ?? ""} className="input bg-white" />
-        </Field>
       </div>
       <div className="mt-3 flex items-center justify-between">
         <button className="rounded-lg border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-100">บันทึกการแก้ไข</button>
         <ConfirmButton formAction={deleteItem} message={`ลบรายการ "${item.description}"?`}>ลบรายการ</ConfirmButton>
       </div>
-      <p className="mt-2 text-xs text-gray-500">วันที่ปิดตู้ → ถึงโกดังไทย เป็นของตู้ แก้ได้ที่หน้าตู้</p>
+      <p className="mt-2 text-xs text-gray-500">
+        วันที่ของแต่ละสถานะ (ผลิต / ถึงโกดังจีน / ส่งลูกค้า) อัปเดตที่กล่อง &quot;อัปเดตสถานะรายการที่เลือก&quot; · ปิดตู้ → ถึงโกดังไทย แก้ได้ที่หน้าตู้
+      </p>
     </form>
+  );
+}
+
+// รูปสินค้าในโหมดแก้ไข: ดู / ลบ / อัปโหลดเพิ่ม (ใช้ในหน้ารายละเอียดสินค้าของใบเสนอราคา)
+function ItemPhotos({ item }: { item: ItemWithPackages }) {
+  return (
+    <div className="mt-2 pl-8">
+      <div className="flex flex-wrap items-end gap-2">
+        {item.images.map((img) => (
+          <form key={img.id} action={deleteItemImage} className="relative">
+            <input type="hidden" name="imageId" value={img.id} />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`/admin/item-image/${img.id}`} alt="" className="h-20 w-20 rounded-lg border border-gray-200 object-cover" />
+            <ConfirmButton
+              message="ลบรูปนี้?"
+              className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-sm text-brand-600 shadow ring-1 ring-gray-200 hover:bg-brand-50"
+            >
+              ✕
+            </ConfirmButton>
+          </form>
+        ))}
+        {item.images.length < 6 && (
+          <form action={uploadItemImages} className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed border-gray-300 px-3 py-2">
+            <input type="hidden" name="itemId" value={item.id} />
+            <input name="images" type="file" accept="image/*" multiple required className="max-w-52 text-xs file:mr-2 file:rounded file:border-0 file:bg-brand-50 file:px-2 file:py-1 file:text-brand-700" />
+            <button className="rounded border border-brand-600 px-2 py-1 text-xs font-medium text-brand-600 hover:bg-brand-50">📷 อัปโหลดรูปสินค้า</button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ลิงก์หน้าสินค้า (ภายใน) เปิดแท็บใหม่ — แสดงแค่ชื่อเว็บให้สั้น
+function ProductLink({ href }: { href: string }) {
+  let host = href;
+  try {
+    host = new URL(href).hostname.replace(/^www\./, "");
+  } catch {}
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-brand-700 hover:underline">
+      🔗 ลิงก์สินค้า ({host})
+    </a>
   );
 }
 
@@ -128,6 +166,16 @@ function ItemDetails({ item, currency, showPrice = true }: { item: ItemWithPacka
           ))}
         </ul>
       )}
+      {item.spec && <p className="mt-1 text-sm whitespace-pre-line text-gray-700">{item.spec}</p>}
+      {item.productUrl && <ProductLink href={item.productUrl} />}
+      {item.images.length > 0 && (
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
+          {item.images.map((img) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <a key={img.id} href={`/admin/item-image/${img.id}`} target="_blank"><img src={`/admin/item-image/${img.id}`} alt="" className="h-14 w-14 rounded border border-gray-200 object-cover" /></a>
+          ))}
+        </div>
+      )}
       {item.domesticTracking && <p className="mt-1 text-xs text-gray-500">เลขพัสดุในไทย: {item.domesticTracking}</p>}
     </>
   );
@@ -152,7 +200,8 @@ export default async function OrderPage({ params, searchParams }: Props) {
   const editing = (await searchParams).edit === "1";
   const order = await db.query.orders.findFirst({
     where: eq(orders.id, Number(id)),
-    with: { items: { with: { container: true, packages: true } } },
+    // รูปสินค้าโหลดแค่ id (ตัวรูปดึงผ่าน /admin/item-image/<id>)
+    with: { items: { with: { container: true, packages: true, images: { columns: { id: true } } } } },
   });
   if (!order) notFound();
   const customers = await listCustomersForPicker();
@@ -213,7 +262,12 @@ export default async function OrderPage({ params, searchParams }: Props) {
       </div>
       {!order.customerPhone && (
         <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          ⚠️ ยังไม่มีเบอร์โทรลูกค้า ลูกค้าจะเช็คสถานะเองไม่ได้ — กด &quot;แก้ไข&quot; แล้วเลือกลูกค้าจากทะเบียน
+          ⚠️ ยังไม่มีเบอร์โทรลูกค้า ลูกค้าจะเช็คสถานะเองไม่ได้ —{" "}
+          {order.customerId ? (
+            <Link href={`/admin/customers/${order.customerId}`} className="font-medium underline">เพิ่มเบอร์ที่หน้าลูกค้า</Link>
+          ) : (
+            <>กด &quot;แก้ไข&quot; แล้วเลือกลูกค้าจากทะเบียน</>
+          )}
         </p>
       )}
     </div>
@@ -250,7 +304,11 @@ export default async function OrderPage({ params, searchParams }: Props) {
               {order.items.length > 0 && order.items.every((i) => !i.container) && <span className="text-gray-400">ยังไม่เข้าตู้</span>}
             </Info>
             <Info label="เลขคำสั่งซื้อ">{order.purchaseOrderNo}</Info>
-            <Info label="ร้านค้า">{order.shopName}</Info>
+            <Info label="ร้านค้า">
+              {order.shopName}
+              {order.shopName && order.hideShopOnQuote && <span className="ml-1 text-xs text-amber-700">(ไม่แสดงในใบเสนอราคา)</span>}
+            </Info>
+            <Info label="Platform (ภายใน)">{order.platform}</Info>
             <Info label="ค่าสินค้า (ยอดเต็ม)">{order.totalAmount != null && formatMoney(order.totalAmount, order.currency)}</Info>
             <Info label="มัดจำค่าสินค้า">{order.depositAmount != null && formatMoney(order.depositAmount, order.currency)}</Info>
             <Info label={`ค่าดำเนินการ ${order.handlingFeePct}%`}>{order.totalAmount != null && formatMoney(handlingFeeOf(order.totalAmount, order.handlingFeePct), order.currency)}</Info>
@@ -319,33 +377,21 @@ export default async function OrderPage({ params, searchParams }: Props) {
                       />
                       <div className="min-w-48 flex-1"><ItemDetails item={item} currency={order.currency} showPrice={false} /></div>
                       {/* แก้ราคาต่อหน่วยได้ตรงนี้เลย ไม่ต้องเปิด "แก้ไขรายละเอียด" */}
-                      <form action={updateItemPrice} className="flex items-center gap-1.5">
-                        <input type="hidden" name="itemId" value={item.id} />
-                        <label className="text-xs text-gray-500" htmlFor={`price-${item.id}`}>ราคา/หน่วย</label>
-                        <span className="w-28">
-                          <input
-                            id={`price-${item.id}`}
-                            name="unitPrice"
-                            type="number"
-                            step="0.01"
-                            min={0}
-                            defaultValue={item.unitPrice ?? ""}
-                            placeholder={currencyLabel[order.currency]}
-                            className="input py-1 text-sm"
-                          />
-                        </span>
-                        <button className="rounded border border-brand-600 px-2 py-1 text-xs font-medium text-brand-600 hover:bg-brand-50">บันทึก</button>
-                      </form>
+                      <ItemPriceForm itemId={item.id} unitPrice={item.unitPrice} placeholder={currencyLabel[order.currency]} />
                       <div className="w-32 text-sm"><ContainerLink item={item} /></div>
                       <div className="w-56 text-right">
                         <StageBadge stage={stage} />
                         <p className="mt-0.5 text-xs text-gray-500">{formatThaiDateTime(at)}</p>
                       </div>
                     </div>
-                    <details className="mt-1 pl-8">
-                      <summary className="cursor-pointer text-xs text-gray-500 hover:text-brand-600">แก้ไขรายละเอียด</summary>
+                    <details className="group mt-2 pl-8">
+                      {/* ทำเป็นปุ่มขอบแดง ให้เห็นชัดว่ากดแก้ไขได้ */}
+                      <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-lg border border-brand-600 px-3 py-1.5 text-sm font-medium text-brand-600 select-none hover:bg-brand-50 [&::-webkit-details-marker]:hidden">
+                        ✏️ <span className="group-open:hidden">แก้ไขรายละเอียด</span><span className="hidden group-open:inline">ปิดการแก้ไข</span>
+                      </summary>
                       <ItemEditForm item={item} containerOptions={containerOptions} />
                     </details>
+                    <ItemPhotos item={item} />
                   </li>
                 );
               })}
@@ -363,24 +409,9 @@ export default async function OrderPage({ params, searchParams }: Props) {
             />
           </>
         )}
-
-        <form action={addItem} className="mt-6 border-t border-gray-100 pt-4">
-          <input type="hidden" name="orderId" value={order.id} />
-          <p className="mb-2 text-sm font-medium">+ เพิ่มรายการสินค้า</p>
-          <div className="space-y-2">
-            <div className="grid gap-2 sm:grid-cols-[3fr_1fr_1fr]">
-              <input name="description" required placeholder="ชื่อสินค้า *" className="input" />
-              <input name="quantity" type="number" min={0} placeholder="จำนวน" className="input" />
-              <input name="unitPrice" type="number" step="0.01" min={0} placeholder="ราคาต่อหน่วย" className="input" />
-            </div>
-            <PackageFields />
-            <button className="btn-primary">เพิ่มรายการ</button>
-          </div>
-          <p className="mt-2 text-xs text-gray-500">สินค้าชิ้นเดียวกันที่แบ่งไปหลายตู้ ให้เพิ่มเป็นหลายรายการ</p>
-        </form>
       </Card>
 
-      <Card title="แก้ไขข้อมูลลูกค้าและออเดอร์">
+      <Card title="แก้ไขข้อมูลออเดอร์">
         <form action={updateOrder} className="grid gap-4 sm:grid-cols-2">
           <input type="hidden" name="id" value={order.id} />
           <OrderFields order={order} customers={customers} />

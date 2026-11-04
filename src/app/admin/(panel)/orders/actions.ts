@@ -4,7 +4,7 @@ import { and, eq, inArray, isNotNull, type SQL } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { containers, ignoredImports, itemPackages, orderItems, orders, shippingMethods, type ShippingMethod } from "@/db/schema";
+import { containers, ignoredImports, itemImages, itemPackages, orderItems, orders, shippingMethods, type ShippingMethod } from "@/db/schema";
 import { findCustomerById } from "@/lib/customers";
 import { clampHandlingPct } from "@/lib/money";
 import { requireUser } from "@/lib/auth";
@@ -30,6 +30,11 @@ const method = (fd: FormData): ShippingMethod => {
   return (shippingMethods as readonly string[]).includes(m) ? (m as ShippingMethod) : "truck";
 };
 const refresh = () => revalidatePath("/admin", "layout");
+// ลิงก์หน้าสินค้า: รับเฉพาะ http(s) — ไม่ใช่ลิงก์ = ไม่บันทึก
+const url = (v: FormDataEntryValue | null | undefined) => {
+  const s = str(v);
+  return s && /^https?:\/\//i.test(s) ? s : null;
+};
 
 // พิมพ์เลขตู้ได้เลย ถ้ายังไม่มีตู้นี้ ระบบสร้างให้อัตโนมัติ
 async function findOrCreateContainer(tx: Tx, code: string, m: ShippingMethod) {
@@ -108,6 +113,8 @@ function orderFields(fd: FormData) {
     purchaseOrderNo: text(fd, "purchaseOrderNo"),
     intlTrackingNo: text(fd, "intlTrackingNo"),
     shopName: text(fd, "shopName"),
+    hideShopOnQuote: fd.get("hideShopOnQuote") === "1",
+    platform: text(fd, "platform"),
     currency: fd.get("currency") === "CNY" ? ("CNY" as const) : ("THB" as const),
     totalAmount: toNum(fd.get("totalAmount")),
     depositAmount: toNum(fd.get("depositAmount")),
@@ -143,6 +150,7 @@ export async function createOrder(_prev: string | null, fd: FormData): Promise<s
       return {
         item: {
           description: str(descriptions[i]) ?? "",
+          productUrl: url(fd.getAll("itemProductUrl")[i]),
           quantity: toInt(fd.getAll("itemQuantity")[i]),
           unitPrice: toNum(fd.getAll("itemUnitPrice")[i]),
           ...packageTotals(packages),
@@ -196,6 +204,7 @@ export async function deleteOrder(fd: FormData) {
     const itemIds = tx.select({ id: orderItems.id }).from(orderItems).where(eq(orderItems.orderId, id));
     await rememberDeletedImports(tx, inArray(itemPackages.itemId, itemIds));
     await tx.delete(itemPackages).where(inArray(itemPackages.itemId, itemIds));
+    await tx.delete(itemImages).where(inArray(itemImages.itemId, itemIds));
     await tx.delete(orderItems).where(eq(orderItems.orderId, id));
     await tx.delete(orders).where(eq(orders.id, id));
   });
@@ -216,6 +225,8 @@ export async function addItem(fd: FormData) {
       .values({
         orderId: Number(fd.get("orderId")),
         description,
+        spec: text(fd, "spec"),
+        productUrl: url(fd.get("productUrl")),
         quantity: toInt(fd.get("quantity")),
         unitPrice: toNum(fd.get("unitPrice")),
         ...packageTotals(packages),
@@ -250,15 +261,13 @@ export async function updateItem(fd: FormData) {
       .update(orderItems)
       .set({
         description,
+        spec: text(fd, "spec"),
+        productUrl: url(fd.get("productUrl")),
         quantity: toInt(fd.get("quantity")),
         unitPrice: toNum(fd.get("unitPrice")),
         ...packageTotals(packages),
         containerId: container?.id ?? null,
-        productionAt: parseLocalDateTime(fd.get("productionAt")),
-        receivedAt: parseLocalDateTime(fd.get("receivedAt")),
-        outForDeliveryAt: parseLocalDateTime(fd.get("outForDeliveryAt")),
-        deliveredAt: parseLocalDateTime(fd.get("deliveredAt")),
-        domesticTracking: text(fd, "domesticTracking"),
+        // วันที่ของสถานะ + เลขพัสดุในไทย ไม่แก้ที่นี่ (อัปเดตผ่าน applyStage) — ไม่ส่งมา = คงค่าเดิม
       })
       .where(eq(orderItems.id, itemId));
   });
@@ -271,6 +280,7 @@ export async function deleteItem(fd: FormData) {
   await db.transaction(async (tx) => {
     await rememberDeletedImports(tx, eq(itemPackages.itemId, itemId));
     await tx.delete(itemPackages).where(eq(itemPackages.itemId, itemId));
+    await tx.delete(itemImages).where(eq(itemImages.itemId, itemId));
     await tx.delete(orderItems).where(eq(orderItems.id, itemId));
   });
   refresh();

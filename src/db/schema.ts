@@ -1,4 +1,4 @@
-import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { boolean, customType, doublePrecision, integer, pgTable, text, timestamp as pgTimestamp } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // โครงสร้างข้อมูล
@@ -9,8 +9,10 @@ import { relations } from "drizzle-orm";
 // - สถานะรับเข้าโกดังจีน / ส่งให้ลูกค้า อยู่ที่รายการสินค้า (ส่งบางส่วนได้)
 // - provider + external_id เก็บไว้เชื่อมกับบริษัทขนส่งที่รับงานต่อ (อนาคตจะดึงสถานะจาก API ของเขา)
 
-const id = () => integer("id").primaryKey({ autoIncrement: true });
-const timestamp = (name: string) => integer(name, { mode: "timestamp" });
+const id = () => integer("id").primaryKey().generatedByDefaultAsIdentity();
+const timestamp = (name: string) => pgTimestamp(name, { withTimezone: true });
+// เก็บไฟล์รูป (bytea ของ Postgres) เป็น Buffer
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => "bytea" });
 const createdAt = () => timestamp("created_at").notNull().$defaultFn(() => new Date());
 const updatedAt = () =>
   timestamp("updated_at").notNull().$defaultFn(() => new Date()).$onUpdateFn(() => new Date());
@@ -25,17 +27,17 @@ export type Currency = (typeof currencies)[number];
 export const userRoles = ["admin", "staff"] as const;
 export type UserRole = (typeof userRoles)[number];
 
-export const users = sqliteTable("users", {
+export const users = pgTable("users", {
   id: id(),
   username: text("username").notNull().unique(),
   name: text("name").notNull(),
   passwordHash: text("password_hash").notNull(),
   role: text("role", { enum: userRoles }).notNull().default("staff"),
-  active: integer("active", { mode: "boolean" }).notNull().default(true),
+  active: boolean("active").notNull().default(true),
   createdAt: createdAt(),
 });
 
-export const containers = sqliteTable("containers", {
+export const containers = pgTable("containers", {
   id: id(),
   code: text("code").notNull().unique(),
   method: text("method", { enum: shippingMethods }).notNull(),
@@ -52,7 +54,7 @@ export const containers = sqliteTable("containers", {
 
 // ทะเบียนลูกค้า — ออเดอร์ผูกกับลูกค้าได้ (customer_id) แต่ยังเก็บชื่อ/เบอร์ไว้ในออเดอร์ด้วย
 // เพื่อให้หน้าติดตามพัสดุใช้เบอร์ตอนสร้างออเดอร์ และออเดอร์ที่ไม่ได้ผูกลูกค้า (เช่น นำเข้าจาก JJ) ยังใช้ได้
-export const customers = sqliteTable("customers", {
+export const customers = pgTable("customers", {
   id: id(),
   code: text("code").unique(), // รหัสลูกค้า เช่น C0001 (เว้นว่างตอนเพิ่ม = ระบบออกให้)
   name: text("name").notNull(), // ชื่อที่ใช้เรียก / แสดงในออเดอร์ (เช่น ชื่อเล่น ชื่อร้าน)
@@ -66,7 +68,7 @@ export const customers = sqliteTable("customers", {
   updatedAt: updatedAt(),
 });
 
-export const orders = sqliteTable("orders", {
+export const orders = pgTable("orders", {
   id: id(),
   code: text("code").notNull().unique(),
   customerId: integer("customer_id").references(() => customers.id, { onDelete: "set null" }),
@@ -77,11 +79,14 @@ export const orders = sqliteTable("orders", {
   intlTrackingNo: text("intl_tracking_no"), // Tracking no. ขนส่งจีน → ไทย (ใช้ภายใน ไม่ส่งไปหน้าติดตามพัสดุของลูกค้า)
   purchaseOrderNo: text("purchase_order_no"), // เลขคำสั่งซื้อ เช่น เลขออเดอร์จากร้านค้า 1688 / Taobao หรือเลข PO ของลูกค้า
   shopName: text("shop_name"), // ร้านค้าที่สั่งซื้อ
+  // ไม่แสดงชื่อร้านในใบเสนอราคา (ร้านที่เราหามาเอง กันลูกค้าไปติดต่อร้านตรง)
+  hideShopOnQuote: boolean("hide_shop_on_quote").notNull().default(false),
+  platform: text("platform"), // แพลตฟอร์มที่สั่ง เช่น 1688, Taobao, Alibaba
   // ยอดเงินของคำสั่งซื้อ — ยอดค้างชำระ = ยอดเต็ม − มัดจำ (คำนวณตอนแสดงผล ไม่เก็บซ้ำ)
   currency: text("currency", { enum: currencies }).notNull().default("THB"),
-  totalAmount: real("total_amount"),
-  depositAmount: real("deposit_amount"),
-  serviceFee: real("service_fee"), // เลิกใช้แล้ว (ค่าบริการเป็นบาท) — แทนด้วย handlingFeePct ด้านล่าง
+  totalAmount: doublePrecision("total_amount"),
+  depositAmount: doublePrecision("deposit_amount"),
+  serviceFee: doublePrecision("service_fee"), // เลิกใช้แล้ว (ค่าบริการเป็นบาท) — แทนด้วย handlingFeePct ด้านล่าง
   // ค่าดำเนินการของร้าน คิดเป็น % ของยอดรวมค่าสินค้า (เลือกได้ 0–8%) — สกุลเงินเดียวกับค่าสินค้า
   handlingFeePct: integer("handling_fee_pct").notNull().default(5),
   provider: text("provider"),
@@ -94,19 +99,21 @@ export const orders = sqliteTable("orders", {
   updatedAt: updatedAt(),
 });
 
-export const orderItems = sqliteTable("order_items", {
+export const orderItems = pgTable("order_items", {
   id: id(),
   orderId: integer("order_id")
     .notNull()
     .references(() => orders.id, { onDelete: "cascade" }),
   containerId: integer("container_id").references(() => containers.id, { onDelete: "set null" }),
   description: text("description").notNull(),
+  spec: text("spec"), // รายละเอียด / ขนาด / สี ของสินค้า (แสดงในหน้ารายละเอียดสินค้าของใบเสนอราคา)
+  productUrl: text("product_url"), // ลิงก์หน้าสินค้า (1688 / Taobao ฯลฯ) ใช้ภายใน เผื่อลูกค้าสั่งซ้ำ — ลูกค้าไม่เห็น
   quantity: integer("quantity"),
-  unitPrice: real("unit_price"), // ราคาต่อหน่วย (สกุลเงินเดียวกับค่าสินค้าของออเดอร์) ใช้ในใบเสนอราคา
+  unitPrice: doublePrecision("unit_price"), // ราคาต่อหน่วย (สกุลเงินเดียวกับค่าสินค้าของออเดอร์) ใช้ในใบเสนอราคา
   // ยอดรวมจากพัสดุทุกแถวใน item_packages (คำนวณใหม่ทุกครั้งที่บันทึก)
   boxes: integer("boxes"),
-  weightKg: real("weight_kg"),
-  cbm: real("cbm"),
+  weightKg: doublePrecision("weight_kg"),
+  cbm: doublePrecision("cbm"),
   productionAt: timestamp("production_at"), // อยู่ระหว่างการผลิต (เฉพาะสินค้าที่สั่งผลิต)
   receivedAt: timestamp("received_at"), // ถึงโกดังจีน
   outForDeliveryAt: timestamp("out_for_delivery_at"),
@@ -119,31 +126,42 @@ export const orderItems = sqliteTable("order_items", {
 
 // พัสดุย่อยของรายการสินค้า: 1 รายการมีได้หลายพัสดุ หลายขนาด
 // แต่ละแถว = กล่องขนาดเดียวกัน N กล่อง (cbm = กว้าง × ยาว × สูง × กล่อง ÷ 1,000,000)
-export const itemPackages = sqliteTable("item_packages", {
+export const itemPackages = pgTable("item_packages", {
   id: id(),
   itemId: integer("item_id")
     .notNull()
     .references(() => orderItems.id, { onDelete: "cascade" }),
   chinaTrackingNo: text("china_tracking_no"),
   boxes: integer("boxes"),
-  weightKg: real("weight_kg"), // น้ำหนักรวมของแถวนี้
-  widthCm: real("width_cm"),
-  lengthCm: real("length_cm"),
-  heightCm: real("height_cm"),
-  cbm: real("cbm"),
+  weightKg: doublePrecision("weight_kg"), // น้ำหนักรวมของแถวนี้
+  widthCm: doublePrecision("width_cm"),
+  lengthCm: doublePrecision("length_cm"),
+  heightCm: doublePrecision("height_cm"),
+  cbm: doublePrecision("cbm"),
   importKey: text("import_key").unique(), // เช่น "jj:12" = PackingList id 12 ของ JJ Cargo
   createdAt: createdAt(),
 });
 
 // ค่าตั้งค่าของระบบแบบ key/value เช่น "cny_rate" = เรทหยวน→บาทของวันนี้ (ใช้ในใบเสนอราคา)
-export const appSettings = sqliteTable("app_settings", {
+export const appSettings = pgTable("app_settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
   updatedAt: updatedAt(),
 });
 
+// รูปสินค้า (ย่อเป็น JPEG ไม่เกิน 1200px ตอนอัปโหลด) เก็บในฐานข้อมูล ใช้ในหน้ารายละเอียดสินค้าของใบเสนอราคา
+export const itemImages = pgTable("item_images", {
+  id: id(),
+  itemId: integer("item_id")
+    .notNull()
+    .references(() => orderItems.id, { onDelete: "cascade" }),
+  mime: text("mime").notNull(),
+  data: bytea("data").notNull(),
+  createdAt: createdAt(),
+});
+
 // พัสดุที่นำเข้าจากระบบอื่นแล้วถูกพนักงานลบทิ้ง — ซิงค์ครั้งต่อไปจะข้าม ไม่ดึงกลับมาอีก
-export const ignoredImports = sqliteTable("ignored_imports", {
+export const ignoredImports = pgTable("ignored_imports", {
   importKey: text("import_key").primaryKey(),
   createdAt: createdAt(),
 });
@@ -161,6 +179,11 @@ export const orderItemsRelations = relations(orderItems, ({ one, many }) => ({
   order: one(orders, { fields: [orderItems.orderId], references: [orders.id] }),
   container: one(containers, { fields: [orderItems.containerId], references: [containers.id] }),
   packages: many(itemPackages),
+  images: many(itemImages),
+}));
+
+export const itemImagesRelations = relations(itemImages, ({ one }) => ({
+  item: one(orderItems, { fields: [itemImages.itemId], references: [orderItems.id] }),
 }));
 
 export const itemPackagesRelations = relations(itemPackages, ({ one }) => ({

@@ -17,16 +17,31 @@ export function OrderFields({
 }) {
   return (
     <>
-      <CustomerPicker
-        customers={customers}
-        selectedId={order ? order.customerId : preselectId}
-        legacy={order && !order.customerId ? { name: order.customerName, phone: order.customerPhone } : undefined}
-      />
-      <Field label="เลขคำสั่งซื้อ (เช่น เลขออเดอร์ 1688 / Taobao)" className="sm:col-span-2">
+      {/* แก้ไขออเดอร์ที่ผูกลูกค้าแล้ว: ไม่ต้องมีช่องเลือกลูกค้า (แก้ข้อมูลลูกค้าที่เมนูลูกค้า) — เก็บ customerId ไว้เหมือนเดิม
+          สร้างออเดอร์ใหม่ / ออเดอร์เก่าที่ยังไม่ผูกลูกค้า: ใช้ช่องเลือกลูกค้า */}
+      {order?.customerId ? (
+        <input type="hidden" name="customerId" value={order.customerId} />
+      ) : (
+        <CustomerPicker
+          customers={customers}
+          selectedId={order ? order.customerId : preselectId}
+          legacy={order && !order.customerId ? { name: order.customerName, phone: order.customerPhone } : undefined}
+        />
+      )}
+      <Field label="เลขคำสั่งซื้อ (เช่น เลขออเดอร์ 1688 / Taobao)">
         <input name="purchaseOrderNo" defaultValue={order?.purchaseOrderNo ?? ""} className="input" autoComplete="off" />
+      </Field>
+      <Field label="Platform / แหล่งที่มาของร้าน (ข้อมูลภายใน ลูกค้าไม่เห็น)">
+        <input name="platform" list="platform-options" defaultValue={order?.platform ?? ""} className="input" autoComplete="off" placeholder="เช่น 1688, Taobao, Alibaba" />
+        <datalist id="platform-options">
+          {["1688", "Taobao", "Tmall", "Alibaba", "Pinduoduo", "JD", "WeChat", "โรงงานโดยตรง"].map((p) => (
+            <option key={p} value={p} />
+          ))}
+        </datalist>
       </Field>
       <PaymentFields
         shopName={order?.shopName}
+        hideShopOnQuote={order?.hideShopOnQuote}
         currency={order?.currency}
         totalAmount={order?.totalAmount}
         depositAmount={order?.depositAmount}

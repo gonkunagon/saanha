@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { asc, count, eq, like, or } from "drizzle-orm";
+import { asc, count, eq, ilike, or } from "drizzle-orm";
 import { db } from "@/db";
 import { customers, orders } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
@@ -29,7 +29,7 @@ export default async function CustomersPage({ searchParams }: Props) {
     .leftJoin(orders, eq(orders.customerId, customers.id))
     .where(
       term
-        ? or(like(customers.code, `%${term}%`), like(customers.name, `%${term}%`), like(customers.firstName, `%${term}%`), like(customers.lastName, `%${term}%`), like(customers.phone, `%${term}%`), like(customers.lineId, `%${term}%`))
+        ? or(ilike(customers.code, `%${term}%`), ilike(customers.name, `%${term}%`), ilike(customers.firstName, `%${term}%`), ilike(customers.lastName, `%${term}%`), ilike(customers.phone, `%${term}%`), ilike(customers.lineId, `%${term}%`))
         : undefined,
     )
     .groupBy(customers.id)

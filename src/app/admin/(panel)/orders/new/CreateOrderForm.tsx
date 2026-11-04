@@ -48,6 +48,7 @@ export function CreateOrderForm({ children }: { children: React.ReactNode }) {
                   ✕
                 </button>
               </div>
+              <input name="itemProductUrl" type="url" placeholder="ลิงก์สินค้า (ใช้ภายใน ไม่บังคับ)" className="input" />
               <PackageFields prefix={`pkg_${key}_`} />
             </div>
           ))}

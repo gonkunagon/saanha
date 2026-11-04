@@ -38,7 +38,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
   const { id } = await params;
   const order = await db.query.orders.findFirst({
     where: eq(orders.id, Number(id)),
-    with: { items: true, customer: true },
+    with: { items: { with: { images: { columns: { id: true } } } }, customer: true },
   });
   if (!order) notFound();
 
@@ -129,7 +129,8 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
               {order.customerLineId && <p className="text-gray-600">Line: {order.customerLineId}</p>}
             </InfoBox>
             <InfoBox title="รายละเอียดการสั่งซื้อ / Order details">
-              <p><span className="inline-block w-28 text-gray-500">ร้านค้า</span>{order.shopName ?? "-"}</p>
+              {/* ร้านที่เราหามาเอง: แสดงแค่หัวข้อ "ร้านค้า" ไม่แสดงชื่อร้าน (ตั้งในออเดอร์) · Platform เป็นข้อมูลภายใน ไม่แสดงเลย */}
+              <p><span className="inline-block w-28 text-gray-500">ร้านค้า</span>{order.hideShopOnQuote ? "" : order.shopName ?? "-"}</p>
               <p><span className="inline-block w-28 text-gray-500">เลขคำสั่งซื้อ</span>{order.purchaseOrderNo ?? "-"}</p>
               <p><span className="inline-block w-28 text-gray-500">วิธีขนส่ง</span>{methodLabel(order.method)}</p>
               <p><span className="inline-block w-28 text-gray-500">สกุลเงิน</span>{order.currency === "CNY" ? "หยวน (CNY)" : "บาท (THB)"}</p>
@@ -253,6 +254,73 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
           ขอบคุณที่ไว้วางใจ {site.name} — นำเข้าสินค้าจากจีน ครบจบในที่เดียว · LINE {site.lineId} · {site.url.replace("https://", "")}
         </footer>
       </article>
+
+      {/* หน้า 2: รายละเอียดสินค้า (ชื่อ จำนวน ขนาด/รายละเอียด รูป) ให้ลูกค้าตรวจและเซ็นยืนยัน — พิมพ์ขึ้นหน้าใหม่เสมอ */}
+      {order.items.length > 0 && (
+        <article className="mt-6 flex min-h-[297mm] break-before-page flex-col bg-white text-[13px] text-gray-800 shadow-lg ring-1 ring-gray-200 [print-color-adjust:exact] print:mt-0 print:min-h-0 print:shadow-none print:ring-0">
+          <header className="mx-10 mt-8 flex items-center justify-between rounded-lg border-2 border-brand-600 px-6 py-4">
+            <div className="flex items-center gap-3">
+              <LogoMark className="h-10 w-10 shrink-0 text-navy-700" />
+              <span className="text-xl font-extrabold tracking-tight text-gray-900">{site.name}</span>
+            </div>
+            <div className="text-right">
+              <h2 className="text-2xl font-bold text-brand-700">รายละเอียดสินค้า</h2>
+              <p className="text-[11px] tracking-[0.25em] text-brand-600">PRODUCT DETAILS</p>
+              <p className="mt-1 text-xs text-gray-500">แนบท้ายใบเสนอราคาเลขที่ QT-{order.code} · {thaiDate(issued)}</p>
+            </div>
+          </header>
+
+          <div className="flex flex-1 flex-col px-10 py-6">
+            <ol className="space-y-4">
+              {order.items.map((i, n) => (
+                <li key={i.id} className="break-inside-avoid overflow-hidden rounded-lg border border-gray-200">
+                  <div className="flex items-baseline gap-3 border-b border-gray-100 bg-gray-50 px-4 py-2">
+                    <span className="text-gray-500">{n + 1}.</span>
+                    <span className="flex-1 text-[15px] font-semibold text-gray-900">{i.description}</span>
+                    <span className="text-gray-600">จำนวน {num(i.quantity)}</span>
+                  </div>
+                  <div className="space-y-3 px-4 py-3">
+                    <div>
+                      <p className="text-[11px] font-semibold tracking-wide text-brand-700 uppercase">รายละเอียด / ขนาด</p>
+                      <p className="whitespace-pre-line">{i.spec || "-"}</p>
+                    </div>
+                    {i.images.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2">
+                        {i.images.map((img) => (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img key={img.id} src={`/admin/item-image/${img.id}`} alt={i.description} className="h-44 w-full rounded border border-gray-100 bg-white object-contain" />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+
+            {/* ลูกค้าเซ็นยืนยันว่ารายละเอียดถูกต้อง */}
+            <div className="mt-auto break-inside-avoid pt-8">
+              <p className="rounded-lg border border-accent-400 bg-accent-300/15 px-4 py-3 leading-6">
+                ข้าพเจ้าได้ตรวจสอบชื่อสินค้า จำนวน รายละเอียด ขนาด และรูปภาพสินค้าข้างต้นแล้ว
+                <b> ถูกต้องตามที่ต้องการ</b> และยืนยันให้ {site.name} ดำเนินการสั่งซื้อตามรายละเอียดนี้
+              </p>
+              <div className="mt-12 grid grid-cols-2 gap-10 text-center text-[12px] text-gray-600">
+                <div />
+                <div>
+                  <div className="mx-auto h-12 w-56 border-b border-gray-400" />
+                  <p className="mt-2 font-semibold text-gray-800">ผู้อนุมัติ / ลูกค้า</p>
+                  <p>(.................................................)</p>
+                  <p className="text-gray-400">{order.customerName}</p>
+                  <p className="mt-2">วันที่ ......../......../........</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <footer className="border-t-4 border-accent-400 bg-gray-50 px-10 py-3 text-center text-[11px] text-gray-500">
+            {site.name} · LINE {site.lineId} · {site.url.replace("https://", "")}
+          </footer>
+        </article>
+      )}
     </div>
   );
 }

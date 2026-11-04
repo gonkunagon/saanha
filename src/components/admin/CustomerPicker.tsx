@@ -136,13 +136,12 @@ function QuickAdd({
   const [name, setName] = useState(looksLikePhone ? "" : defaultQuery.trim());
   const [phone, setPhone] = useState(looksLikePhone ? defaultQuery.trim() : "");
   const [lineId, setLineId] = useState("");
-  const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const save = () =>
     startTransition(async () => {
-      const res = await quickCreateCustomer({ code, name, phone, lineId });
+      const res = await quickCreateCustomer({ name, phone, lineId });
       if ("error" in res) setError(res.error ?? "บันทึกไม่สำเร็จ");
       else onCreated(res.customer);
     });
@@ -150,8 +149,7 @@ function QuickAdd({
   return (
     <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
       <p className="mb-2 text-sm font-semibold">เพิ่มลูกค้าใหม่</p>
-      <div className="grid gap-2 sm:grid-cols-4">
-        <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="รหัส (เว้นว่างได้)" className="input uppercase" />
+      <div className="grid gap-2 sm:grid-cols-3">
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="ชื่อลูกค้า *" className="input" />
         <input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" placeholder="เบอร์โทร" className="input" />
         <input value={lineId} onChange={(e) => setLineId(e.target.value)} placeholder="LINE ID" className="input" />

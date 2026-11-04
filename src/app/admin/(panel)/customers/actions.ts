@@ -6,14 +6,13 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { customers, orders } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
-import { findCustomerByCode, findCustomerByPhone, nextCustomerCode } from "@/lib/customers";
+import { findCustomerByPhone, nextCustomerCode } from "@/lib/customers";
 
 export type CustomerFormState = { error?: string; ok?: string } | null;
 
 const text = (fd: FormData, key: string) => String(fd.get(key) ?? "").trim() || null;
 
 type CustomerInput = {
-  code: string | null;
   name: string;
   firstName: string | null;
   lastName: string | null;
@@ -25,7 +24,6 @@ type CustomerInput = {
 
 function customerFields(fd: FormData): CustomerInput {
   return {
-    code: text(fd, "code")?.toUpperCase() ?? null,
     name: text(fd, "name") ?? "",
     firstName: text(fd, "firstName"),
     lastName: text(fd, "lastName"),
@@ -36,22 +34,17 @@ function customerFields(fd: FormData): CustomerInput {
   };
 }
 
-// ตรวจข้อมูล + กันเบอร์ซ้ำ (ลูกค้า 1 คน = 1 เบอร์) + กันรหัสลูกค้าซ้ำ — เบอร์ไม่บังคับ แต่ถ้าใส่ต้องถูกต้อง
+// ตรวจข้อมูล + กันเบอร์ซ้ำ (ลูกค้า 1 คน = 1 เบอร์) — เบอร์ไม่บังคับ แต่ถ้าใส่ต้องถูกต้อง
 async function validate(fields: CustomerInput, selfId?: number): Promise<string | null> {
   if (!fields.name) return "กรุณาใส่ชื่อลูกค้า";
   if (fields.phone && fields.phone.replace(/\D/g, "").length < 4) return "เบอร์โทรไม่ถูกต้อง (เว้นว่างได้)";
-  if (fields.code && !/^[A-Z0-9_-]{1,20}$/.test(fields.code)) return "รหัสลูกค้าใช้ได้เฉพาะ A-Z, 0-9, - _ (ไม่เกิน 20 ตัว)";
   const dupPhone = fields.phone ? await findCustomerByPhone(fields.phone) : undefined;
   if (dupPhone && dupPhone.id !== selfId) return `เบอร์นี้เป็นของลูกค้า ${dupPhone.name} อยู่แล้ว`;
-  if (fields.code) {
-    const dupCode = await findCustomerByCode(fields.code);
-    if (dupCode && dupCode.id !== selfId) return `รหัส ${fields.code} เป็นของลูกค้า ${dupCode.name} อยู่แล้ว`;
-  }
   return null;
 }
 
-// เว้นรหัสว่าง = ระบบออกรหัสถัดไปให้ (C0001, C0002, …)
-const withCode = async (fields: CustomerInput) => ({ ...fields, code: fields.code ?? (await nextCustomerCode()) });
+// รหัสลูกค้าระบบรันให้เองตอนเพิ่ม (C0001, C0002, …) — แก้ไขลูกค้าแล้วรหัสเดิมไม่เปลี่ยน
+const withCode = async (fields: CustomerInput) => ({ ...fields, code: await nextCustomerCode() });
 
 export async function createCustomer(_prev: CustomerFormState, fd: FormData): Promise<CustomerFormState> {
   await requireUser();
@@ -70,7 +63,7 @@ export async function updateCustomer(_prev: CustomerFormState, fd: FormData): Pr
   const fields = customerFields(fd);
   const error = await validate(fields, id);
   if (error) return { error };
-  const row = await withCode(fields);
+  const row = fields;
   await db.transaction(async (tx) => {
     await tx.update(customers).set(row).where(eq(customers.id, id));
     // ออเดอร์ที่ผูกกับลูกค้านี้ใช้ชื่อ/เบอร์ล่าสุดตาม (หน้าติดตามพัสดุใช้เบอร์ในออเดอร์)
@@ -84,10 +77,9 @@ export async function updateCustomer(_prev: CustomerFormState, fd: FormData): Pr
 }
 
 // เพิ่มลูกค้าจากหน้าสร้างออเดอร์ (ไม่ต้องออกจากหน้า) — คืนข้อมูลลูกค้าให้ช่องเลือกลูกค้าเลือกต่อทันที
-export async function quickCreateCustomer(input: { code: string; name: string; phone: string; lineId: string }) {
+export async function quickCreateCustomer(input: { name: string; phone: string; lineId: string }) {
   await requireUser();
   const fields: CustomerInput = {
-    code: input.code.trim().toUpperCase() || null,
     name: input.name.trim(),
     firstName: null,
     lastName: null,

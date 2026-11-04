@@ -14,9 +14,6 @@ export async function findCustomerByPhone(phone: string) {
 export const findCustomerById = (id: number) =>
   db.query.customers.findFirst({ where: sql`${customers.id} = ${id}` });
 
-export const findCustomerByCode = (code: string) =>
-  db.query.customers.findFirst({ where: eq(customers.code, code) });
-
 // รหัสลูกค้าถัดไป: C + เลข 4 หลัก ต่อจากรหัสรูปแบบ C#### ที่มากที่สุด (รหัสที่พนักงานตั้งเองรูปแบบอื่นไม่นับ)
 export async function nextCustomerCode() {
   const rows = await db.select({ code: customers.code }).from(customers).where(like(customers.code, "C%"));

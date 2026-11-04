@@ -31,18 +31,20 @@ export function CustomerForm({ customer, onCreated, onCancel }: { customer?: Cus
       className="grid gap-4 sm:grid-cols-2"
     >
       {customer && <input type="hidden" name="id" value={customer.id} />}
-      <Field label="รหัสลูกค้า (เว้นว่าง = ระบบออกให้ เช่น C0001)">
-        <input name="code" defaultValue={customer?.code ?? ""} className="input uppercase" autoComplete="off" />
+      {/* ชื่อที่ใช้เรียกอยู่บนสุด · รหัสลูกค้าระบบรันให้เอง (แสดงอย่างเดียวตอนแก้ไข) */}
+      <Field label="ชื่อที่ใช้เรียก / แสดงในออเดอร์ * (เช่น ชื่อเล่น ชื่อร้าน)" className={customer?.code ? "" : "sm:col-span-2"}>
+        <input name="name" required defaultValue={customer?.name} className="input" />
       </Field>
-      <div className="hidden sm:block" />
+      {customer?.code && (
+        <Field label="รหัสลูกค้า (ระบบออกให้)">
+          <input value={customer.code} readOnly tabIndex={-1} className="input bg-gray-50 font-mono text-gray-500" />
+        </Field>
+      )}
       <Field label="ชื่อจริง">
         <input name="firstName" defaultValue={customer?.firstName ?? ""} className="input" />
       </Field>
       <Field label="นามสกุล">
         <input name="lastName" defaultValue={customer?.lastName ?? ""} className="input" />
-      </Field>
-      <Field label="ชื่อที่ใช้เรียก / แสดงในออเดอร์ * (เช่น ชื่อเล่น ชื่อร้าน)">
-        <input name="name" required defaultValue={customer?.name} className="input" />
       </Field>
       <Field label="เบอร์โทร (ไม่บังคับ — ลูกค้าใช้ 4 ตัวท้ายเช็คสถานะพัสดุ)">
         <input name="phone" type="tel" defaultValue={customer?.phone} className="input" />

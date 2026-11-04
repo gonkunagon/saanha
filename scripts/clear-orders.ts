@@ -13,7 +13,7 @@ async function main() {
   }
 
   const sql = postgres(url, { prepare: false, max: 1 });
-  const tables = ["item_packages", "item_images", "order_items", "orders", "containers", "ignored_imports"];
+  const tables = ["item_packages", "item_images", "order_items", "payments", "orders", "containers", "ignored_imports"];
   const count = async () =>
     Object.fromEntries(
       await Promise.all(tables.map(async (t) => [t, Number((await sql.unsafe(`select count(*) as n from ${t}`))[0].n)])),

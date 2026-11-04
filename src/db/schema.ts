@@ -160,6 +160,20 @@ export const itemImages = pgTable("item_images", {
   createdAt: createdAt(),
 });
 
+// การชำระเงินของออเดอร์ (ลูกค้าโอนได้หลายครั้ง เช่น มัดจำ + ส่วนที่เหลือ) — ยอดที่โอน วันที่ชำระ ช่องทาง
+export const payments = pgTable("payments", {
+  id: id(),
+  orderId: integer("order_id")
+    .notNull()
+    .references(() => orders.id, { onDelete: "cascade" }),
+  amount: doublePrecision("amount").notNull(),
+  currency: text("currency", { enum: currencies }).notNull().default("THB"),
+  paidAt: timestamp("paid_at").notNull(),
+  method: text("method").notNull(), // ช่องทาง เช่น โอนธนาคาร กสิกร, พร้อมเพย์, เงินสด
+  note: text("note"),
+  createdAt: createdAt(),
+});
+
 // พัสดุที่นำเข้าจากระบบอื่นแล้วถูกพนักงานลบทิ้ง — ซิงค์ครั้งต่อไปจะข้าม ไม่ดึงกลับมาอีก
 export const ignoredImports = pgTable("ignored_imports", {
   importKey: text("import_key").primaryKey(),
@@ -168,6 +182,7 @@ export const ignoredImports = pgTable("ignored_imports", {
 
 export const ordersRelations = relations(orders, ({ one, many }) => ({
   items: many(orderItems),
+  payments: many(payments),
   customer: one(customers, { fields: [orders.customerId], references: [customers.id] }),
 }));
 
@@ -186,6 +201,10 @@ export const itemImagesRelations = relations(itemImages, ({ one }) => ({
   item: one(orderItems, { fields: [itemImages.itemId], references: [orderItems.id] }),
 }));
 
+export const paymentsRelations = relations(payments, ({ one }) => ({
+  order: one(orders, { fields: [payments.orderId], references: [orders.id] }),
+}));
+
 export const itemPackagesRelations = relations(itemPackages, ({ one }) => ({
   item: one(orderItems, { fields: [itemPackages.itemId], references: [orderItems.id] }),
 }));
@@ -196,3 +215,4 @@ export type Container = typeof containers.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type ItemPackage = typeof itemPackages.$inferSelect;
+export type Payment = typeof payments.$inferSelect;

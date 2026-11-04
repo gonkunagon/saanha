@@ -4,7 +4,7 @@ import { and, eq, inArray, isNotNull, type SQL } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { containers, ignoredImports, itemImages, itemPackages, orderItems, orders, shippingMethods, type ShippingMethod } from "@/db/schema";
+import { containers, currencies, ignoredImports, itemImages, itemPackages, orderItems, orders, payments, shippingMethods, type Currency, type ShippingMethod } from "@/db/schema";
 import { findCustomerById } from "@/lib/customers";
 import { clampHandlingPct } from "@/lib/money";
 import { requireUser } from "@/lib/auth";
@@ -371,4 +371,29 @@ export async function applyStage(_prev: string | null, fd: FormData): Promise<st
 
   refresh();
   return null;
+}
+
+// บันทึกการชำระเงินที่ลูกค้าโอนมา (ยอด วันที่ ช่องทาง) — 1 ออเดอร์บันทึกได้หลายครั้ง
+export async function addPayment(fd: FormData) {
+  await requireUser();
+  const orderId = Number(fd.get("orderId"));
+  const amount = toNum(fd.get("amount"));
+  const paymentMethod = text(fd, "method");
+  if (!orderId || amount == null || amount <= 0 || !paymentMethod) return;
+  const c = String(fd.get("currency"));
+  await db.insert(payments).values({
+    orderId,
+    amount,
+    currency: (currencies as readonly string[]).includes(c) ? (c as Currency) : "THB",
+    paidAt: parseLocalDateTime(fd.get("paidAt")) ?? new Date(),
+    method: paymentMethod,
+    note: text(fd, "note"),
+  });
+  refresh();
+}
+
+export async function deletePayment(fd: FormData) {
+  await requireUser();
+  await db.delete(payments).where(eq(payments.id, Number(fd.get("paymentId"))));
+  refresh();
 }

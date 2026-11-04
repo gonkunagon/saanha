@@ -13,6 +13,7 @@ import { OrderFields } from "../OrderFields";
 import { listCustomersForPicker } from "@/lib/customers";
 import { deleteItem, updateItem, updateOrder } from "../actions";
 import { ItemPriceForm } from "./ItemPriceForm";
+import { PaymentsCard } from "./PaymentsCard";
 import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
 import { BalanceText } from "@/components/admin/ui";
 import { currencyLabel, formatMoney, handlingFeeOf, type CurrencyCode } from "@/lib/money";
@@ -201,7 +202,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
   const order = await db.query.orders.findFirst({
     where: eq(orders.id, Number(id)),
     // รูปสินค้าโหลดแค่ id (ตัวรูปดึงผ่าน /admin/item-image/<id>)
-    with: { items: { with: { container: true, packages: true, images: { columns: { id: true } } } } },
+    with: { items: { with: { container: true, packages: true, images: { columns: { id: true } } } }, payments: true },
   });
   if (!order) notFound();
   const customers = await listCustomersForPicker();
@@ -323,6 +324,8 @@ export default async function OrderPage({ params, searchParams }: Props) {
           </dl>
         </Card>
 
+        <PaymentsCard orderId={order.id} payments={order.payments} editing={false} />
+
         <Card title={`รายการสินค้า (${order.items.length}) · ส่งแล้ว ${summary.deliveredCount}/${summary.itemCount}`}>
           {order.items.length === 0 ? (
             <p className="text-sm text-gray-500">ยังไม่มีรายการสินค้า — กด &quot;แก้ไข&quot; เพื่อเพิ่ม</p>
@@ -410,6 +413,8 @@ export default async function OrderPage({ params, searchParams }: Props) {
           </>
         )}
       </Card>
+
+      <PaymentsCard orderId={order.id} payments={order.payments} editing />
 
       <Card title="แก้ไขข้อมูลออเดอร์">
         <form action={updateOrder} className="grid gap-4 sm:grid-cols-2">

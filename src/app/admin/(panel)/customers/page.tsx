@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { asc, count, eq, ilike, or } from "drizzle-orm";
+import { asc, count, eq, ilike, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { customers, orders } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
@@ -16,6 +16,8 @@ export default async function CustomersPage({ searchParams }: Props) {
   const list = await db
     .select({
       id: customers.id,
+      // ลำดับลูกค้า 1, 2, 3 … ตามลำดับที่เพิ่มเข้าระบบ (ค้นหาแล้วเลขไม่เปลี่ยน)
+      no: sql<number>`(select count(*) from customers c2 where c2.id <= ${customers.id})::int`,
       code: customers.code,
       name: customers.name,
       firstName: customers.firstName,
@@ -33,7 +35,7 @@ export default async function CustomersPage({ searchParams }: Props) {
         : undefined,
     )
     .groupBy(customers.id)
-    .orderBy(asc(customers.code));
+    .orderBy(asc(customers.id));
 
   return (
     <div className="space-y-6">
@@ -54,7 +56,7 @@ export default async function CustomersPage({ searchParams }: Props) {
             <table className="w-full text-sm">
               <thead className="text-left text-gray-500">
                 <tr>
-                  <th className="py-2 pr-4">รหัส</th>
+                  <th className="py-2 pr-4">ลำดับ</th>
                   <th className="py-2 pr-4">ชื่อ</th>
                   <th className="py-2 pr-4">ชื่อจริง - นามสกุล</th>
                   <th className="py-2 pr-4">เบอร์โทร</th>
@@ -66,7 +68,7 @@ export default async function CustomersPage({ searchParams }: Props) {
               <tbody>
                 {list.map((c) => (
                   <tr key={c.id} className="border-t border-gray-100">
-                    <td className="py-2 pr-4 font-mono text-gray-600">{c.code ?? "-"}</td>
+                    <td className="py-2 pr-4 text-gray-600">{c.no}</td>
                     <td className="py-2 pr-4">
                       <Link href={`/admin/customers/${c.id}`} className="font-medium text-brand-700 hover:underline">
                         {c.name}

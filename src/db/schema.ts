@@ -174,6 +174,7 @@ export const payments = pgTable("payments", {
   // คนละสกุล = แปลงด้วยเรทใบเสนอราคาวันที่บันทึก (rate = บาทต่อ 1 หยวน) หรือที่พนักงานกรอกเอง
   appliedAmount: doublePrecision("applied_amount").notNull(),
   rate: doublePrecision("rate"),
+  bank: text("bank"), // ธนาคารที่ลูกค้าโอนมา (รายชื่อใน src/lib/banks.ts) — ไม่โอนผ่านธนาคาร = ว่าง
   note: text("note"),
   createdAt: createdAt(),
 });

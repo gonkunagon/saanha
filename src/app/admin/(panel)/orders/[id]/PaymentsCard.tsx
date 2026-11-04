@@ -4,6 +4,7 @@ import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { currencies, type Order, type Payment } from "@/db/schema";
 import { formatThaiDateTime, nowLocalInputValue } from "@/lib/datetime";
 import { currencyLabel, formatMoney, grandTotalOf, orderBalance, paidOf } from "@/lib/money";
+import { thaiBanks } from "@/lib/banks";
 import { addPayment, deletePayment } from "../actions";
 
 // ช่องทางที่ใช้บ่อย (พิมพ์อย่างอื่นเองได้)
@@ -45,7 +46,7 @@ export function PaymentsCard({ order, payments, editing }: { order: OrderMoney; 
                   <th className="py-2 pr-4 text-right">ยอดโอน</th>
                   <th className="py-2 pr-4 text-right">คิดเป็น ({currencyLabel[cur]})</th>
                   <th className="py-2 pr-4">ช่องทาง</th>
-                  <th className="py-2 pr-4">หมายเหตุ</th>
+                  <th className="py-2 pr-4">ธนาคาร</th>
                   {editing && <th className="py-2" aria-label="ลบ" />}
                 </tr>
               </thead>
@@ -59,7 +60,7 @@ export function PaymentsCard({ order, payments, editing }: { order: OrderMoney; 
                       {p.rate != null && <span className="block text-xs text-gray-500">เรท {p.rate} บาท/หยวน</span>}
                     </td>
                     <td className="py-2 pr-4">{p.method}</td>
-                    <td className="py-2 pr-4 text-gray-600">{p.note ?? "-"}</td>
+                    <td className="py-2 pr-4 text-gray-600">{p.bank ?? p.note ?? "-"}</td>
                     {editing && (
                       <td className="py-2 text-right">
                         <form>
@@ -109,13 +110,16 @@ export function PaymentsCard({ order, payments, editing }: { order: OrderMoney; 
               <input name="paidAt" type="datetime-local" required defaultValue={nowLocalInputValue()} className="input bg-white" />
             </Field>
             <Field label="ช่องทางการชำระ *">
-              <input name="method" required list="payment-methods" placeholder="เช่น โอนธนาคาร กสิกร" className="input bg-white" />
+              <input name="method" required list="payment-methods" placeholder="เช่น โอนธนาคาร, พร้อมเพย์" className="input bg-white" />
               <datalist id="payment-methods">
                 {METHOD_SUGGESTIONS.map((m) => <option key={m} value={m} />)}
               </datalist>
             </Field>
-            <Field label="หมายเหตุ">
-              <input name="note" placeholder="เช่น มัดจำ, ส่วนที่เหลือ" className="input bg-white" />
+            <Field label="ธนาคาร">
+              <select name="bank" defaultValue="" className="input bg-white">
+                <option value="">— ไม่ได้โอนผ่านธนาคาร —</option>
+                {thaiBanks.map((b) => <option key={b} value={b}>{b}</option>)}
+              </select>
             </Field>
             <Field label={`ถ้าโอนเป็น${currencyLabel[other]}: คิดเป็นกี่${currencyLabel[cur]}`} className="sm:col-span-2">
               <input name="appliedAmount" type="number" step="0.01" min={0.01} placeholder="เว้นว่าง = แปลงด้วยเรทใบเสนอราคาวันนี้" className="input bg-white" />

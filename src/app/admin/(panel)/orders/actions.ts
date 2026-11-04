@@ -409,7 +409,7 @@ export async function addPayment(fd: FormData) {
     rate,
     paidAt: parseLocalDateTime(fd.get("paidAt")) ?? new Date(),
     method: paymentMethod,
-    note: text(fd, "note"),
+    bank: text(fd, "bank"),
   });
   refresh();
 }

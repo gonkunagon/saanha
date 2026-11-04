@@ -22,6 +22,13 @@
       "when": 1793789627684,
       "tag": "0002_payment_applied_amount",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793790978714,
+      "tag": "0003_payment_bank",
+      "breakpoints": true
     }
   ]
 }

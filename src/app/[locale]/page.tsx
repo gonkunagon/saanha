@@ -43,7 +43,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           alt=""
           fill
           priority
-          sizes="100vw"
+          // ส่งไฟล์ต้นฉบับตรงๆ (1672×941) ไม่ให้ Next บีบอัดซ้ำที่คุณภาพ 75 จนภาพเบลอ
+          unoptimized
           placeholder="blur"
           className="object-cover object-[6%_center] md:object-[center_15%]"
         />

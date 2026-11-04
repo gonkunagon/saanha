@@ -4,6 +4,8 @@
 
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
+  // บน Vercel (serverless) ไม่ตั้งเวลาเอง — แต่ละ instance จะซิงค์ซ้อนกัน ใช้ /api/cron/jj-sync หรือเซิร์ฟเวอร์ในเครื่องแทน
+  if (process.env.VERCEL) return;
   if (!process.env.JJ_CARGO_URL || !process.env.JJ_CARGO_USERNAME || !process.env.JJ_CARGO_PASSWORD) return;
 
   const minutes = Number(process.env.JJ_CARGO_SYNC_MINUTES ?? 15);

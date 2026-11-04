@@ -9,9 +9,9 @@ if (!url) throw new Error("DATABASE_URL is not set (Supabase Postgres connection
 const globalForDb = globalThis as unknown as { pg?: ReturnType<typeof postgres> };
 
 // ใช้ pooler โหมด Transaction (พอร์ต 6543) — แชร์การเชื่อมต่อได้ ไม่ติดเพดาน 15 clients ของโหมด Session
-// prepare: false จำเป็นสำหรับโหมดนี้ · บน Vercel แต่ละ instance ใช้ 1 การเชื่อมต่อ และปิดเองเมื่อว่าง 20 วินาที
+// prepare: false จำเป็นสำหรับโหมดนี้ · บน Vercel แต่ละ instance ใช้ไม่เกิน 3 การเชื่อมต่อ และปิดเองเมื่อว่าง 20 วินาที
 const client =
-  globalForDb.pg ?? postgres(url, { prepare: false, max: process.env.VERCEL ? 1 : 5, idle_timeout: 20 });
+  globalForDb.pg ?? postgres(url, { prepare: false, max: process.env.VERCEL ? 3 : 5, idle_timeout: 20 });
 
 if (process.env.NODE_ENV !== "production") globalForDb.pg = client;
 

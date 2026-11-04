@@ -168,7 +168,7 @@ export async function createOrder(_prev: string | null, fd: FormData): Promise<s
       newId = await db.transaction(async (tx) => {
         const [row] = await tx
           .insert(orders)
-          .values({ ...fields, code: await nextOrderCode() })
+          .values({ ...fields, code: await nextOrderCode(tx) })
           .returning({ id: orders.id });
         for (const { item, packages } of items) {
           const [created] = await tx.insert(orderItems).values({ ...item, orderId: row.id }).returning({ id: orderItems.id });

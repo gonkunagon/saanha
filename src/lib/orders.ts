@@ -34,10 +34,11 @@ export function containerStageOf(c: Container): ContainerStage | null {
 }
 
 // เลขออเดอร์อัตโนมัติ เช่น SH2611-0001 (ปี-เดือน ตามเวลาไทย + ลำดับในเดือน)
-export async function nextOrderCode() {
+// q = transaction ที่กำลังทำอยู่ (ถ้ามี) — ห้ามใช้ db ตรงๆ ใน transaction เพราะบน Vercel มีการเชื่อมต่อเดียว จะค้างรอกันเอง
+export async function nextOrderCode(q: Pick<typeof db, "select"> = db) {
   const bkk = new Date(Date.now() + 7 * 3600_000);
   const prefix = `SH${String(bkk.getUTCFullYear()).slice(2)}${String(bkk.getUTCMonth() + 1).padStart(2, "0")}-`;
-  const [last] = await db
+  const [last] = await q
     .select({ code: orders.code })
     .from(orders)
     .where(like(orders.code, `${prefix}%`))

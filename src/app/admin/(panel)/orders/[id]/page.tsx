@@ -16,7 +16,7 @@ import { ItemPriceForm } from "./ItemPriceForm";
 import { PaymentsCard } from "./PaymentsCard";
 import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
 import { BalanceText } from "@/components/admin/ui";
-import { currencyLabel, formatMoney, handlingFeeOf, type CurrencyCode } from "@/lib/money";
+import { currencyLabel, formatMoney, grandTotalOf, handlingFeeOf, orderBalance, paidOf, type CurrencyCode } from "@/lib/money";
 import { StageUpdateForm, type ContainerOption } from "./StageUpdateForm";
 import { PackageFields } from "@/components/admin/PackageFields";
 import { deleteItemImage, uploadItemImages } from "../image-actions";
@@ -311,10 +311,14 @@ export default async function OrderPage({ params, searchParams }: Props) {
             </Info>
             <Info label="Platform (ภายใน)">{order.platform}</Info>
             <Info label="ค่าสินค้า (ยอดเต็ม)">{order.totalAmount != null && formatMoney(order.totalAmount, order.currency)}</Info>
-            <Info label="มัดจำค่าสินค้า">{order.depositAmount != null && formatMoney(order.depositAmount, order.currency)}</Info>
             <Info label={`ค่าดำเนินการ ${order.handlingFeePct}%`}>{order.totalAmount != null && formatMoney(handlingFeeOf(order.totalAmount, order.handlingFeePct), order.currency)}</Info>
-            <Info label="ค่าสินค้าค้างชำระ">
-              <BalanceText total={order.totalAmount} deposit={order.depositAmount} currency={order.currency} />
+            <Info label="รวมเป็นเงินทั้งสิ้น">{order.totalAmount != null && formatMoney(grandTotalOf(order.totalAmount, order.handlingFeePct), order.currency)}</Info>
+            {/* ยอดที่จ่ายแล้ว/ค้างชำระ คิดจากรายการชำระเงิน (ออเดอร์เก่าที่ยังไม่มีรายการ ใช้ช่องมัดจำ) */}
+            <Info label={order.payments.length ? "ชำระแล้ว" : "มัดจำค่าสินค้า"}>
+              {paidOf(order, order.payments) != null && formatMoney(paidOf(order, order.payments), order.currency)}
+            </Info>
+            <Info label="ยอดค้างชำระ">
+              <BalanceText balance={orderBalance(order, order.payments)} currency={order.currency} />
             </Info>
             <Info label="Tracking no. จีน → ไทย">{order.intlTrackingNo}</Info>
             <Info label="บริษัทขนส่งที่รับงานต่อ">{order.provider}</Info>
@@ -324,7 +328,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
           </dl>
         </Card>
 
-        <PaymentsCard orderId={order.id} payments={order.payments} editing={false} />
+        <PaymentsCard order={order} payments={order.payments} editing={false} />
 
         <Card title={`รายการสินค้า (${order.items.length}) · ส่งแล้ว ${summary.deliveredCount}/${summary.itemCount}`}>
           {order.items.length === 0 ? (
@@ -414,12 +418,12 @@ export default async function OrderPage({ params, searchParams }: Props) {
         )}
       </Card>
 
-      <PaymentsCard orderId={order.id} payments={order.payments} editing />
+      <PaymentsCard order={order} payments={order.payments} editing />
 
       <Card title="แก้ไขข้อมูลออเดอร์">
         <form action={updateOrder} className="grid gap-4 sm:grid-cols-2">
           <input type="hidden" name="id" value={order.id} />
-          <OrderFields order={order} customers={customers} />
+          <OrderFields order={order} customers={customers} paymentsLinked={order.payments.length > 0} />
           <div className="flex items-center gap-3 sm:col-span-2">
             <button className="btn-primary">บันทึก</button>
             <Link href={`/admin/orders/${order.id}`} className="text-sm text-gray-500 hover:underline">ยกเลิก</Link>

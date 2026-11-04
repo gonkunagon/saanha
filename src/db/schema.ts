@@ -170,6 +170,10 @@ export const payments = pgTable("payments", {
   currency: text("currency", { enum: currencies }).notNull().default("THB"),
   paidAt: timestamp("paid_at").notNull(),
   method: text("method").notNull(), // ช่องทาง เช่น โอนธนาคาร กสิกร, พร้อมเพย์, เงินสด
+  // ยอดนี้คิดเป็นเงินสกุลของออเดอร์เท่าไหร่ (ใช้หักยอดค้างชำระ) — สกุลเดียวกัน = เท่ากับ amount
+  // คนละสกุล = แปลงด้วยเรทใบเสนอราคาวันที่บันทึก (rate = บาทต่อ 1 หยวน) หรือที่พนักงานกรอกเอง
+  appliedAmount: doublePrecision("applied_amount").notNull(),
+  rate: doublePrecision("rate"),
   note: text("note"),
   createdAt: createdAt(),
 });

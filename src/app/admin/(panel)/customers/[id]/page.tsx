@@ -8,7 +8,7 @@ import { summarizeOrder } from "@/lib/orders";
 import { formatThaiDateTime } from "@/lib/datetime";
 import { BalanceText, Card, StageBadge, methodLabel } from "@/components/admin/ui";
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
-import { balanceOf, formatMoney, type CurrencyCode } from "@/lib/money";
+import { formatMoney, orderBalance, type CurrencyCode } from "@/lib/money";
 import { CustomerForm } from "../CustomerForm";
 import { deleteCustomer } from "../actions";
 
@@ -21,7 +21,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const list = await db.query.orders.findMany({
     where: eq(orders.customerId, customer.id),
     orderBy: desc(orders.createdAt),
-    with: { items: { with: { container: true } } },
+    with: { items: { with: { container: true } }, payments: { columns: { appliedAmount: true } } },
   });
 
   // ยอดสั่งซื้อรวม / ค้างชำระรวม แยกตามสกุลเงิน
@@ -30,7 +30,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
     if (o.totalAmount == null) continue;
     const t = byCurrency.get(o.currency) ?? { total: 0, balance: 0 };
     t.total += o.totalAmount;
-    t.balance += Math.max(0, balanceOf(o.totalAmount, o.depositAmount) ?? 0);
+    t.balance += Math.max(0, orderBalance(o, o.payments) ?? 0);
     byCurrency.set(o.currency, t);
   }
   const totals = [...byCurrency.entries()];
@@ -102,7 +102,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                     <StageBadge stage={summarizeOrder(o.items).stage} />
                     <span className="ml-auto flex items-center gap-4">
                       {o.totalAmount != null && <span className="font-medium">{formatMoney(o.totalAmount, o.currency)}</span>}
-                      <BalanceText total={o.totalAmount} deposit={o.depositAmount} currency={o.currency} />
+                      <BalanceText balance={orderBalance(o, o.payments)} currency={o.currency} />
                       <Link href={`/admin/quote/${o.id}`} target="_blank" className="text-xs text-brand-700 hover:underline">ใบเสนอราคา</Link>
                     </span>
                   </div>

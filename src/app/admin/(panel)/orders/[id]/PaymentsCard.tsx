@@ -1,19 +1,23 @@
 import { Card, Field } from "@/components/admin/ui";
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
-import { currencies, type Payment } from "@/db/schema";
+import { currencies, type Order, type Payment } from "@/db/schema";
 import { formatThaiDateTime, nowLocalInputValue } from "@/lib/datetime";
-import { currencyLabel, formatMoney } from "@/lib/money";
+import { currencyLabel, formatMoney, grandTotalOf, orderBalance, paidOf } from "@/lib/money";
 import { addPayment, deletePayment } from "../actions";
 
 // ช่องทางที่ใช้บ่อย (พิมพ์อย่างอื่นเองได้)
 const METHOD_SUGGESTIONS = ["โอนธนาคาร", "พร้อมเพย์", "เงินสด", "Alipay", "WeChat Pay"];
 
+type OrderMoney = Pick<Order, "id" | "currency" | "totalAmount" | "depositAmount" | "handlingFeePct">;
+
 // การชำระเงินของออเดอร์: ยอดที่ลูกค้าโอน วันที่ชำระ ช่องทาง — หน้าแก้ไขเพิ่ม/ลบได้
-export function PaymentsCard({ orderId, payments, editing }: { orderId: number; payments: Payment[]; editing: boolean }) {
+// ยอดที่โอนคนละสกุลกับออเดอร์ แสดง "คิดเป็น" สกุลออเดอร์ด้วย (ใช้หักยอดค้างชำระ)
+export function PaymentsCard({ order, payments, editing }: { order: OrderMoney; payments: Payment[]; editing: boolean }) {
   const sorted = [...payments].sort((a, b) => a.paidAt.getTime() - b.paidAt.getTime());
-  const totals = currencies
-    .map((c) => ({ c, sum: sorted.filter((p) => p.currency === c).reduce((s, p) => s + p.amount, 0) }))
-    .filter((t) => t.sum > 0);
+  const cur = order.currency;
+  const other = currencies.find((c) => c !== cur)!;
+  const grand = grandTotalOf(order.totalAmount, order.handlingFeePct);
+  const balance = orderBalance(order, payments);
 
   return (
     <Card title={`การชำระเงิน (${sorted.length})`}>
@@ -26,6 +30,7 @@ export function PaymentsCard({ orderId, payments, editing }: { orderId: number; 
               <tr>
                 <th className="py-2 pr-4">วันที่ชำระ</th>
                 <th className="py-2 pr-4 text-right">ยอดโอน</th>
+                <th className="py-2 pr-4 text-right">คิดเป็น ({currencyLabel[cur]})</th>
                 <th className="py-2 pr-4">ช่องทาง</th>
                 <th className="py-2 pr-4">หมายเหตุ</th>
                 {editing && <th className="py-2" aria-label="ลบ" />}
@@ -36,6 +41,10 @@ export function PaymentsCard({ orderId, payments, editing }: { orderId: number; 
                 <tr key={p.id} className="border-t border-gray-100">
                   <td className="py-2 pr-4 whitespace-nowrap">{formatThaiDateTime(p.paidAt)}</td>
                   <td className="py-2 pr-4 text-right font-semibold whitespace-nowrap">{formatMoney(p.amount, p.currency)}</td>
+                  <td className="py-2 pr-4 text-right whitespace-nowrap">
+                    {formatMoney(p.appliedAmount, cur)}
+                    {p.rate != null && <span className="block text-xs text-gray-500">เรท {p.rate} บาท/หยวน</span>}
+                  </td>
                   <td className="py-2 pr-4">{p.method}</td>
                   <td className="py-2 pr-4 text-gray-600">{p.note ?? "-"}</td>
                   {editing && (
@@ -51,10 +60,8 @@ export function PaymentsCard({ orderId, payments, editing }: { orderId: number; 
             </tbody>
             <tfoot>
               <tr className="border-t border-gray-200">
-                <td className="py-2 pr-4 font-medium">รวมชำระแล้ว</td>
-                <td className="py-2 pr-4 text-right font-bold whitespace-nowrap text-green-700">
-                  {totals.map((t) => <span key={t.c} className="block">{formatMoney(t.sum, t.c)}</span>)}
-                </td>
+                <td className="py-2 pr-4 font-medium" colSpan={2}>รวมชำระแล้ว</td>
+                <td className="py-2 pr-4 text-right font-bold whitespace-nowrap text-green-700">{formatMoney(paidOf(order, payments), cur)}</td>
                 <td colSpan={editing ? 3 : 2} />
               </tr>
             </tfoot>
@@ -62,14 +69,26 @@ export function PaymentsCard({ orderId, payments, editing }: { orderId: number; 
         </div>
       )}
 
+      {/* สรุปยอด: รวมเป็นเงินทั้งสิ้น − ชำระแล้ว = ค้างชำระ */}
+      {grand != null && (
+        <p className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm">
+          <span>รวมเป็นเงินทั้งสิ้น <b>{formatMoney(grand, cur)}</b></span>
+          <span>ชำระแล้ว <b className="text-green-700">{formatMoney(paidOf(order, payments) ?? 0, cur)}</b></span>
+          <span>
+            {balance != null && balance < 0 ? "ชำระเกิน " : "ค้างชำระ "}
+            <b className={balance != null && balance > 0 ? "text-brand-700" : "text-green-700"}>{formatMoney(Math.abs(balance ?? 0), cur)}</b>
+          </span>
+        </p>
+      )}
+
       {editing && (
         <form action={addPayment} className="mt-4 grid gap-3 rounded-lg bg-gray-50 p-4 sm:grid-cols-2 lg:grid-cols-5">
-          <input type="hidden" name="orderId" value={orderId} />
+          <input type="hidden" name="orderId" value={order.id} />
           <Field label="ยอดโอน *">
             <input name="amount" type="number" step="0.01" min={0.01} required className="input bg-white" />
           </Field>
           <Field label="สกุลเงิน">
-            <select name="currency" defaultValue="THB" className="input bg-white">
+            <select name="currency" defaultValue={cur} className="input bg-white">
               {currencies.map((c) => <option key={c} value={c}>{currencyLabel[c]}</option>)}
             </select>
           </Field>
@@ -85,7 +104,10 @@ export function PaymentsCard({ orderId, payments, editing }: { orderId: number; 
           <Field label="หมายเหตุ">
             <input name="note" placeholder="เช่น มัดจำ, ส่วนที่เหลือ" className="input bg-white" />
           </Field>
-          <div className="sm:col-span-2 lg:col-span-5">
+          <Field label={`ถ้าโอนเป็น${currencyLabel[other]}: คิดเป็นกี่${currencyLabel[cur]}`} className="sm:col-span-2">
+            <input name="appliedAmount" type="number" step="0.01" min={0.01} placeholder="เว้นว่าง = แปลงด้วยเรทใบเสนอราคาวันนี้" className="input bg-white" />
+          </Field>
+          <div className="flex items-end sm:col-span-2 lg:col-span-3">
             <button className="btn-primary">+ บันทึกการชำระเงิน</button>
           </div>
         </form>

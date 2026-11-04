@@ -7,7 +7,7 @@ import { summarizeOrder } from "@/lib/orders";
 import { formatThaiDateTime } from "@/lib/datetime";
 import { itemStages, stageLabelsTh, type ItemStage } from "@/lib/stages";
 import { BalanceText, Card, StageBadge, methodLabel } from "@/components/admin/ui";
-import { formatMoney } from "@/lib/money";
+import { formatMoney, orderBalance } from "@/lib/money";
 import { SyncJjButton } from "./SyncJjButton";
 import { getSyncStatus } from "@/lib/jjsync";
 
@@ -32,7 +32,7 @@ export default async function OrdersPage({ searchParams }: Props) {
       : undefined,
     orderBy: desc(orders.createdAt),
     limit: 200,
-    with: { items: { with: { container: true } } },
+    with: { items: { with: { container: true } }, payments: { columns: { appliedAmount: true } } },
   });
 
   const rows = list
@@ -112,7 +112,7 @@ export default async function OrdersPage({ searchParams }: Props) {
                     {o.totalAmount != null ? (
                       <>
                         <span className="block text-xs text-gray-500">เต็ม {formatMoney(o.totalAmount, o.currency)}</span>
-                        <BalanceText total={o.totalAmount} deposit={o.depositAmount} currency={o.currency} />
+                        <BalanceText balance={orderBalance(o, o.payments)} currency={o.currency} />
                       </>
                     ) : (
                       <span className="text-gray-400">-</span>

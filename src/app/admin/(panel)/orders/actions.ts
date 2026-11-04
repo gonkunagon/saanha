@@ -7,6 +7,7 @@ import { db } from "@/db";
 import { containers, currencies, ignoredImports, itemImages, itemPackages, orderItems, orders, payments, shippingMethods, type Currency, type ShippingMethod } from "@/db/schema";
 import { findCustomerById } from "@/lib/customers";
 import { clampHandlingPct } from "@/lib/money";
+import { getQuoteRate } from "@/lib/settings";
 import { requireUser } from "@/lib/auth";
 import { parseLocalDateTime } from "@/lib/datetime";
 import { nextOrderCode, stageOfItem } from "@/lib/orders";
@@ -380,11 +381,32 @@ export async function addPayment(fd: FormData) {
   const amount = toNum(fd.get("amount"));
   const paymentMethod = text(fd, "method");
   if (!orderId || amount == null || amount <= 0 || !paymentMethod) return;
+  const order = await db.query.orders.findFirst({ where: eq(orders.id, orderId), columns: { currency: true } });
+  if (!order) return;
   const c = String(fd.get("currency"));
+  const currency: Currency = (currencies as readonly string[]).includes(c) ? (c as Currency) : "THB";
+  // ยอดที่คิดเป็นสกุลของออเดอร์: สกุลเดียวกันใช้ยอดเดิม · คนละสกุลใช้ที่กรอกเอง หรือแปลงด้วยเรทใบเสนอราคาของวันนี้
+  let appliedAmount = amount;
+  let rate: number | null = null;
+  if (currency !== order.currency) {
+    const manual = toNum(fd.get("appliedAmount"));
+    if (manual != null && manual > 0) {
+      appliedAmount = manual;
+      rate = currency === "THB" ? amount / manual : manual / amount;
+    } else {
+      rate = (await getQuoteRate()).rate;
+      if (!rate) return; // ไม่มีเรทวันนี้และไม่ได้กรอกยอดที่คิดเป็น — บันทึกไม่ได้
+      appliedAmount = currency === "THB" ? amount / rate : amount * rate;
+    }
+    appliedAmount = Math.round(appliedAmount * 100) / 100;
+    rate = Math.round(rate * 10000) / 10000;
+  }
   await db.insert(payments).values({
     orderId,
     amount,
-    currency: (currencies as readonly string[]).includes(c) ? (c as Currency) : "THB",
+    currency,
+    appliedAmount,
+    rate,
     paidAt: parseLocalDateTime(fd.get("paidAt")) ?? new Date(),
     method: paymentMethod,
     note: text(fd, "note"),

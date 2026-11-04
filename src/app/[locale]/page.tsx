@@ -36,7 +36,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     <>
       {/* Hero */}
       <section className="relative overflow-hidden bg-slate-950 text-white">
-        {/* รถบรรทุก SAANHA อยู่ซ้ายของภาพ ตัวหนังสือจึงวางฝั่งขวา (มือถือ: ตัวหนังสือด้านบน รถด้านล่าง) */}
+        {/* รถบรรทุก SAANHA อยู่ซ้ายของภาพ ตัวหนังสือจึงวางฝั่งขวา (มือถือ: ตัวหนังสือด้านบน รถด้านล่าง)
+            จอกว้างตัดภาพจากด้านล่าง (ถนน) เป็นหลัก ให้เห็นเครื่องบินด้านบนเต็มลำ */}
         <Image
           src={heroImage}
           alt=""
@@ -44,7 +45,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           priority
           sizes="100vw"
           placeholder="blur"
-          className="object-cover object-[6%_center] md:object-center"
+          className="object-cover object-[6%_center] md:object-[center_15%]"
         />
         {/* ไล่เงาทับภาพ ให้ตัวหนังสืออ่านง่าย */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-950/50 to-transparent md:bg-transparent md:bg-gradient-to-l md:from-slate-950/85 md:via-slate-950/45 md:to-transparent" />

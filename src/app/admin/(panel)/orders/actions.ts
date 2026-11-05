@@ -385,21 +385,15 @@ export async function addPayment(fd: FormData) {
   if (!order) return;
   const c = String(fd.get("currency"));
   const currency: Currency = (currencies as readonly string[]).includes(c) ? (c as Currency) : "THB";
-  // ยอดที่คิดเป็นสกุลของออเดอร์: สกุลเดียวกันใช้ยอดเดิม · คนละสกุลใช้ที่กรอกเอง หรือแปลงด้วยเรทใบเสนอราคาของวันนี้
+  // ยอดที่คิดเป็นสกุลของออเดอร์: สกุลเดียวกันใช้ยอดเดิม · คนละสกุลแปลงด้วยเรทที่กรอกเอง หรือเรทใบเสนอราคาของวันนี้
   let appliedAmount = amount;
   let rate: number | null = null;
   if (currency !== order.currency) {
-    const manual = toNum(fd.get("appliedAmount"));
-    if (manual != null && manual > 0) {
-      appliedAmount = manual;
-      rate = currency === "THB" ? amount / manual : manual / amount;
-    } else {
-      rate = (await getQuoteRate()).rate;
-      if (!rate) return; // ไม่มีเรทวันนี้และไม่ได้กรอกยอดที่คิดเป็น — บันทึกไม่ได้
-      appliedAmount = currency === "THB" ? amount / rate : amount * rate;
-    }
-    appliedAmount = Math.round(appliedAmount * 100) / 100;
+    const manual = toNum(fd.get("rate"));
+    rate = manual != null && manual > 0 ? manual : (await getQuoteRate()).rate;
+    if (!rate) return; // ไม่มีเรทวันนี้และไม่ได้กรอกเรท — บันทึกไม่ได้
     rate = Math.round(rate * 10000) / 10000;
+    appliedAmount = convertPaid(amount, currency, rate);
   }
   await db.insert(payments).values({
     orderId,
@@ -411,6 +405,25 @@ export async function addPayment(fd: FormData) {
     method: paymentMethod,
     bank: text(fd, "bank"),
   });
+  refresh();
+}
+
+// ยอดโอน → สกุลของออเดอร์ (rate = บาทต่อ 1 หยวน)
+const convertPaid = (amount: number, currency: Currency, rate: number) =>
+  Math.round((currency === "THB" ? amount / rate : amount * rate) * 100) / 100;
+
+// แก้เรทของรายการที่โอนคนละสกุล แล้วคำนวณยอดที่คิดเป็นสกุลออเดอร์ใหม่
+export async function updatePaymentRate(fd: FormData) {
+  await requireUser();
+  const rate = toNum(fd.get("rate"));
+  if (rate == null || rate <= 0) return;
+  const payment = await db.query.payments.findFirst({ where: eq(payments.id, Number(fd.get("paymentId"))) });
+  if (!payment || payment.rate == null) return;
+  const r = Math.round(rate * 10000) / 10000;
+  await db
+    .update(payments)
+    .set({ rate: r, appliedAmount: convertPaid(payment.amount, payment.currency, r) })
+    .where(eq(payments.id, payment.id));
   refresh();
 }
 

@@ -5,7 +5,8 @@ import { currencies, type Order, type Payment } from "@/db/schema";
 import { formatThaiDateTime, nowLocalInputValue } from "@/lib/datetime";
 import { currencyLabel, formatMoney, grandTotalOf, orderBalance, paidOf } from "@/lib/money";
 import { thaiBanks } from "@/lib/banks";
-import { addPayment, deletePayment } from "../actions";
+import { getQuoteRate } from "@/lib/settings";
+import { addPayment, deletePayment, updatePaymentRate } from "../actions";
 
 // ช่องทางการชำระ (เลือกจากรายการ)
 const PAYMENT_METHODS = ["โอนธนาคาร", "พร้อมเพย์", "เงินสด", "บัตรเครดิต / เดบิต", "Alipay", "WeChat Pay", "อื่นๆ"];
@@ -14,12 +15,14 @@ type OrderMoney = Pick<Order, "id" | "currency" | "totalAmount" | "depositAmount
 
 // การชำระเงินของออเดอร์: ยอดที่ลูกค้าโอน วันที่ชำระ ช่องทาง — กด "แก้ไขการชำระเงิน" (?pay=1) จึงเพิ่ม/ลบได้
 // ยอดที่โอนคนละสกุลกับออเดอร์ แสดง "คิดเป็น" สกุลออเดอร์ด้วย (ใช้หักยอดค้างชำระ)
-export function PaymentsCard({ order, payments, editing }: { order: OrderMoney; payments: Payment[]; editing: boolean }) {
+export async function PaymentsCard({ order, payments, editing }: { order: OrderMoney; payments: Payment[]; editing: boolean }) {
   const sorted = [...payments].sort((a, b) => a.paidAt.getTime() - b.paidAt.getTime());
   const cur = order.currency;
   const other = currencies.find((c) => c !== cur)!;
   const grand = grandTotalOf(order.totalAmount, order.handlingFeePct);
   const balance = orderBalance(order, payments);
+  // เรทใบเสนอราคาวันนี้ ใช้เป็นค่าตั้งต้นเมื่อไม่ได้กรอกเรทเอง
+  const todayRate = editing ? (await getQuoteRate()).rate : null;
 
   return (
     // id="payments" ให้กดปุ่มแล้วหน้าเลื่อนมาที่ส่วนนี้เลย
@@ -57,7 +60,19 @@ export function PaymentsCard({ order, payments, editing }: { order: OrderMoney; 
                     <td className="py-2 pr-4 text-right font-semibold whitespace-nowrap">{formatMoney(p.amount, p.currency)}</td>
                     <td className="py-2 pr-4 text-right whitespace-nowrap">
                       {formatMoney(p.appliedAmount, cur)}
-                      {p.rate != null && <span className="block text-xs text-gray-500">เรท {p.rate} บาท/หยวน</span>}
+                      {p.rate != null &&
+                        (editing ? (
+                          // แก้เรทเองได้ — ยอดที่คิดเป็นจะคำนวณใหม่
+                          <form action={updatePaymentRate} className="mt-1 flex items-center justify-end gap-1 text-xs text-gray-500">
+                            <input type="hidden" name="paymentId" value={p.id} />
+                            เรท
+                            <input name="rate" type="number" step="0.0001" min={0.0001} required defaultValue={p.rate} aria-label="เรท บาทต่อหยวน" className="input w-24 px-2 py-1 text-right text-xs" />
+                            บาท/หยวน
+                            <button className="rounded border border-brand-600 px-1.5 py-0.5 font-medium text-brand-600 hover:bg-brand-50">บันทึก</button>
+                          </form>
+                        ) : (
+                          <span className="block text-xs text-gray-500">เรท {p.rate} บาท/หยวน</span>
+                        ))}
                     </td>
                     <td className="py-2 pr-4">{p.method}</td>
                     <td className="py-2 pr-4 text-gray-600">{p.bank ?? p.note ?? "-"}</td>
@@ -120,8 +135,15 @@ export function PaymentsCard({ order, payments, editing }: { order: OrderMoney; 
                 {thaiBanks.map((b) => <option key={b} value={b}>{b}</option>)}
               </select>
             </Field>
-            <Field label={`ถ้าโอนเป็น${currencyLabel[other]}: คิดเป็นกี่${currencyLabel[cur]}`} className="sm:col-span-2">
-              <input name="appliedAmount" type="number" step="0.01" min={0.01} placeholder="เว้นว่าง = แปลงด้วยเรทใบเสนอราคาวันนี้" className="input bg-white" />
+            <Field label={`เรท (บาท / 1 หยวน) — ใช้เมื่อโอนเป็น${currencyLabel[other]}`} className="sm:col-span-2">
+              <input
+                name="rate"
+                type="number"
+                step="0.0001"
+                min={0.0001}
+                placeholder={todayRate ? `เว้นว่าง = เรทใบเสนอราคาวันนี้ ${todayRate}` : "ใส่เรท เช่น 5.05"}
+                className="input bg-white"
+              />
             </Field>
             <div className="flex items-end sm:col-span-2 lg:col-span-3">
               <button className="btn-primary">+ บันทึกการชำระเงิน</button>

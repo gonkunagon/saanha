@@ -66,7 +66,7 @@ export async function PaymentsCard({ order, payments, editing }: { order: OrderM
                           <form action={updatePaymentRate} className="mt-1 flex items-center justify-end gap-1 text-xs text-gray-500">
                             <input type="hidden" name="paymentId" value={p.id} />
                             เรท
-                            <input name="rate" type="number" step="0.0001" min={0.0001} required defaultValue={p.rate} aria-label="เรท บาทต่อหยวน" className="input w-24 px-2 py-1 text-right text-xs" />
+                            <input name="rate" type="number" step="0.0001" min={0.0001} required defaultValue={p.rate} aria-label="เรท บาทต่อหยวน" className="w-20 rounded border border-gray-300 px-1.5 py-0.5 text-right text-xs focus:border-brand-500 focus:outline-none" />
                             บาท/หยวน
                             <button className="rounded border border-brand-600 px-1.5 py-0.5 font-medium text-brand-600 hover:bg-brand-50">บันทึก</button>
                           </form>

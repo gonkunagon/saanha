@@ -250,11 +250,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
         <h1 className="text-2xl font-bold">{order.code}</h1>
         <StageBadge stage={summary.stage} />
         <span className="ml-auto flex items-center gap-3">
-          {editing ? (
-            <Link href={`/admin/orders/${order.id}`} className="btn-secondary">✓ เสร็จแล้ว</Link>
-          ) : (
-            <Link href={`/admin/orders/${order.id}?edit=1`} className="btn-primary">✏️ แก้ไข / อัปเดตสถานะ</Link>
-          )}
+          {editing && <Link href={`/admin/orders/${order.id}`} className="btn-secondary">✓ เสร็จแล้ว</Link>}
           <DeleteOrderButton
             orderId={order.id}
             code={order.code}
@@ -282,7 +278,18 @@ export default async function OrderPage({ params, searchParams }: Props) {
       <div className="space-y-6">
         {header}
 
-        <Card title="ข้อมูลออเดอร์">
+        <Card
+          title="ข้อมูลออเดอร์"
+          actions={
+            // ปุ่มขอบแดงแบบเดียวกับ "แก้ไขการชำระเงิน"
+            <Link
+              href={`/admin/orders/${order.id}?edit=1`}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-brand-600 px-3 py-1.5 text-sm font-medium text-brand-600 hover:bg-brand-50"
+            >
+              ✏️ แก้ไข / อัปเดตสถานะ
+            </Link>
+          }
+        >
           <dl className="grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
             <Info label="ลูกค้า">
               {order.customerId ? (

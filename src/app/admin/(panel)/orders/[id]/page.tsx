@@ -220,7 +220,7 @@ type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ edit?: s
 
 // ปกติแสดงข้อมูลอย่างเดียว · กด "แก้ไข" (?edit=1) จึงเปิดฟอร์มอัปเดตสถานะ / เพิ่ม-แก้รายการ / แก้ข้อมูลออเดอร์
 export default async function OrderPage({ params, searchParams }: Props) {
-  await requireUser();
+  const user = await requireUser();
   const { id } = await params;
   const sp = await searchParams;
   const editing = sp.edit === "1";
@@ -368,10 +368,10 @@ export default async function OrderPage({ params, searchParams }: Props) {
               <Info label="ยอดค้างชำระ">
                 <BalanceText balance={orderBalance(order, order.payments)} currency={order.currency} />
               </Info>
-              {/* ภายใน: กำไร = ยอดที่คิดลูกค้า (รวมเป็นเงินทั้งสิ้น) − ยอดที่สั่งซื้อ (ค่าสินค้า ยอดเต็ม) — หยวนแสดงเป็นบาทตามเรทตอนสั่งซื้อด้วย */}
-              <Info label="กำไร / ส่วนต่าง">
+              {/* เฉพาะแอดมิน: กำไร = ยอดที่คิดลูกค้า (รวมเป็นเงินทั้งสิ้น) − ยอดที่สั่งซื้อ (ค่าสินค้า ยอดเต็ม) — หยวนแสดงเป็นบาทตามเรทตอนสั่งซื้อด้วย */}
+              {user.role === "admin" && (<Info label="กำไร / ส่วนต่าง">
                 <ProfitText order={order} />
-              </Info>
+              </Info>)}
             </InfoSection>
 
             <dl className="grid gap-x-6 gap-y-4 px-1 text-sm sm:grid-cols-2 lg:grid-cols-3">

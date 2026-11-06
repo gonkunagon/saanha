@@ -3,7 +3,9 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth";
 import { Card } from "@/components/admin/ui";
-import { setUserActive, setUserRole } from "./actions";
+import { ConfirmButton } from "@/components/admin/ConfirmButton";
+import { TrashIcon } from "@/components/admin/DeleteOrderButton";
+import { deleteUser, setUserActive, setUserRole } from "./actions";
 import { ChangePasswordForm, CreateUserForm } from "./UserForms";
 
 export default async function UsersPage() {
@@ -50,7 +52,7 @@ export default async function UsersPage() {
                   <td className="py-2 pr-4"><ChangePasswordForm id={u.id} /></td>
                   <td className="py-2 text-right whitespace-nowrap">
                     {u.id !== me.id && (
-                      <span className="inline-flex gap-3">
+                      <span className="inline-flex items-center gap-3">
                         <form action={setUserRole}>
                           <input type="hidden" name="id" value={u.id} />
                           <input type="hidden" name="role" value={u.role === "admin" ? "staff" : "admin"} />
@@ -62,6 +64,16 @@ export default async function UsersPage() {
                           <input type="hidden" name="id" value={u.id} />
                           <input type="hidden" name="active" value={u.active ? "0" : "1"} />
                           <button className="text-sm text-brand-600 hover:underline">{u.active ? "ปิดใช้งาน" : "เปิดใช้งาน"}</button>
+                        </form>
+                        <form action={deleteUser}>
+                          <input type="hidden" name="id" value={u.id} />
+                          <ConfirmButton
+                            message={`ลบบัญชี ${u.name} (${u.username}) ถาวร? เข้าสู่ระบบด้วยบัญชีนี้ไม่ได้อีก`}
+                            className="-my-1 rounded-lg p-1 text-gray-400 hover:bg-brand-50 hover:text-brand-600"
+                          >
+                            <span className="sr-only">ลบ {u.name}</span>
+                            <TrashIcon className="h-5 w-5" />
+                          </ConfirmButton>
                         </form>
                       </span>
                     )}

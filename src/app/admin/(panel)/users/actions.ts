@@ -54,3 +54,12 @@ export async function setUserRole(formData: FormData) {
   await db.update(users).set({ role: role(formData.get("role")) }).where(eq(users.id, id));
   revalidatePath("/admin/users");
 }
+
+// ลบบัญชีพนักงานที่ออกไปแล้ว (ลบตัวเองไม่ได้) — คุกกี้ของบัญชีที่ถูกลบใช้ต่อไม่ได้ เพราะหาผู้ใช้ไม่เจอ
+export async function deleteUser(formData: FormData) {
+  const me = await requireAdmin();
+  const id = Number(formData.get("id"));
+  if (!id || id === me.id) return;
+  await db.delete(users).where(eq(users.id, id));
+  revalidatePath("/admin/users");
+}

@@ -25,7 +25,6 @@ export default async function OrdersPage({ searchParams }: Props) {
           ilike(orders.code, `%${term}%`),
           ilike(orders.customerName, `%${term}%`),
           ilike(orders.customerPhone, `%${term}%`),
-          ilike(orders.externalId, `%${term}%`),
           ilike(orders.purchaseOrderNo, `%${term}%`),
           ilike(orders.shopName, `%${term}%`),
           ilike(orders.intlTrackingNo, `%${term}%`),

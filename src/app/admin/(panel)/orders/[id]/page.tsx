@@ -338,7 +338,6 @@ export default async function OrderPage({ params, searchParams }: Props) {
               {/* หลายเลขเก็บบรรทัดละเลข (Info แสดงขึ้นบรรทัดใหม่ให้เอง) */}
               <Info label="Tracking no. จีน → ไทย">{order.intlTrackingNo}</Info>
               <Info label="บริษัทขนส่งที่รับงานต่อ">{order.provider}</Info>
-              <Info label="External ID">{order.externalId}</Info>
             </InfoSection>
 
             <InfoSection title="สรุปยอดชำระ" tone="money">

@@ -26,9 +26,6 @@ function CreateContainerForm({ onCancel }: { onCancel: () => void }) {
       <Field label="บริษัทขนส่ง">
         <input name="provider" className="input" />
       </Field>
-      <Field label="External ID (เลขอ้างอิงของบริษัทขนส่ง)">
-        <input name="externalId" className="input" />
-      </Field>
       <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
         <button disabled={pending} className="btn-primary">{pending ? "กำลังสร้าง..." : "สร้างตู้"}</button>
         <button type="button" onClick={onCancel} className="rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50">

@@ -30,7 +30,7 @@ export default async function ContainersPage() {
                 <th className="py-2 pr-4">วิธีขนส่ง</th>
                 <th className="py-2 pr-4">สถานะ</th>
                 <th className="py-2 pr-4">ออเดอร์ / รายการ</th>
-                <th className="py-2 pr-4">บริษัทขนส่ง / External ID</th>
+                <th className="py-2 pr-4">บริษัทขนส่ง</th>
                 <th className="py-2">อัปเดตล่าสุด</th>
               </tr>
             </thead>
@@ -52,7 +52,7 @@ export default async function ContainersPage() {
                       {new Set(c.items.map((i) => i.orderId)).size} / {c.items.length}
                     </td>
                     <td className="py-2 pr-4 text-gray-600">
-                      {c.provider ?? "-"} {c.externalId && <span className="text-gray-400">· {c.externalId}</span>}
+                      {c.provider ?? "-"}
                     </td>
                     <td className="py-2 text-gray-500">{formatThaiDateTime(c.updatedAt)}</td>
                   </tr>

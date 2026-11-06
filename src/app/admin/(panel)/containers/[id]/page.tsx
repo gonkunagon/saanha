@@ -162,9 +162,6 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
             <Field label="บริษัทขนส่ง">
               <input name="provider" defaultValue={container.provider ?? ""} className="input" />
             </Field>
-            <Field label="External ID (เลขอ้างอิงของบริษัทขนส่ง)">
-              <input name="externalId" defaultValue={container.externalId ?? ""} className="input" />
-            </Field>
             <Field label="หมายเหตุภายใน" className="sm:col-span-2">
               <textarea name="note" rows={2} defaultValue={container.note ?? ""} className="input" />
             </Field>

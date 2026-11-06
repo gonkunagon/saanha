@@ -25,7 +25,7 @@ export async function createContainer(_prev: string | null, fd: FormData): Promi
   if (await db.query.containers.findFirst({ where: eq(containers.code, code) })) return "เลขตู้นี้มีอยู่แล้ว";
   const [row] = await db
     .insert(containers)
-    .values({ code, method: method(fd), provider: text(fd, "provider"), externalId: text(fd, "externalId") })
+    .values({ code, method: method(fd), provider: text(fd, "provider") })
     .returning({ id: containers.id });
   refresh();
   redirect(`/admin/containers/${row.id}`);
@@ -38,7 +38,7 @@ export async function updateContainer(fd: FormData) {
   if (!code) return;
   await db
     .update(containers)
-    .set({ code, method: method(fd), provider: text(fd, "provider"), externalId: text(fd, "externalId"), note: text(fd, "note") })
+    .set({ code, method: method(fd), provider: text(fd, "provider"), note: text(fd, "note") })
     .where(eq(containers.id, id));
   refresh();
 }

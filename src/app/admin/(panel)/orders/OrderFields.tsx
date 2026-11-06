@@ -68,9 +68,6 @@ export function OrderFields({
       <Field label="บริษัทขนส่งที่รับงานต่อ">
         <input name="provider" defaultValue={order?.provider ?? ""} className="input" />
       </Field>
-      <Field label="External ID (เลขออเดอร์ของบริษัทขนส่ง)">
-        <input name="externalId" defaultValue={order?.externalId ?? ""} className="input" />
-      </Field>
       <Field label="หมายเหตุถึงลูกค้า (แสดงในหน้าติดตามพัสดุ)" className="sm:col-span-2">
         <textarea name="note" rows={2} defaultValue={order?.note ?? ""} className="input" />
       </Field>

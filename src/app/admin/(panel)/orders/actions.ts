@@ -121,7 +121,8 @@ function orderFields(fd: FormData) {
     totalAmount: toNum(fd.get("totalAmount")),
     depositAmount: toNum(fd.get("depositAmount")),
     handlingFeePct: clampHandlingPct(fd.get("handlingFeePct")),
-    orderRate: toNum(fd.get("orderRate")),
+    // ฟอร์มที่ไม่มีช่องเรท (เช่น หน้าที่เปิดค้างไว้ก่อนมีช่องนี้) = ไม่แตะค่าเดิม (undefined → drizzle ไม่อัปเดตคอลัมน์)
+    orderRate: fd.has("orderRate") ? toNum(fd.get("orderRate")) : undefined,
     method: method(fd),
     provider: text(fd, "provider"),
     externalId: text(fd, "externalId"),

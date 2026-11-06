@@ -91,6 +91,8 @@ export const orders = pgTable("orders", {
   handlingFeePct: integer("handling_fee_pct").notNull().default(5),
   // เรทหยวนตอนสั่งซื้อ (บาทต่อ 1 หยวน) — จดไว้ดูว่าตอนสั่งของเรทเท่าไหร่ (ไม่ได้ใช้คำนวณยอด)
   orderRate: doublePrecision("order_rate"),
+  // ยอดที่ร้านจ่ายสั่งซื้อสินค้าจริง (ต้นทุน, สกุลเดียวกับค่าสินค้า) — ใช้คิดกำไร = รวมเป็นเงินทั้งสิ้น − ต้นทุน (ภายใน ลูกค้าไม่เห็น)
+  costAmount: doublePrecision("cost_amount"),
   provider: text("provider"),
   externalId: text("external_id"),
   note: text("note"), // หมายเหตุที่ลูกค้าเห็นในหน้าติดตามพัสดุ

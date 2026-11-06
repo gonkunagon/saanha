@@ -35,6 +35,13 @@ export function paidOf(order: { depositAmount: number | null }, payments: { appl
   return Math.round(payments.reduce((s, p) => s + p.appliedAmount, 0) * 100) / 100;
 }
 
+// กำไร / ส่วนต่าง = รวมเป็นเงินทั้งสิ้นที่คิดลูกค้า − ยอดที่จ่ายสั่งซื้อจริง (ยังไม่ใส่ต้นทุน = ยังคิดไม่ได้)
+export function profitOf(order: { totalAmount: number | null; handlingFeePct: number; costAmount: number | null }): number | null {
+  const total = grandTotalOf(order.totalAmount, order.handlingFeePct);
+  if (total == null || order.costAmount == null) return null;
+  return Math.round((total - order.costAmount) * 100) / 100;
+}
+
 // ยอดค้างชำระ = รวมเป็นเงินทั้งสิ้น (ค่าสินค้า + ค่าดำเนินการ) − ยอดที่จ่ายแล้ว
 export function orderBalance(
   order: { totalAmount: number | null; depositAmount: number | null; handlingFeePct: number },

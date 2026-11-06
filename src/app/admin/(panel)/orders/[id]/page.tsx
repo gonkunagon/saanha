@@ -16,7 +16,7 @@ import { ItemPriceForm } from "./ItemPriceForm";
 import { PaymentsCard } from "./PaymentsCard";
 import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
 import { BalanceText } from "@/components/admin/ui";
-import { currencyLabel, formatMoney, grandTotalOf, handlingFeeOf, orderBalance, paidOf, type CurrencyCode } from "@/lib/money";
+import { currencyLabel, formatMoney, grandTotalOf, handlingFeeOf, orderBalance, paidOf, profitOf, type CurrencyCode } from "@/lib/money";
 import { StageUpdateForm, type ContainerOption } from "./StageUpdateForm";
 import { PackageFields } from "@/components/admin/PackageFields";
 import { deleteItemImage, uploadItemImages } from "../image-actions";
@@ -125,6 +125,19 @@ function InfoSection({ title, tone, children }: { title: string; tone?: "money";
       <h3 className="mb-3 text-sm font-semibold text-gray-800">{title}</h3>
       <dl className="grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2 lg:grid-cols-3">{children}</dl>
     </section>
+  );
+}
+
+function ProfitText({ order }: { order: { totalAmount: number | null; handlingFeePct: number; costAmount: number | null; currency: CurrencyCode; orderRate: number | null } }) {
+  const profit = profitOf(order);
+  if (profit == null) return <span className="text-gray-400">{order.costAmount == null ? "ใส่ยอดที่จ่ายสั่งซื้อจริงก่อน" : "-"}</span>;
+  return (
+    <span className={`font-semibold ${profit < 0 ? "text-brand-700" : "text-emerald-700"}`}>
+      {formatMoney(profit, order.currency)}
+      {order.currency === "CNY" && order.orderRate != null && (
+        <span className="ml-1 text-xs font-normal text-gray-500">(≈ {formatMoney(Math.round(profit * order.orderRate * 100) / 100, "THB")})</span>
+      )}
+    </span>
   );
 }
 
@@ -353,6 +366,11 @@ export default async function OrderPage({ params, searchParams }: Props) {
               </Info>
               <Info label="ยอดค้างชำระ">
                 <BalanceText balance={orderBalance(order, order.payments)} currency={order.currency} />
+              </Info>
+              {/* ภายใน: ต้นทุนที่จ่ายสั่งซื้อจริง และกำไร (หยวน แสดงเป็นบาทตามเรทตอนสั่งซื้อด้วย) */}
+              <Info label="ยอดที่จ่ายสั่งซื้อจริง (ต้นทุน)">{order.costAmount != null && formatMoney(order.costAmount, order.currency)}</Info>
+              <Info label="กำไร / ส่วนต่าง">
+                <ProfitText order={order} />
               </Info>
             </InfoSection>
 

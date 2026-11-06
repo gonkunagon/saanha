@@ -14,10 +14,11 @@ type Props = {
   paymentsLinked?: boolean;
   // เรทหยวนตอนสั่งซื้อ (ออเดอร์ใหม่ = เรทใบเสนอราคาวันนี้ แก้ได้)
   orderRate?: number | null;
+  costAmount?: number | null;
 };
 
 // ร้านค้า ค่าสินค้า (ยอดเต็ม / มัดจำ / ค้างชำระ คำนวณให้ทันทีที่พิมพ์) และค่าดำเนินการของร้าน (% ของค่าสินค้า)
-export function PaymentFields({ shopName, hideShopOnQuote = false, currency: initialCurrency = "THB", totalAmount, depositAmount, handlingFeePct = 5, paymentsLinked = false, orderRate }: Props) {
+export function PaymentFields({ shopName, hideShopOnQuote = false, currency: initialCurrency = "THB", totalAmount, depositAmount, handlingFeePct = 5, paymentsLinked = false, orderRate, costAmount }: Props) {
   const [currency, setCurrency] = useState<CurrencyCode>(initialCurrency);
   const [total, setTotal] = useState(totalAmount == null ? "" : String(totalAmount));
   const [deposit, setDeposit] = useState(depositAmount == null ? "" : String(depositAmount));
@@ -80,6 +81,12 @@ export function PaymentFields({ shopName, hideShopOnQuote = false, currency: ini
         <span className="mb-1 block text-sm text-gray-600">เรทตอนสั่งซื้อ (บาท / 1 หยวน)</span>
         <span className="block w-32">
           <input name="orderRate" type="number" step="0.0001" min={0} defaultValue={orderRate ?? ""} placeholder="เช่น 5.05" className="input" />
+        </span>
+      </label>
+      <label className="block">
+        <span className="mb-1 block text-sm text-gray-600">ยอดที่จ่ายสั่งซื้อจริง / ต้นทุน ({currencyLabel[currency]}, ภายใน)</span>
+        <span className="block w-40">
+          <input name="costAmount" type="number" step="0.01" min={0} defaultValue={costAmount ?? ""} className="input" />
         </span>
       </label>
       {paymentsLinked ? (

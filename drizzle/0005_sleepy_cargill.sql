@@ -1,0 +1,1 @@
+ALTER TABLE "orders" ADD COLUMN "cost_amount" double precision;

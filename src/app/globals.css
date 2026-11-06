@@ -18,7 +18,8 @@
   --color-accent-600: #dc9d00;
   --color-accent-ink: #3b2300;
   --color-ink: #1f2937;
-  --font-sans: var(--font-noto-thai), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-sarabun), ui-sans-serif, system-ui, sans-serif;
+  --font-logo: var(--font-noto-logo), var(--font-sarabun), sans-serif;
 }
 
 body {

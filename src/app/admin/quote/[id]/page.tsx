@@ -93,7 +93,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
           <div className="flex items-center gap-4 px-6 py-5">
             <LogoMark className="h-14 w-14 shrink-0 text-navy-700" />
             <div>
-              <p className="text-2xl font-extrabold tracking-tight text-gray-900">{site.name}</p>
+              <p className="font-logo text-2xl font-extrabold tracking-tight text-gray-900">{site.name}</p>
               {site.showAddress && <p className="max-w-xs text-[11px] leading-5 text-gray-600">{site.address.th}</p>}
               <p className="text-[11px] text-gray-600">โทร: {site.phone}</p>
               <p className="text-[11px] text-gray-600">Line: {site.lineId}</p>
@@ -261,7 +261,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
           <header className="mx-10 mt-8 flex items-center justify-between rounded-lg border-2 border-brand-600 px-6 py-4">
             <div className="flex items-center gap-3">
               <LogoMark className="h-10 w-10 shrink-0 text-navy-700" />
-              <span className="text-xl font-extrabold tracking-tight text-gray-900">{site.name}</span>
+              <span className="font-logo text-xl font-extrabold tracking-tight text-gray-900">{site.name}</span>
             </div>
             <div className="text-right">
               <h2 className="text-2xl font-bold text-brand-700">รายละเอียดสินค้า</h2>

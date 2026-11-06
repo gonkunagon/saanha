@@ -10,6 +10,7 @@ import { clampHandlingPct } from "@/lib/money";
 import { getQuoteRate } from "@/lib/settings";
 import { requireUser } from "@/lib/auth";
 import { parseLocalDateTime } from "@/lib/datetime";
+import { joinTracking } from "@/lib/tracking";
 import { nextOrderCode, stageOfItem } from "@/lib/orders";
 import { calcCbm } from "@/lib/cbm";
 import { containerStageFields, itemStages, optionalStages, stageIndex, type ContainerStage, type ItemStage } from "@/lib/stages";
@@ -112,7 +113,7 @@ async function savePackages(tx: Tx, itemId: number, pkgs: PackageRow[]) {
 function orderFields(fd: FormData) {
   return {
     purchaseOrderNo: text(fd, "purchaseOrderNo"),
-    intlTrackingNo: text(fd, "intlTrackingNo"),
+    intlTrackingNo: joinTracking(fd.getAll("intlTrackingNo").map(String)),
     shopName: text(fd, "shopName"),
     hideShopOnQuote: fd.get("hideShopOnQuote") === "1",
     platform: text(fd, "platform"),

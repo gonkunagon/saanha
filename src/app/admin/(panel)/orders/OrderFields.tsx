@@ -3,6 +3,8 @@ import type { PickerCustomer } from "@/lib/customers";
 import { Field, MethodSelect } from "@/components/admin/ui";
 import { PaymentFields } from "@/components/admin/PaymentFields";
 import { CustomerPicker } from "@/components/admin/CustomerPicker";
+import { TrackingFields } from "@/components/admin/TrackingFields";
+import { splitTracking } from "@/lib/tracking";
 
 // ช่องข้อมูลออเดอร์ ใช้ทั้งตอนสร้างและแก้ไข
 // ลูกค้าต้องเลือกจากทะเบียนลูกค้า — preselectId มาจากปุ่ม "สร้างออเดอร์ให้ลูกค้านี้"
@@ -56,9 +58,11 @@ export function OrderFields({
       <Field label="วิธีขนส่ง">
         <MethodSelect defaultValue={order?.method} />
       </Field>
-      <Field label="Tracking no. จากจีนมาไทย (ใช้ภายใน ลูกค้าไม่เห็น)" className="sm:col-span-2">
-        <input name="intlTrackingNo" defaultValue={order?.intlTrackingNo ?? ""} className="input" autoComplete="off" />
-      </Field>
+      {/* หลายช่องได้ (1 ออเดอร์มีหลายพัสดุ) — ไม่ใช้ <Field> เพราะ label ห้ามครอบหลายช่อง */}
+      <div className="sm:col-span-2">
+        <span className="mb-1 block text-sm text-gray-600">Tracking no. จากจีนมาไทย (ใช้ภายใน ลูกค้าไม่เห็น)</span>
+        <TrackingFields defaults={splitTracking(order?.intlTrackingNo)} />
+      </div>
       <Field label="บริษัทขนส่งที่รับงานต่อ">
         <input name="provider" defaultValue={order?.provider ?? ""} className="input" />
       </Field>

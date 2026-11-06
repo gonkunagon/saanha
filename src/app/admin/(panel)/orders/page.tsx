@@ -9,6 +9,7 @@ import { itemStages, stageLabelsTh, type ItemStage } from "@/lib/stages";
 import { BalanceText, Card, StageBadge, methodLabel } from "@/components/admin/ui";
 import { formatMoney, grandTotalOf, orderBalance } from "@/lib/money";
 import { SyncJjButton } from "./SyncJjButton";
+import { splitTracking } from "@/lib/tracking";
 import { getSyncStatus } from "@/lib/jjsync";
 
 type Props = { searchParams: Promise<{ q?: string; stage?: string }> };
@@ -99,7 +100,7 @@ export default async function OrdersPage({ searchParams }: Props) {
                   </td>
                   <td className="py-2 pr-4">
                     {methodLabel(o.method)}
-                    {o.intlTrackingNo && <span className="block text-xs text-gray-500">{o.intlTrackingNo}</span>}
+                    {splitTracking(o.intlTrackingNo).map((t) => <span key={t} className="block text-xs text-gray-500">{t}</span>)}
                   </td>
                   <td className="py-2 pr-4">{s.itemCount} / {s.containerCount} ตู้</td>
                   <td className="py-2 pr-4">

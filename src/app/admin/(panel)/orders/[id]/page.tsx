@@ -118,7 +118,7 @@ function ProductLink({ href }: { href: string }) {
 }
 
 // แสดงข้อมูล 1 ช่อง (ไม่มีค่า = ขีด)
-// กรอบย่อยในข้อมูลออเดอร์ (หัวข้อ + ช่องข้อมูล 3 คอลัมน์) — กรอบการเงินพื้นสีอ่อนให้เห็นเด่น
+// กรอบย่อยในข้อมูลออเดอร์ (หัวข้อ + ช่องข้อมูล 3 คอลัมน์) — กรอบสรุปยอดชำระพื้นสีอ่อนให้เห็นเด่น
 function InfoSection({ title, tone, children }: { title: string; tone?: "money"; children: React.ReactNode }) {
   return (
     <section className={`rounded-lg border p-4 ${tone === "money" ? "border-accent-300 bg-accent-300/10" : "border-gray-200"}`}>
@@ -300,7 +300,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
             </Link>
           }
         >
-          {/* แบ่งเป็น 3 กรอบ: ลูกค้า/คำสั่งซื้อ · การเงิน · ขนส่ง — หมายเหตุอยู่ล่างสุด */}
+          {/* แบ่งเป็น 3 กรอบ: ลูกค้า/คำสั่งซื้อ · ขนส่ง · สรุปยอดชำระ — หมายเหตุอยู่ล่างสุด */}
           <div className="space-y-4">
             <InfoSection title="ข้อมูลลูกค้า / คำสั่งซื้อ">
               <Info label="ลูกค้า">
@@ -322,22 +322,6 @@ export default async function OrderPage({ params, searchParams }: Props) {
               <Info label="Platform (ภายใน)">{order.platform}</Info>
             </InfoSection>
 
-            <InfoSection title="การเงิน" tone="money">
-              <Info label="ค่าสินค้า (ยอดเต็ม)">{order.totalAmount != null && formatMoney(order.totalAmount, order.currency)}</Info>
-              <Info label={`ค่าดำเนินการ ${order.handlingFeePct}%`}>{order.totalAmount != null && formatMoney(handlingFeeOf(order.totalAmount, order.handlingFeePct), order.currency)}</Info>
-              <Info label="รวมเป็นเงินทั้งสิ้น">
-                {order.totalAmount != null && <b>{formatMoney(grandTotalOf(order.totalAmount, order.handlingFeePct), order.currency)}</b>}
-              </Info>
-              <Info label="เรทตอนสั่งซื้อ">{order.orderRate != null && `${order.orderRate} บาท / หยวน`}</Info>
-              {/* ยอดที่จ่ายแล้ว/ค้างชำระ คิดจากรายการชำระเงิน (ออเดอร์เก่าที่ยังไม่มีรายการ ใช้ช่องมัดจำ) */}
-              <Info label={order.payments.length ? "ชำระแล้ว" : "มัดจำค่าสินค้า"}>
-                {paidOf(order, order.payments) != null && formatMoney(paidOf(order, order.payments), order.currency)}
-              </Info>
-              <Info label="ยอดค้างชำระ">
-                <BalanceText balance={orderBalance(order, order.payments)} currency={order.currency} />
-              </Info>
-            </InfoSection>
-
             <InfoSection title="ข้อมูลขนส่ง">
               <Info label="วิธีขนส่ง">{methodLabel(order.method)}</Info>
               <Info label="ตู้">
@@ -355,6 +339,22 @@ export default async function OrderPage({ params, searchParams }: Props) {
               <Info label="Tracking no. จีน → ไทย">{order.intlTrackingNo}</Info>
               <Info label="บริษัทขนส่งที่รับงานต่อ">{order.provider}</Info>
               <Info label="External ID">{order.externalId}</Info>
+            </InfoSection>
+
+            <InfoSection title="สรุปยอดชำระ" tone="money">
+              <Info label="ค่าสินค้า (ยอดเต็ม)">{order.totalAmount != null && formatMoney(order.totalAmount, order.currency)}</Info>
+              <Info label={`ค่าดำเนินการ ${order.handlingFeePct}%`}>{order.totalAmount != null && formatMoney(handlingFeeOf(order.totalAmount, order.handlingFeePct), order.currency)}</Info>
+              <Info label="รวมเป็นเงินทั้งสิ้น">
+                {order.totalAmount != null && <b>{formatMoney(grandTotalOf(order.totalAmount, order.handlingFeePct), order.currency)}</b>}
+              </Info>
+              <Info label="เรทตอนสั่งซื้อ">{order.orderRate != null && `${order.orderRate} บาท / หยวน`}</Info>
+              {/* ยอดที่จ่ายแล้ว/ค้างชำระ คิดจากรายการชำระเงิน (ออเดอร์เก่าที่ยังไม่มีรายการ ใช้ช่องมัดจำ) */}
+              <Info label={order.payments.length ? "ชำระแล้ว" : "มัดจำค่าสินค้า"}>
+                {paidOf(order, order.payments) != null && formatMoney(paidOf(order, order.payments), order.currency)}
+              </Info>
+              <Info label="ยอดค้างชำระ">
+                <BalanceText balance={orderBalance(order, order.payments)} currency={order.currency} />
+              </Info>
             </InfoSection>
 
             <dl className="grid gap-x-6 gap-y-4 px-1 text-sm sm:grid-cols-2 lg:grid-cols-3">

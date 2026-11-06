@@ -29,6 +29,13 @@
       "when": 1793790978714,
       "tag": "0003_payment_bank",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793954508051,
+      "tag": "0004_order_rate",
+      "breakpoints": true
     }
   ]
 }

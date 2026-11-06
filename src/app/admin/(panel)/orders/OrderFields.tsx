@@ -11,11 +11,13 @@ export function OrderFields({
   customers,
   preselectId,
   paymentsLinked,
+  todayRate,
 }: {
   order?: Order;
   customers: PickerCustomer[];
   preselectId?: number;
   paymentsLinked?: boolean;
+  todayRate?: number | null;
 }) {
   return (
     <>
@@ -49,6 +51,7 @@ export function OrderFields({
         depositAmount={order?.depositAmount}
         handlingFeePct={order?.handlingFeePct}
         paymentsLinked={paymentsLinked}
+        orderRate={order ? order.orderRate : todayRate}
       />
       <Field label="วิธีขนส่ง">
         <MethodSelect defaultValue={order?.method} />

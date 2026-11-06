@@ -120,6 +120,7 @@ function orderFields(fd: FormData) {
     totalAmount: toNum(fd.get("totalAmount")),
     depositAmount: toNum(fd.get("depositAmount")),
     handlingFeePct: clampHandlingPct(fd.get("handlingFeePct")),
+    orderRate: toNum(fd.get("orderRate")),
     method: method(fd),
     provider: text(fd, "provider"),
     externalId: text(fd, "externalId"),

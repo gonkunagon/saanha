@@ -12,10 +12,12 @@ type Props = {
   handlingFeePct?: number;
   // ออเดอร์มีรายการชำระเงินแล้ว: ยอดจ่าย/ค้างคิดจากส่วน "การชำระเงิน" แทนช่องมัดจำ
   paymentsLinked?: boolean;
+  // เรทหยวนตอนสั่งซื้อ (ออเดอร์ใหม่ = เรทใบเสนอราคาวันนี้ แก้ได้)
+  orderRate?: number | null;
 };
 
 // ร้านค้า ค่าสินค้า (ยอดเต็ม / มัดจำ / ค้างชำระ คำนวณให้ทันทีที่พิมพ์) และค่าดำเนินการของร้าน (% ของค่าสินค้า)
-export function PaymentFields({ shopName, hideShopOnQuote = false, currency: initialCurrency = "THB", totalAmount, depositAmount, handlingFeePct = 5, paymentsLinked = false }: Props) {
+export function PaymentFields({ shopName, hideShopOnQuote = false, currency: initialCurrency = "THB", totalAmount, depositAmount, handlingFeePct = 5, paymentsLinked = false, orderRate }: Props) {
   const [currency, setCurrency] = useState<CurrencyCode>(initialCurrency);
   const [total, setTotal] = useState(totalAmount == null ? "" : String(totalAmount));
   const [deposit, setDeposit] = useState(depositAmount == null ? "" : String(depositAmount));
@@ -74,8 +76,12 @@ export function PaymentFields({ shopName, hideShopOnQuote = false, currency: ini
           </span>
         </div>
       </label>
+      <label className="block">
+        <span className="mb-1 block text-sm text-gray-600">เรทตอนสั่งซื้อ (บาท / 1 หยวน)</span>
+        <input name="orderRate" type="number" step="0.0001" min={0} defaultValue={orderRate ?? ""} placeholder="เช่น 5.05" className="input" />
+      </label>
       {paymentsLinked ? (
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-2">
           {/* เก็บค่ามัดจำเดิมไว้ ไม่ให้หายตอนบันทึก */}
           <input type="hidden" name="depositAmount" value={deposit} />
           <span className="mb-1 block text-sm text-gray-600">ยอดชำระ / ค้างชำระ</span>
@@ -95,7 +101,7 @@ export function PaymentFields({ shopName, hideShopOnQuote = false, currency: ini
               className="input"
             />
           </label>
-          <div className="lg:col-span-2">
+          <div>
             <span className="mb-1 block text-sm text-gray-600">ค่าสินค้าค้างชำระ (คำนวณอัตโนมัติ)</span>
             <p
               className={`rounded-lg px-3 py-2 font-semibold ${

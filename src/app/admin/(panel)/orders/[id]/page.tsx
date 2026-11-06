@@ -321,6 +321,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
             </Info>
             <Info label="Platform (ภายใน)">{order.platform}</Info>
             <Info label="ค่าสินค้า (ยอดเต็ม)">{order.totalAmount != null && formatMoney(order.totalAmount, order.currency)}</Info>
+            <Info label="เรทตอนสั่งซื้อ">{order.orderRate != null && `${order.orderRate} บาท / หยวน`}</Info>
             <Info label={`ค่าดำเนินการ ${order.handlingFeePct}%`}>{order.totalAmount != null && formatMoney(handlingFeeOf(order.totalAmount, order.handlingFeePct), order.currency)}</Info>
             <Info label="รวมเป็นเงินทั้งสิ้น">{order.totalAmount != null && formatMoney(grandTotalOf(order.totalAmount, order.handlingFeePct), order.currency)}</Info>
             {/* ยอดที่จ่ายแล้ว/ค้างชำระ คิดจากรายการชำระเงิน (ออเดอร์เก่าที่ยังไม่มีรายการ ใช้ช่องมัดจำ) */}

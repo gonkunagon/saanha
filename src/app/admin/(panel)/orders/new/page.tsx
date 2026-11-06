@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { listCustomersForPicker } from "@/lib/customers";
+import { getQuoteRate } from "@/lib/settings";
 import { Card } from "@/components/admin/ui";
 import { OrderFields } from "../OrderFields";
 import { CreateOrderForm } from "./CreateOrderForm";
@@ -10,7 +11,7 @@ type Props = { searchParams: Promise<{ customer?: string }> };
 export default async function NewOrderPage({ searchParams }: Props) {
   await requireUser();
   const { customer } = await searchParams;
-  const customers = await listCustomersForPicker();
+  const [customers, { rate: todayRate }] = await Promise.all([listCustomersForPicker(), getQuoteRate()]);
 
   return (
     <div className="space-y-6">
@@ -21,7 +22,7 @@ export default async function NewOrderPage({ searchParams }: Props) {
       <Card>
         <p className="mb-4 text-sm text-gray-500">ระบบจะออกเลขออเดอร์ให้อัตโนมัติ</p>
         <CreateOrderForm>
-          <OrderFields customers={customers} preselectId={Number(customer) || undefined} />
+          <OrderFields customers={customers} preselectId={Number(customer) || undefined} todayRate={todayRate} />
         </CreateOrderForm>
       </Card>
     </div>

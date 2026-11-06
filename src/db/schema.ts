@@ -89,6 +89,8 @@ export const orders = pgTable("orders", {
   serviceFee: doublePrecision("service_fee"), // เลิกใช้แล้ว (ค่าบริการเป็นบาท) — แทนด้วย handlingFeePct ด้านล่าง
   // ค่าดำเนินการของร้าน คิดเป็น % ของยอดรวมค่าสินค้า (เลือกได้ 0–8%) — สกุลเงินเดียวกับค่าสินค้า
   handlingFeePct: integer("handling_fee_pct").notNull().default(5),
+  // เรทหยวนตอนสั่งซื้อ (บาทต่อ 1 หยวน) — จดไว้ดูว่าตอนสั่งของเรทเท่าไหร่ (ไม่ได้ใช้คำนวณยอด)
+  orderRate: doublePrecision("order_rate"),
   provider: text("provider"),
   externalId: text("external_id"),
   note: text("note"), // หมายเหตุที่ลูกค้าเห็นในหน้าติดตามพัสดุ

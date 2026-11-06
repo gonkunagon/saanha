@@ -56,7 +56,9 @@ export function OrderFields({
         orderRate={order ? order.orderRate : todayRate}
       />
       <Field label="วิธีขนส่ง">
-        <MethodSelect defaultValue={order?.method} />
+        <span className="block w-40">
+          <MethodSelect defaultValue={order?.method} />
+        </span>
       </Field>
       {/* หลายช่องได้ (1 ออเดอร์มีหลายพัสดุ) — ไม่ใช้ <Field> เพราะ label ห้ามครอบหลายช่อง */}
       <div className="sm:col-span-2">

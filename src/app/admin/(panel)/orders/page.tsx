@@ -55,7 +55,7 @@ export default async function OrdersPage({ searchParams }: Props) {
           <input
             name="q"
             defaultValue={q}
-            placeholder="ค้นหา เลขออเดอร์ / เลขคำสั่งซื้อ / Tracking / ร้านค้า / ชื่อ / เบอร์ / External ID"
+            placeholder="ค้นหา เลขออเดอร์ / เลขคำสั่งซื้อ / Tracking / ร้านค้า / ชื่อ / เบอร์"
             className="input max-w-sm flex-1"
           />
           <select name="stage" defaultValue={stage} className="input w-auto">
@@ -77,7 +77,6 @@ export default async function OrdersPage({ searchParams }: Props) {
                 <th className="py-2 pr-4">รายการ / ตู้</th>
                 <th className="py-2 pr-4">สถานะ</th>
                 <th className="py-2 pr-4">ยอดเงิน</th>
-                <th className="py-2 pr-4">External ID</th>
                 <th className="py-2 pr-4">สร้างเมื่อ</th>
                 <th className="py-2" aria-label="ลบ" />
               </tr>
@@ -120,7 +119,6 @@ export default async function OrdersPage({ searchParams }: Props) {
                       <span className="text-gray-400">-</span>
                     )}
                   </td>
-                  <td className="py-2 pr-4 text-gray-600">{o.externalId ?? "-"}</td>
                   <td className="py-2 pr-4 text-gray-500">{formatThaiDateTime(o.createdAt)}</td>
                   <td className="py-2 text-right">
                     {/* ไอคอนใบเสนอราคา (เอกสาร) — ชี้ค้างจะขึ้นชื่อปุ่ม */}

@@ -54,7 +54,6 @@ export function OrderFields({
         handlingFeePct={order?.handlingFeePct}
         paymentsLinked={paymentsLinked}
         orderRate={order ? order.orderRate : todayRate}
-        costAmount={order?.costAmount}
       />
       <Field label="วิธีขนส่ง">
         <span className="block w-40">

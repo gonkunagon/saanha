@@ -118,6 +118,16 @@ function ProductLink({ href }: { href: string }) {
 }
 
 // แสดงข้อมูล 1 ช่อง (ไม่มีค่า = ขีด)
+// กรอบย่อยในข้อมูลออเดอร์ (หัวข้อ + ช่องข้อมูล 3 คอลัมน์) — กรอบการเงินพื้นสีอ่อนให้เห็นเด่น
+function InfoSection({ title, tone, children }: { title: string; tone?: "money"; children: React.ReactNode }) {
+  return (
+    <section className={`rounded-lg border p-4 ${tone === "money" ? "border-accent-300 bg-accent-300/10" : "border-gray-200"}`}>
+      <h3 className="mb-3 text-sm font-semibold text-gray-800">{title}</h3>
+      <dl className="grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2 lg:grid-cols-3">{children}</dl>
+    </section>
+  );
+}
+
 function Info({ label, children, wide }: { label: string; children: React.ReactNode; wide?: boolean }) {
   const empty = children == null || children === "" || children === false;
   return (
@@ -290,54 +300,68 @@ export default async function OrderPage({ params, searchParams }: Props) {
             </Link>
           }
         >
-          <dl className="grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
-            <Info label="ลูกค้า">
-              {order.customerId ? (
-                <Link href={`/admin/customers/${order.customerId}`} className="font-medium text-brand-700 hover:underline">
-                  {order.customerName}
-                </Link>
-              ) : (
-                order.customerName
-              )}
-            </Info>
-            <Info label="เบอร์โทร">{order.customerPhone}</Info>
-            <Info label="LINE ID">{order.customerLineId}</Info>
-            <Info label="วิธีขนส่ง">{methodLabel(order.method)}</Info>
-            <Info label="ตู้">
-              {[...new Map(order.items.filter((i) => i.container).map((i) => [i.container!.id, i.container!])).values()].map(
-                (c, n) => (
-                  <span key={c.id}>
-                    {n > 0 && ", "}
-                    <Link href={`/admin/containers/${c.id}`} className="text-brand-700 hover:underline">{c.code}</Link>
-                  </span>
-                ),
-              )}
-              {order.items.length > 0 && order.items.every((i) => !i.container) && <span className="text-gray-400">ยังไม่เข้าตู้</span>}
-            </Info>
-            <Info label="เลขคำสั่งซื้อ">{order.purchaseOrderNo}</Info>
-            <Info label="ร้านค้า">
-              {order.shopName}
-              {order.shopName && order.hideShopOnQuote && <span className="ml-1 text-xs text-amber-700">(ไม่แสดงในใบเสนอราคา)</span>}
-            </Info>
-            <Info label="Platform (ภายใน)">{order.platform}</Info>
-            <Info label="ค่าสินค้า (ยอดเต็ม)">{order.totalAmount != null && formatMoney(order.totalAmount, order.currency)}</Info>
-            <Info label="เรทตอนสั่งซื้อ">{order.orderRate != null && `${order.orderRate} บาท / หยวน`}</Info>
-            <Info label={`ค่าดำเนินการ ${order.handlingFeePct}%`}>{order.totalAmount != null && formatMoney(handlingFeeOf(order.totalAmount, order.handlingFeePct), order.currency)}</Info>
-            <Info label="รวมเป็นเงินทั้งสิ้น">{order.totalAmount != null && formatMoney(grandTotalOf(order.totalAmount, order.handlingFeePct), order.currency)}</Info>
-            {/* ยอดที่จ่ายแล้ว/ค้างชำระ คิดจากรายการชำระเงิน (ออเดอร์เก่าที่ยังไม่มีรายการ ใช้ช่องมัดจำ) */}
-            <Info label={order.payments.length ? "ชำระแล้ว" : "มัดจำค่าสินค้า"}>
-              {paidOf(order, order.payments) != null && formatMoney(paidOf(order, order.payments), order.currency)}
-            </Info>
-            <Info label="ยอดค้างชำระ">
-              <BalanceText balance={orderBalance(order, order.payments)} currency={order.currency} />
-            </Info>
-            {/* หลายเลขเก็บบรรทัดละเลข (Info แสดงขึ้นบรรทัดใหม่ให้เอง) */}
-            <Info label="Tracking no. จีน → ไทย">{order.intlTrackingNo}</Info>
-            <Info label="บริษัทขนส่งที่รับงานต่อ">{order.provider}</Info>
-            <Info label="External ID">{order.externalId}</Info>
-            <Info label="หมายเหตุถึงลูกค้า" wide>{order.note}</Info>
-            <Info label="หมายเหตุภายใน" wide>{order.internalNote}</Info>
-          </dl>
+          {/* แบ่งเป็น 3 กรอบ: ลูกค้า/คำสั่งซื้อ · การเงิน · ขนส่ง — หมายเหตุอยู่ล่างสุด */}
+          <div className="space-y-4">
+            <InfoSection title="ข้อมูลลูกค้า / คำสั่งซื้อ">
+              <Info label="ลูกค้า">
+                {order.customerId ? (
+                  <Link href={`/admin/customers/${order.customerId}`} className="font-medium text-brand-700 hover:underline">
+                    {order.customerName}
+                  </Link>
+                ) : (
+                  order.customerName
+                )}
+              </Info>
+              <Info label="เบอร์โทร">{order.customerPhone}</Info>
+              <Info label="LINE ID">{order.customerLineId}</Info>
+              <Info label="เลขคำสั่งซื้อ">{order.purchaseOrderNo}</Info>
+              <Info label="ร้านค้า">
+                {order.shopName}
+                {order.shopName && order.hideShopOnQuote && <span className="ml-1 text-xs text-amber-700">(ไม่แสดงในใบเสนอราคา)</span>}
+              </Info>
+              <Info label="Platform (ภายใน)">{order.platform}</Info>
+            </InfoSection>
+
+            <InfoSection title="การเงิน" tone="money">
+              <Info label="ค่าสินค้า (ยอดเต็ม)">{order.totalAmount != null && formatMoney(order.totalAmount, order.currency)}</Info>
+              <Info label={`ค่าดำเนินการ ${order.handlingFeePct}%`}>{order.totalAmount != null && formatMoney(handlingFeeOf(order.totalAmount, order.handlingFeePct), order.currency)}</Info>
+              <Info label="รวมเป็นเงินทั้งสิ้น">
+                {order.totalAmount != null && <b>{formatMoney(grandTotalOf(order.totalAmount, order.handlingFeePct), order.currency)}</b>}
+              </Info>
+              <Info label="เรทตอนสั่งซื้อ">{order.orderRate != null && `${order.orderRate} บาท / หยวน`}</Info>
+              {/* ยอดที่จ่ายแล้ว/ค้างชำระ คิดจากรายการชำระเงิน (ออเดอร์เก่าที่ยังไม่มีรายการ ใช้ช่องมัดจำ) */}
+              <Info label={order.payments.length ? "ชำระแล้ว" : "มัดจำค่าสินค้า"}>
+                {paidOf(order, order.payments) != null && formatMoney(paidOf(order, order.payments), order.currency)}
+              </Info>
+              <Info label="ยอดค้างชำระ">
+                <BalanceText balance={orderBalance(order, order.payments)} currency={order.currency} />
+              </Info>
+            </InfoSection>
+
+            <InfoSection title="ข้อมูลขนส่ง">
+              <Info label="วิธีขนส่ง">{methodLabel(order.method)}</Info>
+              <Info label="ตู้">
+                {[...new Map(order.items.filter((i) => i.container).map((i) => [i.container!.id, i.container!])).values()].map(
+                  (c, n) => (
+                    <span key={c.id}>
+                      {n > 0 && ", "}
+                      <Link href={`/admin/containers/${c.id}`} className="text-brand-700 hover:underline">{c.code}</Link>
+                    </span>
+                  ),
+                )}
+                {order.items.length > 0 && order.items.every((i) => !i.container) && <span className="text-gray-400">ยังไม่เข้าตู้</span>}
+              </Info>
+              {/* หลายเลขเก็บบรรทัดละเลข (Info แสดงขึ้นบรรทัดใหม่ให้เอง) */}
+              <Info label="Tracking no. จีน → ไทย">{order.intlTrackingNo}</Info>
+              <Info label="บริษัทขนส่งที่รับงานต่อ">{order.provider}</Info>
+              <Info label="External ID">{order.externalId}</Info>
+            </InfoSection>
+
+            <dl className="grid gap-x-6 gap-y-4 px-1 text-sm sm:grid-cols-2 lg:grid-cols-3">
+              <Info label="หมายเหตุถึงลูกค้า" wide>{order.note}</Info>
+              <Info label="หมายเหตุภายใน" wide>{order.internalNote}</Info>
+            </dl>
+          </div>
         </Card>
 
         <PaymentsCard order={order} payments={order.payments} editing={editingPayments} />

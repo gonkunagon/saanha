@@ -78,7 +78,9 @@ export function PaymentFields({ shopName, hideShopOnQuote = false, currency: ini
       </label>
       <label className="block">
         <span className="mb-1 block text-sm text-gray-600">เรทตอนสั่งซื้อ (บาท / 1 หยวน)</span>
-        <input name="orderRate" type="number" step="0.0001" min={0} defaultValue={orderRate ?? ""} placeholder="เช่น 5.05" className="input" />
+        <span className="block w-32">
+          <input name="orderRate" type="number" step="0.0001" min={0} defaultValue={orderRate ?? ""} placeholder="เช่น 5.05" className="input" />
+        </span>
       </label>
       {paymentsLinked ? (
         <div className="lg:col-span-2">

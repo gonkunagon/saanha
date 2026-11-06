@@ -11,13 +11,16 @@ export function TrackingFields({ defaults }: { defaults: string[] }) {
     <div className="space-y-2">
       {rows.map((r, i) => (
         <div key={r.id} className="flex gap-2">
-          <input
-            name="intlTrackingNo"
-            defaultValue={r.v}
-            placeholder={`Tracking no. ${i + 1}`}
-            className="input"
-            autoComplete="off"
-          />
+          {/* .input กว้างเต็มช่องเสมอ จึงคุมความกว้างด้วย span ที่ครอบ */}
+          <span className="w-full max-w-xs">
+            <input
+              name="intlTrackingNo"
+              defaultValue={r.v}
+              placeholder={`Tracking no. ${i + 1}`}
+              className="input"
+              autoComplete="off"
+            />
+          </span>
           {rows.length > 1 && (
             <button
               type="button"

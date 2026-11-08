@@ -44,7 +44,11 @@ export async function refreshMarketRate() {
 // ออกใบเสนอราคาใหม่เป็นวันนี้ (ล้างวันเปิดบิลเดิม — เปิดหน้าใหม่แล้วระบบล็อกวันนี้ + เรทวันนี้ให้)
 export async function reissueQuote(fd: FormData) {
   await requireUser();
-  await db.update(orders).set({ quotedAt: null, quoteRate: null, updatedAt: sql`${orders.updatedAt}` }) // ไม่นับเป็นการแก้ไขออเดอร์.where(eq(orders.id, Number(fd.get("orderId"))));
+  // ไม่นับเป็นการแก้ไขออเดอร์ (คง updatedAt เดิม)
+  await db
+    .update(orders)
+    .set({ quotedAt: null, quoteRate: null, updatedAt: sql`${orders.updatedAt}` })
+    .where(eq(orders.id, Number(fd.get("orderId"))));
   refresh();
   revalidatePath("/admin", "layout");
 }

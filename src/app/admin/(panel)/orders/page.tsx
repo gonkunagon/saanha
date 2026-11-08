@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { desc, ilike, or } from "drizzle-orm";
+import { desc, ilike, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { orders } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
@@ -9,7 +9,6 @@ import { itemStages, stageLabelsTh, type ItemStage } from "@/lib/stages";
 import { BalanceText, Card, StageBadge, methodLabel } from "@/components/admin/ui";
 import { formatMoney, grandTotalOf, orderBalance } from "@/lib/money";
 import { SyncJjButton } from "./SyncJjButton";
-import { splitTracking } from "@/lib/tracking";
 import { getSyncStatus } from "@/lib/jjsync";
 
 type Props = { searchParams: Promise<{ q?: string; stage?: string }> };
@@ -28,11 +27,13 @@ export default async function OrdersPage({ searchParams }: Props) {
           ilike(orders.purchaseOrderNo, `%${term}%`),
           ilike(orders.shopName, `%${term}%`),
           ilike(orders.intlTrackingNo, `%${term}%`),
+          // Tracking no. จีนของพัสดุในออเดอร์
+          sql`exists (select 1 from item_packages p join order_items i on i.id = p.item_id where i.order_id = ${orders.id} and p.china_tracking_no ilike ${`%${term}%`})`,
         )
       : undefined,
     orderBy: desc(orders.createdAt),
     limit: 200,
-    with: { items: { with: { container: true } }, payments: { columns: { appliedAmount: true } } },
+    with: { items: { with: { container: true, packages: { columns: { chinaTrackingNo: true } } } }, payments: { columns: { appliedAmount: true } } },
   });
 
   const rows = list
@@ -98,7 +99,9 @@ export default async function OrdersPage({ searchParams }: Props) {
                   </td>
                   <td className="py-2 pr-4">
                     {methodLabel(o.method)}
-                    {splitTracking(o.intlTrackingNo).map((t) => <span key={t} className="block text-xs text-gray-500">{t}</span>)}
+                    {[...new Set(o.items.flatMap((i) => i.packages.map((p) => p.chinaTrackingNo)).filter(Boolean))].map((t) => (
+                      <span key={t} className="block text-xs text-gray-500">{t}</span>
+                    ))}
                   </td>
                   <td className="py-2 pr-4">{s.itemCount} / {s.containerCount} ตู้</td>
                   <td className="py-2 pr-4">

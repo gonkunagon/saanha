@@ -362,8 +362,6 @@ export default async function OrderPage({ params, searchParams }: Props) {
                 )}
                 {order.items.length > 0 && order.items.every((i) => !i.container) && <span className="text-gray-400">ยังไม่เข้าตู้</span>}
               </Info>
-              {/* หลายเลขเก็บบรรทัดละเลข (Info แสดงขึ้นบรรทัดใหม่ให้เอง) */}
-              <Info label="Tracking no. จีน → ไทย">{order.intlTrackingNo}</Info>
               <Info label="บริษัทขนส่งที่รับงานต่อ">{order.provider}</Info>
             </InfoSection>
 

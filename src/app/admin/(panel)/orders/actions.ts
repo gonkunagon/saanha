@@ -114,7 +114,8 @@ async function savePackages(tx: Tx, itemId: number, pkgs: PackageRow[]) {
 function orderFields(fd: FormData) {
   return {
     purchaseOrderNo: text(fd, "purchaseOrderNo"),
-    intlTrackingNo: joinTracking(fd.getAll("intlTrackingNo").map(String)),
+    // ช่องนี้เลิกใช้ในฟอร์มแล้ว (ใช้ Tracking no. จีนของพัสดุแทน) — ไม่ส่งมา = คงค่าเดิม
+    intlTrackingNo: fd.has("intlTrackingNo") ? joinTracking(fd.getAll("intlTrackingNo").map(String)) : undefined,
     shopName: text(fd, "shopName"),
     hideShopOnQuote: fd.get("hideShopOnQuote") === "1",
     platform: text(fd, "platform"),

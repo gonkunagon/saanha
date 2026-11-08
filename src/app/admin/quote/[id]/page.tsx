@@ -12,8 +12,10 @@ import { amountInThaiWords } from "@/lib/thaiText";
 import { methodLabel } from "@/components/admin/ui";
 import { LogoMark } from "@/components/Logo";
 import { PrintButton } from "./PrintButton";
-import { getQuoteRate } from "@/lib/settings";
+import { getQuoteRate, sameBangkokDay } from "@/lib/settings";
 import { RateBox } from "./RateBox";
+import { ConfirmButton } from "@/components/admin/ConfirmButton";
+import { reissueQuote } from "./actions";
 
 // ใบเสนอราคาของออเดอร์ (หน้าพิมพ์ A4) — อยู่นอกเมนูหลังบ้าน จะได้พิมพ์ / บันทึก PDF ได้สะอาด
 // เลขที่ใบเสนอราคา = QT-<เลขออเดอร์> · ยืนราคา 7 วันนับจากวันที่ออก
@@ -42,11 +44,20 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
   });
   if (!order) notFound();
 
-  const issued = new Date();
+  // วันเปิดบิล: เปิดใบครั้งแรก = ล็อกวันนี้ไว้ · ระหว่างวันนั้นเรทหยวนยังปรับได้ (เก็บเรทล่าสุด) · พ้นวันแล้วใบคงที่ (วันเดิม เรทเดิม)
+  const now = new Date();
   const isCny = order.currency === "CNY";
+  const issuedToday = !order.quotedAt || sameBangkokDay(order.quotedAt, now);
+  const q = isCny && issuedToday ? await getQuoteRate(now) : null;
+  const issued = order.quotedAt ?? now;
+  const rate = isCny ? (issuedToday ? q?.rate ?? null : order.quoteRate) : null;
+  // หยวนต้องมีเรทก่อนถึงจะนับว่าออกใบแล้ว
+  if (issuedToday && (!isCny || rate != null) && (!order.quotedAt || order.quoteRate !== rate)) {
+    // ไม่นับเป็นการแก้ไขออเดอร์ (คง updatedAt เดิม)
+    await db.update(orders).set({ quotedAt: issued, quoteRate: rate, updatedAt: order.updatedAt }).where(eq(orders.id, order.id));
+  }
+  const locked = !issuedToday;
   const validUntil = isCny ? issued : new Date(issued.getTime() + VALID_DAYS * 86_400_000);
-  const q = isCny ? await getQuoteRate(issued) : null;
-  const rate = q?.rate ?? null;
   const c = order.customer;
   const fullName = c && [c.firstName, c.lastName].filter(Boolean).join(" ");
   // ลูกค้าไม่เห็นค่าดำเนินการแยก: บวก % ค่าดำเนินการเข้าไปในราคาต่อหน่วยเลย
@@ -86,6 +97,23 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
       </div>
 
       {q && <RateBox q={q} />}
+      {locked && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900 print:hidden">
+          <span>
+            ใบนี้เปิดบิลเมื่อ <b>{thaiDate(issued)}</b>
+            {rate != null && <> · เรท {rate} บาท / หยวน</>} — วันที่และเรทล็อกไว้เป็นประวัติ
+          </span>
+          <form action={reissueQuote}>
+            <input type="hidden" name="orderId" value={order.id} />
+            <ConfirmButton
+              message={`ออกใบเสนอราคาใหม่เป็นวันนี้${isCny ? " (ใช้เรทวันนี้)" : ""}? วันเปิดบิลเดิม ${thaiDate(issued)} จะถูกแทนที่`}
+              className="rounded-lg border border-amber-400 bg-white px-3 py-1.5 text-sm font-medium hover:bg-amber-100"
+            >
+              ออกใบใหม่เป็นวันนี้
+            </ConfirmButton>
+          </form>
+        </div>
+      )}
 
       <article className="flex min-h-[297mm] flex-col bg-white text-[13px] text-gray-800 shadow-lg ring-1 ring-gray-200 [print-color-adjust:exact] print:min-h-0 print:shadow-none print:ring-0">
         {/* หัวกระดาษ */}

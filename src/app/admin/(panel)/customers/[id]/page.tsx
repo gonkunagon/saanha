@@ -128,7 +128,11 @@ export default async function CustomerPage({
                     <span className="ml-auto flex items-center gap-4">
                       {o.totalAmount != null && <span className="font-medium">{formatMoney(o.totalAmount, o.currency)}</span>}
                       <BalanceText balance={orderBalance(o, o.payments)} currency={o.currency} />
-                      <Link href={`/admin/quote/${o.id}`} target="_blank" className="text-xs text-brand-700 hover:underline">ใบเสนอราคา</Link>
+                      <Link href={`/admin/quote/${o.id}`} target="_blank" className="text-xs text-brand-700 hover:underline">
+                        ใบเสนอราคา
+                        {/* วันเปิดบิล = วันแรกที่ออกใบเสนอราคา */}
+                        <span className="text-gray-500">{o.quotedAt ? ` · เปิดบิล ${formatThaiDateTime(o.quotedAt)}` : " · ยังไม่เปิดบิล"}</span>
+                      </Link>
                     </span>
                   </div>
                   <ul className="divide-y divide-gray-50 px-4 text-sm">

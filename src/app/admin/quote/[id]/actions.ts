@@ -1,6 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { orders } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { clearManualCnyRate, getMarketRate, setCnyMarkup, setManualCnyRate } from "@/lib/settings";
 
@@ -36,4 +39,12 @@ export async function refreshMarketRate() {
   await requireUser();
   await getMarketRate(true);
   refresh();
+}
+
+// ออกใบเสนอราคาใหม่เป็นวันนี้ (ล้างวันเปิดบิลเดิม — เปิดหน้าใหม่แล้วระบบล็อกวันนี้ + เรทวันนี้ให้)
+export async function reissueQuote(fd: FormData) {
+  await requireUser();
+  await db.update(orders).set({ quotedAt: null, quoteRate: null }).where(eq(orders.id, Number(fd.get("orderId"))));
+  refresh();
+  revalidatePath("/admin", "layout");
 }

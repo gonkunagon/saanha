@@ -89,15 +89,13 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
             <InfoBox title="ลูกค้า / Customer">
               <p className="text-[15px] font-semibold text-gray-900">{order.customerName}</p>
               {fullName && <p>{fullName}</p>}
-              {c?.address && <p className="whitespace-pre-line text-gray-600">{c.address}</p>}
               <p className="text-gray-600">เบอร์โทร: {order.customerPhone || "-"}</p>
               {order.customerLineId && <p className="text-gray-600">Line: {order.customerLineId}</p>}
             </InfoBox>
             <InfoBox title="รายละเอียดการขนส่ง / Shipment">
               <p><span className="inline-block w-28 text-gray-500">เลขคำสั่งซื้อ</span>{order.purchaseOrderNo ?? "-"}</p>
               <p><span className="inline-block w-28 text-gray-500">ตู้</span>{container.code}</p>
-              <p><span className="inline-block w-28 text-gray-500">ปิดตู้ที่จีน</span>{container.loadedAt ? thaiDate(container.loadedAt) : "-"}</p>
-              <p><span className="inline-block w-28 text-gray-500">ถึงโกดังไทย</span>{container.arrivedAt ? thaiDate(container.arrivedAt) : "-"}</p>
+              <p className="flex"><span className="w-28 shrink-0 text-gray-500">ที่อยู่ในการจัดส่ง</span><span className="whitespace-pre-line">{c?.address || "-"}</span></p>
             </InfoBox>
           </div>
 
@@ -148,7 +146,7 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
               <div>
                 <p className="mb-1 text-[11px] font-semibold tracking-wide text-brand-700 uppercase">หมายเหตุ / Notes</p>
                 <ol className="list-decimal space-y-0.5 pl-5 text-[12px] leading-5 text-gray-600">
-                  <li>ค่าขนส่งจีน–ไทย คิดตามปริมาตรจริงที่วัด ณ โกดัง ({num(rate)} บาท / คิว)</li>
+                  <li>ค่าขนส่งจีน–ไทย คิดตามปริมาตรจริงที่วัด ณ โกดัง</li>
                   <li>บริการจัดส่งฟรีในเขตกรุงเทพมหานคร สำหรับพื้นที่ปริมณฑล ค่าจัดส่งพิจารณาตามปริมาณสินค้า กรุณาสอบถามเจ้าหน้าที่</li>
                   <li>ราคานี้ไม่รวมค่าตีลังไม้ และค่าประกันสินค้า (ถ้ามี)</li>
                 </ol>

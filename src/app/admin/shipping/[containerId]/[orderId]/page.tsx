@@ -11,7 +11,6 @@ import { formatMoney } from "@/lib/money";
 import { amountInThaiWords } from "@/lib/thaiText";
 import { shippingCostOf, shippingRateOf } from "@/lib/shipping";
 import { methodLabel } from "@/components/admin/ui";
-import { LogoMark } from "@/components/Logo";
 import { PrintButton } from "../../../quote/[id]/PrintButton";
 
 // ใบสรุปค่าขนส่ง (หน้าพิมพ์ A4 แบบเดียวกับใบเสนอราคา) — ค่าขนส่งจีน → ไทย ของ 1 ออเดอร์ใน 1 ตู้
@@ -71,21 +70,10 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
       </div>
 
       <article className="flex min-h-[297mm] flex-col bg-white text-[13px] text-gray-800 shadow-lg ring-1 ring-gray-200 [print-color-adjust:exact] print:min-h-0 print:shadow-none print:ring-0">
-        <header className="mx-10 mt-8 flex items-stretch justify-between rounded-lg border-2 border-brand-600">
-          <div className="flex items-center gap-4 px-6 py-5">
-            <LogoMark className="h-14 w-14 shrink-0 text-navy-700" />
-            <div>
-              <p className="font-logo text-2xl font-extrabold tracking-tight text-gray-900">{site.name}</p>
-              {site.showAddress && <p className="max-w-xs text-[11px] leading-5 text-gray-600">{site.address.th}</p>}
-              <p className="text-[11px] text-gray-600">โทร: {site.phone}</p>
-              <p className="text-[11px] text-gray-600">Line: {site.lineId}</p>
-              {site.showEmail && <p className="text-[11px] text-gray-600">Email: {site.email}</p>}
-            </div>
-          </div>
-          <div className="flex flex-col items-end justify-center border-l-2 border-brand-600 px-8">
-            <h1 className="text-3xl font-bold text-brand-700">ใบสรุปค่าขนส่ง</h1>
-            <p className="text-xs tracking-[0.3em] text-brand-600">SHIPPING SUMMARY</p>
-          </div>
+        {/* หัวกระดาษ: ชื่อเอกสารอย่างเดียว (ไม่แสดงข้อมูลบริษัท) */}
+        <header className="mx-10 mt-8 rounded-lg border-2 border-brand-600 px-8 py-5 text-center">
+          <h1 className="text-3xl font-bold text-brand-700">ใบสรุปค่าขนส่ง</h1>
+          <p className="text-xs tracking-[0.3em] text-brand-600">SHIPPING SUMMARY</p>
         </header>
 
         <div className="flex flex-1 flex-col px-10 py-8">

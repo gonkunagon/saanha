@@ -135,7 +135,7 @@ export const itemPackages = pgTable("item_packages", {
     .references(() => orderItems.id, { onDelete: "cascade" }),
   chinaTrackingNo: text("china_tracking_no"),
   boxes: integer("boxes"),
-  weightKg: doublePrecision("weight_kg"), // น้ำหนักรวมของแถวนี้
+  weightKg: doublePrecision("weight_kg"), // น้ำหนักต่อกล่อง (รวมของแถว = × boxes)
   widthCm: doublePrecision("width_cm"),
   lengthCm: doublePrecision("length_cm"),
   heightCm: doublePrecision("height_cm"),

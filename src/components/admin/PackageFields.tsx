@@ -101,7 +101,8 @@ export function PackageFields({ prefix = "pkg_", defaults = [] }: { prefix?: str
   };
 
   const totalBoxes = rows.reduce((s, r) => s + (Number(r.boxes) || 0), 0);
-  const totalWeight = rows.reduce((s, r) => s + (Number(r.weight) || 0), 0);
+  // น้ำหนักที่กรอกเป็นต่อกล่อง → น้ำหนักรวม = น้ำหนัก × จำนวนกล่อง (ไม่ใส่กล่อง = 1)
+  const totalWeight = rows.reduce((s, r) => s + (Number(r.weight) || 0) * (Number(r.boxes) > 0 ? Number(r.boxes) : 1), 0);
   const totalCbm = rows.reduce((s, r) => s + (rowCbm(r) ?? 0), 0);
 
   const cell = "input px-2 text-center";
@@ -110,7 +111,7 @@ export function PackageFields({ prefix = "pkg_", defaults = [] }: { prefix?: str
       <div className="mb-1 hidden gap-2 text-xs text-gray-500 md:grid md:grid-cols-[13rem_4.5rem_5.5rem_auto_6rem_1.5rem]">
         <span>เลขพัสดุจีน</span>
         <span>กล่อง</span>
-        <span>น้ำหนัก (กก.)</span>
+        <span>น้ำหนัก/กล่อง (กก.)</span>
         <span>ขนาดต่อกล่อง กว้าง × ยาว × สูง (ซม.)</span>
         <span className="text-right">คิว</span>
         <span />
@@ -134,7 +135,7 @@ export function PackageFields({ prefix = "pkg_", defaults = [] }: { prefix?: str
                 </button>
               </div>
               <input name={`${prefix}boxes`} type="number" min={0} value={r.boxes} onChange={(e) => update(r.key, "boxes", e.target.value)} placeholder="กล่อง" className={cell} aria-label="จำนวนกล่อง" />
-              <input name={`${prefix}weightKg`} type="number" step="0.01" min={0} value={r.weight} onChange={(e) => update(r.key, "weight", e.target.value)} placeholder="กก." className={cell} aria-label="น้ำหนัก (กก.)" />
+              <input name={`${prefix}weightKg`} type="number" step="0.01" min={0} value={r.weight} onChange={(e) => update(r.key, "weight", e.target.value)} placeholder="กก." className={cell} aria-label="น้ำหนักต่อกล่อง (กก.)" />
               {/* .input กว้างเต็มช่องเสมอ จึงคุมความกว้างด้วย span ที่ครอบ */}
               <div className="col-span-2 flex items-center gap-1 md:col-span-1">
                 <span className="w-16"><input name={`${prefix}widthCm`} type="number" step="0.1" min={0} value={r.w} onChange={(e) => update(r.key, "w", e.target.value)} placeholder="กว้าง" className={cell} aria-label="กว้าง (ซม.)" /></span>

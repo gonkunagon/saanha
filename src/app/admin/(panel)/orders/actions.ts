@@ -81,7 +81,8 @@ function packageTotals(pkgs: PackageRow[]) {
       : null;
   return {
     boxes: sum(pkgs.map((p) => p.boxes), 0),
-    weightKg: sum(pkgs.map((p) => p.weightKg), 2),
+    // น้ำหนักพัสดุเป็นต่อกล่อง → รวม = น้ำหนัก × จำนวนกล่อง
+    weightKg: sum(pkgs.map((p) => (p.weightKg == null ? null : p.weightKg * (p.boxes && p.boxes > 0 ? p.boxes : 1))), 2),
     cbm: sum(pkgs.map((p) => p.cbm), 4),
   };
 }

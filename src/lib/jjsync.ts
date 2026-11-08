@@ -200,7 +200,7 @@ export async function applyJjSnapshot(
       .update(orderItems)
       .set({
         boxes: sum(pkgs.map((x) => x.boxes), 0),
-        weightKg: sum(pkgs.map((x) => x.weightKg), 2),
+        weightKg: sum(pkgs.map((x) => (x.weightKg == null ? null : x.weightKg * (x.boxes && x.boxes > 0 ? x.boxes : 1))), 2),
         cbm: sum(pkgs.map((x) => x.cbm), 4),
       })
       .where(eq(orderItems.id, itemId));

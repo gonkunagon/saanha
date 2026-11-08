@@ -130,8 +130,8 @@ export default async function CustomerPage({
                       <BalanceText balance={orderBalance(o, o.payments)} currency={o.currency} />
                       <Link href={`/admin/quote/${o.id}`} target="_blank" className="text-xs text-brand-700 hover:underline">
                         ใบเสนอราคา
-                        {/* วันเปิดบิล = วันแรกที่ออกใบเสนอราคา */}
-                        <span className="text-gray-500">{o.quotedAt ? ` · เปิดบิล ${formatThaiDateTime(o.quotedAt)}` : " · ยังไม่เปิดบิล"}</span>
+                        {/* วันเปิดบิล = วันที่สร้างออเดอร์ (หรือวันที่ออกใบใหม่) */}
+                        <span className="text-gray-500"> · เปิดบิล {formatThaiDateTime(o.quotedAt ?? o.createdAt)}</span>
                       </Link>
                     </span>
                   </div>

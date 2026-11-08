@@ -44,17 +44,17 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
   });
   if (!order) notFound();
 
-  // วันเปิดบิล: เปิดใบครั้งแรก = ล็อกวันนี้ไว้ · ระหว่างวันนั้นเรทหยวนยังปรับได้ (เก็บเรทล่าสุด) · พ้นวันแล้วใบคงที่ (วันเดิม เรทเดิม)
+  // วันเปิดบิล = วันที่สร้างออเดอร์ (หรือวันที่กด "ออกใบใหม่เป็นวันนี้" = quotedAt)
+  // ภายในวันเปิดบิล เรทหยวนยังปรับได้ (เก็บเรทล่าสุดไว้) · พ้นวันแล้วใบคงที่: วันเดิม เรทเดิม (ไม่มีเรทที่เก็บไว้ = ใช้เรทตอนสั่งซื้อ)
   const now = new Date();
   const isCny = order.currency === "CNY";
-  const issuedToday = !order.quotedAt || sameBangkokDay(order.quotedAt, now);
+  const issued = order.quotedAt ?? order.createdAt;
+  const issuedToday = sameBangkokDay(issued, now);
   const q = isCny && issuedToday ? await getQuoteRate(now) : null;
-  const issued = order.quotedAt ?? now;
-  const rate = isCny ? (issuedToday ? q?.rate ?? null : order.quoteRate) : null;
-  // หยวนต้องมีเรทก่อนถึงจะนับว่าออกใบแล้ว
-  if (issuedToday && (!isCny || rate != null) && (!order.quotedAt || order.quoteRate !== rate)) {
+  const rate = isCny ? (issuedToday ? q?.rate ?? null : order.quoteRate ?? order.orderRate) : null;
+  if (isCny && issuedToday && rate != null && order.quoteRate !== rate) {
     // ไม่นับเป็นการแก้ไขออเดอร์ (คง updatedAt เดิม)
-    await db.update(orders).set({ quotedAt: issued, quoteRate: rate, updatedAt: order.updatedAt }).where(eq(orders.id, order.id));
+    await db.update(orders).set({ quoteRate: rate, updatedAt: order.updatedAt }).where(eq(orders.id, order.id));
   }
   const locked = !issuedToday;
   const validUntil = isCny ? issued : new Date(issued.getTime() + VALID_DAYS * 86_400_000);

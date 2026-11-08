@@ -91,7 +91,7 @@ export const orders = pgTable("orders", {
   handlingFeePct: integer("handling_fee_pct").notNull().default(5),
   // เรทหยวนตอนสั่งซื้อ (บาทต่อ 1 หยวน) — จดไว้ดูว่าตอนสั่งของเรทเท่าไหร่ (ไม่ได้ใช้คำนวณยอด)
   orderRate: doublePrecision("order_rate"),
-  // วันเปิดบิล = วันแรกที่ออกใบเสนอราคา (ล็อกไว้เป็นประวัติ) + เรทหยวนที่ใช้ในใบนั้น — ระหว่างวันเดียวกันเรทยังปรับได้
+  // วันเปิดบิล = วันที่สร้างออเดอร์ · quotedAt มีค่าเมื่อกด "ออกใบใหม่เป็นวันนี้" · quoteRate = เรทหยวนที่ใช้ในใบ (ล็อกเมื่อพ้นวันเปิดบิล)
   quotedAt: timestamp("quoted_at"),
   quoteRate: doublePrecision("quote_rate"),
   provider: text("provider"),

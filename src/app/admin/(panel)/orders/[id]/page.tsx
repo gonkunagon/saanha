@@ -397,19 +397,12 @@ export default async function OrderPage({ params, searchParams }: Props) {
             <p className="text-sm text-gray-500">ยังไม่มีรายการสินค้า — กด &quot;แก้ไข&quot; เพื่อเพิ่ม</p>
           ) : (
             <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200">
-              {order.items.map((item, idx) => {
-                const stage = stages[idx];
-                return (
-                  <li key={item.id} className="flex flex-wrap items-center gap-3 p-3">
-                    <div className="min-w-48 flex-1"><ItemDetails item={item} /></div>
-                    <div className="w-32 text-sm"><ContainerLink item={item} /></div>
-                    <div className="w-56 text-right">
-                      <StageBadge stage={stage} />
-                      <p className="mt-0.5 text-xs text-gray-500">{formatThaiDateTime(itemStageDates(item, item.container)[stage])}</p>
-                    </div>
-                  </li>
-                );
-              })}
+              {/* ตู้และสถานะแสดงด้านบนแล้ว (ข้อมูลขนส่ง / ป้ายสถานะข้างเลขออเดอร์) */}
+              {order.items.map((item) => (
+                <li key={item.id} className="p-3">
+                  <ItemDetails item={item} />
+                </li>
+              ))}
             </ul>
           )}
         </Card>

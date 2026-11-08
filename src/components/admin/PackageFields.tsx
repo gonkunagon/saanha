@@ -86,7 +86,6 @@ export function PackageFields({ prefix = "pkg_", defaults = [] }: { prefix?: str
     });
     setNextKey((k) => k + n - 1);
     setRows((rs) => autoNumber([...rs.slice(0, at), ...copies, ...rs.slice(at + 1)]));
-    setMessage({ ok: true, text: `แตกเป็น ${n} แถว แถวละ 1 กล่องแล้ว` });
   };
 
   // ดึงข้อมูลจาก JJ Cargo: แทนแถวนี้ด้วยพัสดุทุกกล่องของเลขนั้น (1 กล่อง = 1 แถว)

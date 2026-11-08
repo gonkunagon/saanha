@@ -14,12 +14,14 @@ export function OrderFields({
   preselectId,
   paymentsLinked,
   todayRate,
+  shipping,
 }: {
   order?: Order;
   customers: PickerCustomer[];
   preselectId?: number;
   paymentsLinked?: boolean;
   todayRate?: number | null;
+  shipping?: React.ReactNode; // พัสดุ / ตู้ ของแต่ละรายการ (หน้าแก้ไขออเดอร์) — แสดงใต้วิธีขนส่ง
 }) {
   return (
     <>
@@ -60,6 +62,7 @@ export function OrderFields({
           <MethodSelect defaultValue={order?.method} />
         </span>
       </Field>
+      {shipping}
       {/* หลายช่องได้ (1 ออเดอร์มีหลายพัสดุ) — ไม่ใช้ <Field> เพราะ label ห้ามครอบหลายช่อง */}
       <div className="sm:col-span-2">
         <span className="mb-1 block text-sm text-gray-600">Tracking no. จากจีนมาไทย (ใช้ภายใน ลูกค้าไม่เห็น)</span>

@@ -487,15 +487,21 @@ export default async function OrderPage({ params, searchParams }: Props) {
       <Card title="แก้ไขข้อมูลออเดอร์">
         <form action={updateOrder} className="grid gap-4 sm:grid-cols-2">
           <input type="hidden" name="id" value={order.id} />
-          <OrderFields order={order} customers={customers} paymentsLinked={order.payments.length > 0} />
-          {order.items.length > 0 && (
-            <div className="space-y-3 sm:col-span-2">
-              <span className="block text-sm text-gray-600">พัสดุ / ตู้ ของแต่ละรายการ</span>
-              {order.items.map((item) => (
-                <ItemShippingFields key={item.id} item={item} containerOptions={containerOptions} />
-              ))}
-            </div>
-          )}
+          <OrderFields
+            order={order}
+            customers={customers}
+            paymentsLinked={order.payments.length > 0}
+            shipping={
+              order.items.length > 0 && (
+                <div className="space-y-3 sm:col-span-2">
+                  <span className="block text-sm text-gray-600">พัสดุ / ตู้ ของแต่ละรายการ</span>
+                  {order.items.map((item) => (
+                    <ItemShippingFields key={item.id} item={item} containerOptions={containerOptions} />
+                  ))}
+                </div>
+              )
+            }
+          />
           <div className="flex items-center gap-3 sm:col-span-2">
             <button className="btn-primary">บันทึก</button>
             <Link href={`/admin/orders/${order.id}`} className="text-sm text-gray-500 hover:underline">ยกเลิก</Link>

@@ -186,7 +186,8 @@ export async function createOrder(_prev: string | null, fd: FormData): Promise<s
   }
   if (newId === null) return "สร้างเลขออเดอร์ไม่สำเร็จ กรุณาลองใหม่";
   refresh();
-  redirect(`/admin/orders/${newId}`);
+  // ปุ่ม "สร้างออเดอร์ + ใบเสนอราคา" → ไปหน้าใบเสนอราคาของออเดอร์ใหม่เลย
+  redirect(fd.get("then") === "quote" ? `/admin/quote/${newId}` : `/admin/orders/${newId}`);
 }
 
 export async function updateOrder(fd: FormData) {

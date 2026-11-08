@@ -21,7 +21,8 @@ export function CreateOrderForm({ children }: { children: React.ReactNode }) {
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        const fd = new FormData(e.currentTarget);
+        // ส่ง submitter ด้วย เพื่อรู้ว่ากดปุ่มไหน (สร้างอย่างเดียว / สร้าง + เปิดใบเสนอราคา)
+        const fd = new FormData(e.currentTarget, (e.nativeEvent as SubmitEvent).submitter);
         startTransition(() => action(fd));
       }}
       className="space-y-6"
@@ -62,7 +63,10 @@ export function CreateOrderForm({ children }: { children: React.ReactNode }) {
       </div>
 
       {error && <p className="text-sm text-brand-600">{error}</p>}
-      <button disabled={pending} className="btn-primary">{pending ? "กำลังสร้าง..." : "สร้างออเดอร์"}</button>
+      <div className="flex flex-wrap items-center gap-3">
+        <button disabled={pending} className="btn-primary">{pending ? "กำลังสร้าง..." : "สร้างออเดอร์"}</button>
+        <button name="then" value="quote" disabled={pending} className="btn-secondary">📄 สร้างออเดอร์ + ใบเสนอราคา</button>
+      </div>
     </form>
   );
 }

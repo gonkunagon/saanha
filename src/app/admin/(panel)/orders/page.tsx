@@ -78,7 +78,6 @@ export default async function OrdersPage({ searchParams }: Props) {
                 <th className="py-2 pr-4">สถานะ</th>
                 <th className="py-2 pr-4">ยอดเงิน</th>
                 <th className="py-2 pr-4">สร้างเมื่อ</th>
-                <th className="py-2 text-center whitespace-nowrap">ใบเสนอราคา</th>
               </tr>
             </thead>
             <tbody>
@@ -122,25 +121,10 @@ export default async function OrdersPage({ searchParams }: Props) {
                     )}
                   </td>
                   <td className="py-2 pr-4 text-gray-500">{formatThaiDateTime(o.createdAt)}</td>
-                  <td className="py-2 text-center">
-                    {/* ไอคอนใบเสนอราคา (เอกสาร) — ชี้ค้างจะขึ้นชื่อปุ่ม */}
-                    <Link
-                      href={`/admin/quote/${o.id}`}
-                      target="_blank"
-                      title="สร้างใบเสนอราคา"
-                      aria-label={`สร้างใบเสนอราคา ${o.code}`}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-brand-600 hover:bg-brand-50"
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-6 w-6">
-                        <path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z" />
-                        <path d="M14 3v5h5M9 9h1M9 13h6M9 17h6" />
-                      </svg>
-                    </Link>
-                  </td>
                 </tr>
               ))}
               {rows.length === 0 && (
-                <tr><td colSpan={9} className="py-6 text-center text-gray-400">ไม่พบออเดอร์</td></tr>
+                <tr><td colSpan={7}className="py-6 text-center text-gray-400">ไม่พบออเดอร์</td></tr>
               )}
             </tbody>
           </table>

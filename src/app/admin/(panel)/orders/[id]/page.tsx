@@ -288,6 +288,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
         <StageBadge stage={summary.stage} />
         <span className="ml-auto flex items-center gap-3">
           {editing && <Link href={`/admin/orders/${order.id}`} className="btn-secondary">✓ เสร็จแล้ว</Link>}
+          <Link href={`/admin/quote/${order.id}`} target="_blank" className="btn-secondary">📄 ใบเสนอราคา</Link>
           <DeleteOrderButton
             orderId={order.id}
             code={order.code}

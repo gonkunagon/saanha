@@ -149,7 +149,8 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
                 <p className="mb-1 text-[11px] font-semibold tracking-wide text-brand-700 uppercase">หมายเหตุ / Notes</p>
                 <ol className="list-decimal space-y-0.5 pl-5 text-[12px] leading-5 text-gray-600">
                   <li>ค่าขนส่งจีน–ไทย คิดตามปริมาตรจริงที่วัด ณ โกดัง ({num(rate)} บาท / คิว)</li>
-                  <li>ไม่รวมค่าจัดส่งในประเทศ ค่าตีลังไม้ และค่าประกันสินค้า (ถ้ามี)</li>
+                  <li>บริการจัดส่งฟรีในเขตกรุงเทพมหานคร สำหรับพื้นที่ปริมณฑล ค่าจัดส่งพิจารณาตามปริมาณสินค้า กรุณาสอบถามเจ้าหน้าที่</li>
+                  <li>ราคานี้ไม่รวมค่าตีลังไม้ และค่าประกันสินค้า (ถ้ามี)</li>
                 </ol>
               </div>
             </div>

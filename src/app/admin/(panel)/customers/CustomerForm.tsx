@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import type { Customer } from "@/db/schema";
 import { Field } from "@/components/admin/ui";
 import { createCustomer, updateCustomer, type CustomerFormState } from "./actions";
@@ -8,7 +9,21 @@ import { createCustomer, updateCustomer, type CustomerFormState } from "./action
 // ฟอร์มเพิ่ม / แก้ไขลูกค้า (มี customer = แก้ไข)
 // เรียก action เองแทน action={...} เพื่อไม่ให้ React ล้างช่องที่กรอกไว้เมื่อบันทึกไม่ผ่าน
 // onCreated = เพิ่มสำเร็จแล้ว (เช่น ปิดหน้าต่างเพิ่มลูกค้า)
-export function CustomerForm({ customer, onCreated, onCancel }: { customer?: Customer; onCreated?: () => void; onCancel?: () => void }) {
+// locked = แสดงอย่างเดียว (ช่องสีเทา แก้ไม่ได้) — กด "แก้ไขข้อมูล" ที่หัวกรอบจึงแก้ได้ · doneHref = บันทึกแล้วกลับไปหน้านี้
+export function CustomerForm({
+  customer,
+  onCreated,
+  onCancel,
+  locked = false,
+  doneHref,
+}: {
+  customer?: Customer;
+  onCreated?: () => void;
+  onCancel?: () => void;
+  locked?: boolean;
+  doneHref?: string;
+}) {
+  const router = useRouter();
   const [state, setState] = useState<CustomerFormState>(null);
   const [pending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
@@ -22,14 +37,16 @@ export function CustomerForm({ customer, onCreated, onCancel }: { customer?: Cus
         startTransition(async () => {
           const result = await (customer ? updateCustomer : createCustomer)(null, fd);
           setState(result);
+          if (customer && result?.ok && doneHref) router.push(doneHref);
           if (!customer && result?.ok) {
             formRef.current?.reset();
             onCreated?.();
           }
         });
       }}
-      className="grid gap-4 sm:grid-cols-2"
+      className={`grid gap-4 sm:grid-cols-2 ${locked ? "[&_.input]:bg-gray-50 [&_.input]:text-gray-600" : ""}`}
     >
+      <fieldset disabled={locked} className="contents">
       {customer && <input type="hidden" name="id" value={customer.id} />}
       {/* ชื่อที่ใช้เรียกอยู่บนสุด · รหัสลูกค้าระบบรันให้เอง (แสดงอย่างเดียวตอนแก้ไข) */}
       <Field label="ชื่อที่ใช้เรียก / แสดงในออเดอร์ * (เช่น ชื่อเล่น ชื่อร้าน)" className={customer?.code ? "" : "sm:col-span-2"}>
@@ -58,6 +75,8 @@ export function CustomerForm({ customer, onCreated, onCancel }: { customer?: Cus
       <Field label="หมายเหตุ (ภายใน)" className="sm:col-span-2">
         <textarea name="note" rows={2} defaultValue={customer?.note ?? ""} className="input" />
       </Field>
+      </fieldset>
+      {!locked && (
       <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
         <button disabled={pending} className="btn-primary">
           {pending ? "กำลังบันทึก..." : customer ? "บันทึก" : "เพิ่มลูกค้า"}
@@ -70,6 +89,7 @@ export function CustomerForm({ customer, onCreated, onCancel }: { customer?: Cus
         {state?.error && <p className="text-sm text-brand-600">{state.error}</p>}
         {state?.ok && customer && <p className="text-sm text-emerald-700">{state.ok}</p>}
       </div>
+      )}
     </form>
   );
 }

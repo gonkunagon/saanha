@@ -12,9 +12,17 @@ import { formatMoney, orderBalance, type CurrencyCode } from "@/lib/money";
 import { CustomerForm } from "../CustomerForm";
 import { deleteCustomer } from "../actions";
 
-export default async function CustomerPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CustomerPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ edit?: string }>;
+}) {
   await requireUser();
   const { id } = await params;
+  // ปกติแสดงอย่างเดียว · กด "แก้ไขข้อมูล" (?edit=1) จึงแก้ได้
+  const editing = (await searchParams).edit === "1";
   const customer = await db.query.customers.findFirst({ where: eq(customers.id, Number(id)) });
   if (!customer) notFound();
 
@@ -49,14 +57,31 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         </Link>
       </div>
 
-      <Card title="ข้อมูลลูกค้า">
-        <CustomerForm customer={customer} />
-        <form action={deleteCustomer} className="mt-4 border-t border-gray-100 pt-4">
-          <input type="hidden" name="id" value={customer.id} />
-          <ConfirmButton message={`ลบลูกค้า ${customer.name}? ออเดอร์เดิมจะยังอยู่ แต่ไม่ผูกกับลูกค้านี้แล้ว`}>
-            ลบลูกค้า
-          </ConfirmButton>
-        </form>
+      <Card
+        title="ข้อมูลลูกค้า"
+        actions={
+          editing ? (
+            <Link href={`/admin/customers/${customer.id}`} className="text-sm text-gray-500 hover:underline">ยกเลิก</Link>
+          ) : (
+            <Link
+              href={`/admin/customers/${customer.id}?edit=1`}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-brand-600 px-3 py-1.5 text-sm font-medium text-brand-600 hover:bg-brand-50"
+            >
+              ✏️ แก้ไขข้อมูล
+            </Link>
+          )
+        }
+      >
+        {/* key: สลับโหมดแล้วให้ฟอร์มเริ่มใหม่จากข้อมูลล่าสุด */}
+        <CustomerForm key={editing ? "edit" : "view"} customer={customer} locked={!editing} doneHref={`/admin/customers/${customer.id}`} />
+        {editing && (
+          <form action={deleteCustomer} className="mt-4 border-t border-gray-100 pt-4">
+            <input type="hidden" name="id" value={customer.id} />
+            <ConfirmButton message={`ลบลูกค้า ${customer.name}? ออเดอร์เดิมจะยังอยู่ แต่ไม่ผูกกับลูกค้านี้แล้ว`}>
+              ลบลูกค้า
+            </ConfirmButton>
+          </form>
+        )}
       </Card>
 
       <Card title="ประวัติการสั่งซื้อ">

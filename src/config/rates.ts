@@ -28,6 +28,9 @@ export const shippingRates: Record<ProductType, Record<ShippingMethod, Rate>> = 
   },
 };
 
+// เรทค่าขนส่งมาตรฐานในหลังบ้าน (บาท / คิว) — ใช้คิดค่าขนส่งของออเดอร์ในตู้ ถ้าออเดอร์ไม่ได้ตั้งเรทเอง
+export const DEFAULT_SHIPPING_RATE_PER_CBM = 6500;
+
 export const transitDays: Record<ShippingMethod, string> = {
   truck: "5-7",
   sea: "12-18",

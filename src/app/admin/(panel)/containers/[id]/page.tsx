@@ -10,6 +10,8 @@ import { containerStageFields, containerStages, stageLabelsTh, type ItemStage } 
 import { Card, Field, MethodSelect, StageBadge, methodLabel } from "@/components/admin/ui";
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { CheckIcon } from "@/components/icons";
+import { DEFAULT_SHIPPING_RATE_PER_CBM } from "@/config/rates";
+import { ShippingRateForm } from "./ShippingRateForm";
 import {
   addOrdersToContainer,
   deleteContainer,
@@ -20,6 +22,10 @@ import {
 } from "../actions";
 
 const sum = (values: (number | null)[]) => values.reduce<number>((a, v) => a + (v ?? 0), 0);
+// ค่าขนส่งของออเดอร์ในตู้นี้ = คิวรวม × เรท (บาท / คิว) ของออเดอร์ (ไม่ตั้ง = เรทมาตรฐาน)
+const shippingOf = (items: { cbm: number | null }[], rate: number | null) =>
+  Math.round(sum(items.map((i) => i.cbm)) * (rate ?? DEFAULT_SHIPPING_RATE_PER_CBM) * 100) / 100;
+const baht = (n: number) => n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 // สถานะที่อัปเดตจากหน้าตู้ได้: ขั้นของตู้ 4 ขั้น + ส่งต่อให้ลูกค้า (ใส่ให้ทุกรายการในตู้)
 const statusOptions: ItemStage[] = [...containerStages, "out_for_delivery", "delivered"];
@@ -189,6 +195,8 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
                 <th className="py-2 pr-4">กก.</th>
                 <th className="py-2 pr-4">คิว</th>
                 <th className="py-2 pr-4">สถานะ</th>
+                <th className="py-2 pr-4 whitespace-nowrap">เรท (บาท / คิว)</th>
+                <th className="py-2 pr-4 text-right whitespace-nowrap">ค่าขนส่ง (บาท)</th>
                 <th className="py-2" />
               </tr>
             </thead>
@@ -208,6 +216,10 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
                   <td className="py-2 pr-4">{sum(own.map((i) => i.weightKg)) || "-"}</td>
                   <td className="py-2 pr-4">{sum(own.map((i) => i.cbm)) || "-"}</td>
                   <td className="py-2 pr-4"><StageBadge stage={summary.stage} /></td>
+                  <td className="py-2 pr-4">
+                    <ShippingRateForm orderId={order.id} rate={order.shippingRate} defaultRate={DEFAULT_SHIPPING_RATE_PER_CBM} />
+                  </td>
+                  <td className="py-2 pr-4 text-right font-medium whitespace-nowrap">{baht(shippingOf(own, order.shippingRate))}</td>
                   <td className="py-2 text-right">
                     <form action={removeOrderFromContainer}>
                       <input type="hidden" name="id" value={container.id} />
@@ -223,9 +235,25 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
                 </tr>
               ))}
               {inside.length === 0 && (
-                <tr><td colSpan={8} className="py-6 text-center text-gray-400">ยังไม่มีออเดอร์ในตู้ — เลือกจากรายการด้านล่าง</td></tr>
+                <tr><td colSpan={10} className="py-6 text-center text-gray-400">ยังไม่มีออเดอร์ในตู้ — เลือกจากรายการด้านล่าง</td></tr>
               )}
             </tbody>
+            {inside.length > 0 && (
+              <tfoot>
+                {/* สรุปค่าขนส่งทั้งตู้ */}
+                <tr className="border-t-2 border-gray-200 font-semibold">
+                  <td className="py-2 pr-4" colSpan={3}>รวมทั้งตู้</td>
+                  <td className="py-2 pr-4">{sum(inside.flatMap((r) => r.items.map((i) => i.boxes))) || "-"}</td>
+                  <td className="py-2 pr-4">{Math.round(sum(inside.flatMap((r) => r.items.map((i) => i.weightKg))) * 100) / 100 || "-"}</td>
+                  <td className="py-2 pr-4">{Math.round(sum(inside.flatMap((r) => r.items.map((i) => i.cbm))) * 10000) / 10000 || "-"}</td>
+                  <td className="py-2 pr-4" colSpan={2} />
+                  <td className="py-2 pr-4 text-right whitespace-nowrap text-brand-700">
+                    {baht(sum(inside.map((r) => shippingOf(r.items, r.order.shippingRate))))}
+                  </td>
+                  <td />
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       </Card>

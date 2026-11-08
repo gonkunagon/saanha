@@ -93,6 +93,8 @@ export const orders = pgTable("orders", {
   orderRate: doublePrecision("order_rate"),
   // วันเปิดบิล = วันที่สร้างออเดอร์ · quotedAt มีค่าเมื่อกด "ออกใบใหม่เป็นวันนี้" · quoteRate = เรทหยวนที่ใช้ในใบ (ล็อกเมื่อพ้นวันเปิดบิล)
   quotedAt: timestamp("quoted_at"),
+  // เรทค่าขนส่งของออเดอร์นี้ (บาท / คิว) — ว่าง = เรทมาตรฐาน (DEFAULT_SHIPPING_RATE_PER_CBM)
+  shippingRate: doublePrecision("shipping_rate"),
   quoteRate: doublePrecision("quote_rate"),
   provider: text("provider"),
   externalId: text("external_id"),

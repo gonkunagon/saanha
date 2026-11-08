@@ -4,7 +4,7 @@ import { and, eq, inArray, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { containers, orderItems, shippingMethods, type ShippingMethod } from "@/db/schema";
+import { containers, orderItems, orders, shippingMethods, type ShippingMethod } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { parseLocalDateTime } from "@/lib/datetime";
 import { containerStageFields, containerStages, type ContainerStage } from "@/lib/stages";
@@ -120,4 +120,13 @@ export async function deleteContainer(fd: FormData) {
   await db.delete(containers).where(eq(containers.id, id));
   refresh();
   redirect("/admin/containers");
+}
+
+// เรทค่าขนส่ง (บาท / คิว) ของออเดอร์ — เว้นว่าง = กลับไปใช้เรทมาตรฐาน
+export async function updateOrderShippingRate(fd: FormData) {
+  await requireUser();
+  const v = parseFloat(String(fd.get("shippingRate") ?? ""));
+  const rate = Number.isFinite(v) && v >= 0 ? Math.round(v * 100) / 100 : null;
+  await db.update(orders).set({ shippingRate: rate }).where(eq(orders.id, Number(fd.get("orderId"))));
+  refresh();
 }

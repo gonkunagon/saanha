@@ -12,6 +12,7 @@ import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { CheckIcon } from "@/components/icons";
 import { DEFAULT_SHIPPING_RATE_PER_CBM } from "@/config/rates";
 import { ShippingRateForm } from "./ShippingRateForm";
+import { shippingCostOf } from "@/lib/shipping";
 import {
   addOrdersToContainer,
   deleteContainer,
@@ -22,9 +23,7 @@ import {
 } from "../actions";
 
 const sum = (values: (number | null)[]) => values.reduce<number>((a, v) => a + (v ?? 0), 0);
-// ค่าขนส่งของออเดอร์ในตู้นี้ = คิวรวม × เรท (บาท / คิว) ของออเดอร์ (ไม่ตั้ง = เรทมาตรฐาน)
-const shippingOf = (items: { cbm: number | null }[], rate: number | null) =>
-  Math.round(sum(items.map((i) => i.cbm)) * (rate ?? DEFAULT_SHIPPING_RATE_PER_CBM) * 100) / 100;
+const shippingOf = shippingCostOf;
 const baht = (n: number) => n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 // สถานะที่อัปเดตจากหน้าตู้ได้: ขั้นของตู้ 4 ขั้น + ส่งต่อให้ลูกค้า (ใส่ให้ทุกรายการในตู้)
@@ -197,6 +196,7 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
                 <th className="py-2 pr-4">สถานะ</th>
                 <th className="py-2 pr-4 whitespace-nowrap">เรท (บาท / คิว)</th>
                 <th className="py-2 pr-4 text-right whitespace-nowrap">ค่าขนส่ง (บาท)</th>
+                <th className="py-2 pr-4 text-center whitespace-nowrap">ใบสรุปค่าขนส่ง</th>
                 <th className="py-2" />
               </tr>
             </thead>
@@ -220,6 +220,21 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
                     <ShippingRateForm orderId={order.id} rate={order.shippingRate} defaultRate={DEFAULT_SHIPPING_RATE_PER_CBM} />
                   </td>
                   <td className="py-2 pr-4 text-right font-medium whitespace-nowrap">{baht(shippingOf(own, order.shippingRate))}</td>
+                  <td className="py-1 pr-4 text-center">
+                    {/* ใบสรุปค่าขนส่ง A4 ของออเดอร์นี้ในตู้นี้ (ส่ง / พิมพ์ให้ลูกค้า) */}
+                    <Link
+                      href={`/admin/shipping/${container.id}/${order.id}`}
+                      target="_blank"
+                      title="ใบสรุปค่าขนส่ง"
+                      aria-label={`ใบสรุปค่าขนส่ง ${order.code}`}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-brand-600 hover:bg-brand-50"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-5 w-5">
+                        <path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z" />
+                        <path d="M14 3v5h5M9 9h1M9 13h6M9 17h6" />
+                      </svg>
+                    </Link>
+                  </td>
                   <td className="py-2 text-right">
                     <form action={removeOrderFromContainer}>
                       <input type="hidden" name="id" value={container.id} />
@@ -235,7 +250,7 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
                 </tr>
               ))}
               {inside.length === 0 && (
-                <tr><td colSpan={10} className="py-6 text-center text-gray-400">ยังไม่มีออเดอร์ในตู้ — เลือกจากรายการด้านล่าง</td></tr>
+                <tr><td colSpan={11} className="py-6 text-center text-gray-400">ยังไม่มีออเดอร์ในตู้ — เลือกจากรายการด้านล่าง</td></tr>
               )}
             </tbody>
             {inside.length > 0 && (
@@ -250,7 +265,7 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
                   <td className="py-2 pr-4 text-right whitespace-nowrap text-brand-700">
                     {baht(sum(inside.map((r) => shippingOf(r.items, r.order.shippingRate))))}
                   </td>
-                  <td />
+                  <td colSpan={2} />
                 </tr>
               </tfoot>
             )}

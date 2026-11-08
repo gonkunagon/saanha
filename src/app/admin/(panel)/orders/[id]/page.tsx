@@ -166,15 +166,12 @@ function Info({ label, children, wide }: { label: string; children: React.ReactN
 }
 
 // รายละเอียดสินค้า: ยอดรวม + พัสดุแต่ละแถว
-function ItemDetails({ item, currency, showPrice = true }: { item: ItemWithPackages; currency: CurrencyCode; showPrice?: boolean }) {
+function ItemDetails({ item }: { item: ItemWithPackages }) {
   return (
     <>
       <p className="font-medium">
         {item.description}
         {item.quantity ? <span className="text-gray-500"> × {item.quantity}</span> : null}
-        {showPrice && item.unitPrice != null && (
-          <span className="ml-2 text-sm font-normal text-gray-600">@ {formatMoney(item.unitPrice, currency)}</span>
-        )}
       </p>
       <p className="text-xs text-gray-500">
         {[
@@ -404,7 +401,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
                 const stage = stages[idx];
                 return (
                   <li key={item.id} className="flex flex-wrap items-center gap-3 p-3">
-                    <div className="min-w-48 flex-1"><ItemDetails item={item} currency={order.currency} /></div>
+                    <div className="min-w-48 flex-1"><ItemDetails item={item} /></div>
                     <div className="w-32 text-sm"><ContainerLink item={item} /></div>
                     <div className="w-56 text-right">
                       <StageBadge stage={stage} />
@@ -447,7 +444,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
                         className="h-5 w-5 accent-brand-600"
                         aria-label={`เลือก ${item.description}`}
                       />
-                      <div className="min-w-48 flex-1"><ItemDetails item={item} currency={order.currency} showPrice={false} /></div>
+                      <div className="min-w-48 flex-1"><ItemDetails item={item} /></div>
                       {/* แก้ราคาต่อหน่วยได้ตรงนี้เลย ไม่ต้องเปิด "แก้ไขรายละเอียด" */}
                       <ItemPriceForm itemId={item.id} unitPrice={item.unitPrice} placeholder={currencyLabel[order.currency]} />
                       <div className="w-32 text-sm"><ContainerLink item={item} /></div>

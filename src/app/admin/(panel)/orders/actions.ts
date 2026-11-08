@@ -193,10 +193,26 @@ export async function updateOrder(fd: FormData) {
   // ไม่ได้เลือกลูกค้า (ออเดอร์เก่าที่ยังไม่ผูก) = คงชื่อ/เบอร์เดิมไว้
   const customer = await selectedCustomer(fd);
   const id = Number(fd.get("id"));
-  await db
-    .update(orders)
-    .set({ ...orderFields(fd), ...customer })
-    .where(eq(orders.id, id));
+  const fields = orderFields(fd);
+  await db.transaction(async (tx) => {
+    await tx
+      .update(orders)
+      .set({ ...fields, ...customer })
+      .where(eq(orders.id, id));
+    // พัสดุ + ตู้ ของแต่ละรายการ (ส่งมาพร้อมฟอร์มแก้ไขออเดอร์)
+    for (const itemId of fd.getAll("shipItemId").map(Number).filter(Boolean)) {
+      const item = await tx.query.orderItems.findFirst({ where: and(eq(orderItems.id, itemId), eq(orderItems.orderId, id)) });
+      if (!item) continue;
+      const code = text(fd, `containerCode_${itemId}`);
+      const container = code ? await findOrCreateContainer(tx, code, fields.method) : null;
+      const packages = parsePackages(fd, `pkg_${itemId}_`);
+      await savePackages(tx, itemId, packages);
+      await tx
+        .update(orderItems)
+        .set({ ...packageTotals(packages), containerId: container?.id ?? null })
+        .where(eq(orderItems.id, itemId));
+    }
+  });
   refresh();
   redirect(`/admin/orders/${id}`); // บันทึกแล้วกลับไปหน้าแสดงข้อมูล
 }
@@ -255,12 +271,7 @@ export async function updateItem(fd: FormData) {
   if (!description) return;
   const itemId = Number(fd.get("itemId"));
   await db.transaction(async (tx) => {
-    const item = await tx.query.orderItems.findFirst({ where: eq(orderItems.id, itemId), with: { order: true } });
-    if (!item) return;
-    const code = text(fd, "containerCode");
-    const container = code ? await findOrCreateContainer(tx, code, item.order.method) : null;
-    const packages = parsePackages(fd, "pkg_");
-    await savePackages(tx, itemId, packages);
+    // พัสดุ + ตู้ แก้ที่ฟอร์มแก้ไขออเดอร์ (updateOrder) — ที่นี่แก้แค่ข้อมูลสินค้า
     await tx
       .update(orderItems)
       .set({
@@ -269,8 +280,6 @@ export async function updateItem(fd: FormData) {
         productUrl: url(fd.get("productUrl")),
         quantity: toInt(fd.get("quantity")),
         unitPrice: toNum(fd.get("unitPrice")),
-        ...packageTotals(packages),
-        containerId: container?.id ?? null,
         // วันที่ของสถานะ + เลขพัสดุในไทย ไม่แก้ที่นี่ (อัปเดตผ่าน applyStage) — ไม่ส่งมา = คงค่าเดิม
       })
       .where(eq(orderItems.id, itemId));

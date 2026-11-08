@@ -27,7 +27,7 @@ const STAGE_FORM = "stage-form";
 // ฟอร์มแก้ไขรายละเอียดรายการ (ซ่อนไว้ กดเปิดเมื่อต้องแก้ข้อมูลผิด)
 type ItemWithPackages = ItemWithContainer & { packages: ItemPackage[]; images: { id: number }[] };
 
-function ItemEditForm({ item, containerOptions }: { item: ItemWithPackages; containerOptions: ContainerOption[] }) {
+function ItemEditForm({ item }: { item: ItemWithPackages }) {
   return (
     <form action={updateItem} className="mt-3 rounded-lg bg-gray-50 p-4">
       <input type="hidden" name="itemId" value={item.id} />
@@ -47,12 +47,32 @@ function ItemEditForm({ item, containerOptions }: { item: ItemWithPackages; cont
         <Field label="ราคาต่อหน่วย">
           <input name="unitPrice" type="number" step="0.01" min={0} defaultValue={item.unitPrice ?? ""} className="input bg-white" />
         </Field>
-        <div className="sm:col-span-2 lg:col-span-4 [&_input]:bg-white">
-          <span className="mb-1 block text-sm text-gray-600">พัสดุ</span>
-          <PackageFields defaults={item.packages} />
-        </div>
-        <Field label="ตู้">
-          <select name="containerCode" defaultValue={item.container?.code ?? ""} className="input bg-white">
+      </div>
+      <div className="mt-3 flex items-center justify-between">
+        <button className="rounded-lg border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-100">บันทึกการแก้ไข</button>
+        <ConfirmButton formAction={deleteItem} message={`ลบรายการ "${item.description}"?`}>ลบรายการ</ConfirmButton>
+      </div>
+      <p className="mt-2 text-xs text-gray-500">
+        พัสดุและตู้ แก้ที่ &quot;แก้ไขข้อมูลออเดอร์&quot; ด้านล่าง · วันที่ของแต่ละสถานะ อัปเดตที่กล่อง &quot;อัปเดตสถานะรายการที่เลือก&quot;
+      </p>
+    </form>
+  );
+}
+
+// พัสดุ + ตู้ ของแต่ละรายการ — อยู่ในฟอร์ม "แก้ไขข้อมูลออเดอร์" (ชื่อช่องมีเลขรายการกำกับ บันทึกพร้อมออเดอร์)
+function ItemShippingFields({ item, containerOptions }: { item: ItemWithPackages; containerOptions: ContainerOption[] }) {
+  return (
+    <div className="rounded-lg bg-gray-50 p-3 [&_input]:bg-white">
+      <input type="hidden" name="shipItemId" value={item.id} />
+      <p className="mb-2 text-sm font-medium">
+        {item.description}
+        {item.quantity ? <span className="font-normal text-gray-500"> × {item.quantity}</span> : null}
+      </p>
+      <PackageFields prefix={`pkg_${item.id}_`} defaults={item.packages} />
+      <label className="mt-3 block">
+        <span className="mb-1 block text-sm text-gray-600">ตู้</span>
+        <span className="block w-full max-w-xs">
+          <select name={`containerCode_${item.id}`} defaultValue={item.container?.code ?? ""} className="input bg-white">
             <option value="">— ไม่อยู่ในตู้ —</option>
             {item.container && !containerOptions.some((c) => c.code === item.container!.code) && (
               <option value={item.container.code}>{item.container.code}</option>
@@ -61,16 +81,9 @@ function ItemEditForm({ item, containerOptions }: { item: ItemWithPackages; cont
               <option key={c.code} value={c.code}>{c.label}</option>
             ))}
           </select>
-        </Field>
-      </div>
-      <div className="mt-3 flex items-center justify-between">
-        <button className="rounded-lg border border-gray-300 bg-white px-4 py-1.5 text-sm hover:bg-gray-100">บันทึกการแก้ไข</button>
-        <ConfirmButton formAction={deleteItem} message={`ลบรายการ "${item.description}"?`}>ลบรายการ</ConfirmButton>
-      </div>
-      <p className="mt-2 text-xs text-gray-500">
-        วันที่ของแต่ละสถานะ (ผลิต / ถึงโกดังจีน / ส่งลูกค้า) อัปเดตที่กล่อง &quot;อัปเดตสถานะรายการที่เลือก&quot; · ปิดตู้ → ถึงโกดังไทย แก้ได้ที่หน้าตู้
-      </p>
-    </form>
+        </span>
+      </label>
+    </div>
   );
 }
 
@@ -449,7 +462,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
                       <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-lg border border-brand-600 px-3 py-1.5 text-sm font-medium text-brand-600 select-none hover:bg-brand-50 [&::-webkit-details-marker]:hidden">
                         ✏️ <span className="group-open:hidden">แก้ไขรายละเอียด</span><span className="hidden group-open:inline">ปิดการแก้ไข</span>
                       </summary>
-                      <ItemEditForm item={item} containerOptions={containerOptions} />
+                      <ItemEditForm item={item} />
                     </details>
                     <ItemPhotos item={item} />
                   </li>
@@ -475,6 +488,14 @@ export default async function OrderPage({ params, searchParams }: Props) {
         <form action={updateOrder} className="grid gap-4 sm:grid-cols-2">
           <input type="hidden" name="id" value={order.id} />
           <OrderFields order={order} customers={customers} paymentsLinked={order.payments.length > 0} />
+          {order.items.length > 0 && (
+            <div className="space-y-3 sm:col-span-2">
+              <span className="block text-sm text-gray-600">พัสดุ / ตู้ ของแต่ละรายการ</span>
+              {order.items.map((item) => (
+                <ItemShippingFields key={item.id} item={item} containerOptions={containerOptions} />
+              ))}
+            </div>
+          )}
           <div className="flex items-center gap-3 sm:col-span-2">
             <button className="btn-primary">บันทึก</button>
             <Link href={`/admin/orders/${order.id}`} className="text-sm text-gray-500 hover:underline">ยกเลิก</Link>

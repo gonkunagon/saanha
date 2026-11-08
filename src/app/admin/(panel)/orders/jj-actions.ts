@@ -27,7 +27,7 @@ export type JjLookupResult = { ok: true; parcels: JjParcel[] } | { ok: false; er
 export async function lookupJjParcels(trackingNo: string): Promise<JjLookupResult> {
   await requireUser();
   const tracking = trackingNo.trim();
-  if (tracking.length < 3) return { ok: false, error: "กรุณาใส่เลขพัสดุจีนก่อนกดดึงข้อมูล" };
+  if (tracking.length < 3) return { ok: false, error: "กรุณาใส่ Tracking no. จีนก่อนกดดึงข้อมูล" };
   try {
     const parcels = await findParcelsByTracking(tracking);
     if (parcels.length === 0) {

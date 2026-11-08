@@ -192,7 +192,7 @@ function ItemDetails({ item, currency, showPrice = true }: { item: ItemWithPacka
             <li key={p.id}>
               └{" "}
               {[
-                p.chinaTrackingNo && `พัสดุจีน ${p.chinaTrackingNo}`,
+                p.chinaTrackingNo && `Tracking ${p.chinaTrackingNo}`,
                 p.boxes != null && `${p.boxes} กล่อง`,
                 p.widthCm && p.lengthCm && p.heightCm && `${p.widthCm}×${p.lengthCm}×${p.heightCm} ซม.`,
                 p.weightKg != null && (p.boxes && p.boxes > 1 ? `${p.weightKg} กก./กล่อง` : `${p.weightKg} กก.`),

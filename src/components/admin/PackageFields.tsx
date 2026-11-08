@@ -109,7 +109,7 @@ export function PackageFields({ prefix = "pkg_", defaults = [] }: { prefix?: str
   return (
     <div className="rounded-lg border border-dashed border-gray-300 p-3">
       <div className="mb-1 hidden gap-2 text-xs text-gray-500 md:grid md:grid-cols-[13rem_4.5rem_5.5rem_auto_6rem_1.5rem]">
-        <span>เลขพัสดุจีน</span>
+        <span>Tracking no. จีน</span>
         <span>กล่อง</span>
         <span>น้ำหนัก/กล่อง (กก.)</span>
         <span>ขนาดต่อกล่อง กว้าง × ยาว × สูง (ซม.)</span>
@@ -123,7 +123,7 @@ export function PackageFields({ prefix = "pkg_", defaults = [] }: { prefix?: str
             <div key={r.key} className="grid grid-cols-2 items-center gap-2 md:grid-cols-[13rem_4.5rem_5.5rem_auto_6rem_1.5rem]">
               <div className="col-span-2 flex gap-1 md:col-span-1">
                 <input type="hidden" name={`${prefix}importKey`} value={r.importKey} />
-                <input name={`${prefix}chinaTrackingNo`} value={r.tracking} onChange={(e) => update(r.key, "tracking", e.target.value)} placeholder={`พัสดุจีน ${i + 1}`} className="input" />
+                <input name={`${prefix}chinaTrackingNo`} value={r.tracking} onChange={(e) => update(r.key, "tracking", e.target.value)} placeholder={`Tracking no. ${i + 1}`} className="input" />
                 <button
                   type="button"
                   onClick={() => fetchFromJj(r)}

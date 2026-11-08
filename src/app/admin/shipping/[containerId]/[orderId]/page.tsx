@@ -71,9 +71,10 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
 
       <article className="flex min-h-[297mm] flex-col bg-white text-[13px] text-gray-800 shadow-lg ring-1 ring-gray-200 [print-color-adjust:exact] print:min-h-0 print:shadow-none print:ring-0">
         {/* หัวกระดาษ: ชื่อเอกสารอย่างเดียว (ไม่แสดงข้อมูลบริษัท) */}
-        <header className="mx-10 mt-8 rounded-lg border-2 border-brand-600 px-8 py-5 text-center">
-          <h1 className="text-3xl font-bold text-brand-700">ใบสรุปค่าขนส่ง</h1>
-          <p className="text-xs tracking-[0.3em] text-brand-600">SHIPPING SUMMARY</p>
+        <header className="mx-10 mt-8 flex flex-col items-center rounded-lg border-2 border-brand-600 px-8 pt-6 pb-5">
+          <h1 className="text-3xl leading-[1.6] font-bold text-brand-700">ใบสรุปค่าขนส่ง</h1>
+          <span className="my-2 h-0.5 w-16 rounded-full bg-accent-400" aria-hidden="true" />
+          <p className="pl-[0.35em] text-xs font-medium tracking-[0.35em] text-brand-600">SHIPPING SUMMARY</p>
         </header>
 
         <div className="flex flex-1 flex-col px-10 py-8">

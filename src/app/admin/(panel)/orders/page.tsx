@@ -98,9 +98,7 @@ export default async function OrdersPage({ searchParams }: Props) {
                   </td>
                   <td className="py-2 pr-4">
                     {methodLabel(o.method)}
-                    {[...new Set(o.items.flatMap((i) => i.packages.map((p) => p.chinaTrackingNo)).filter(Boolean))].map((t) => (
-                      <span key={t} className="block text-xs text-gray-500">{t}</span>
-                    ))}
+                    <TrackingList list={[...new Set(o.items.flatMap((i) => i.packages.map((p) => p.chinaTrackingNo)).filter((t): t is string => !!t))]} />
                   </td>
                   <td className="py-2 pr-4">{s.itemCount} / {s.containerCount} ตู้</td>
                   <td className="py-2 pr-4">
@@ -131,5 +129,19 @@ export default async function OrdersPage({ searchParams }: Props) {
         </div>
       </Card>
     </div>
+  );
+}
+
+// Tracking หลายเลขทำให้ตารางยาว → โชว์เลขแรก + "อีก N เลข" (กดเพื่อดูทั้งหมด)
+function TrackingList({ list }: { list: string[] }) {
+  if (list.length === 0) return null;
+  if (list.length === 1) return <span className="block text-xs text-gray-500">{list[0]}</span>;
+  return (
+    <details className="text-xs text-gray-500">
+      <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+        {list[0]} <span className="font-medium whitespace-nowrap text-brand-600">+ อีก {list.length - 1} เลข</span>
+      </summary>
+      {list.slice(1).map((t) => <span key={t} className="block">{t}</span>)}
+    </details>
   );
 }

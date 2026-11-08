@@ -65,7 +65,7 @@ export function CreateOrderForm({ children }: { children: React.ReactNode }) {
       {error && <p className="text-sm text-brand-600">{error}</p>}
       <div className="flex flex-wrap items-center gap-3">
         <button disabled={pending} className="btn-primary">{pending ? "กำลังสร้าง..." : "สร้างออเดอร์"}</button>
-        <button name="then" value="quote" disabled={pending} className="btn-secondary">📄 สร้างออเดอร์ + ใบเสนอราคา</button>
+        <button name="then" value="quote" disabled={pending} className="btn-secondary">📄 สร้างใบเสนอราคา</button>
       </div>
     </form>
   );

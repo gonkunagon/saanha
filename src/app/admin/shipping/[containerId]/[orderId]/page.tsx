@@ -39,7 +39,6 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
   if (!container || !order) notFound();
   const items = await db.query.orderItems.findMany({
     where: and(eq(orderItems.orderId, order.id), eq(orderItems.containerId, container.id)),
-    with: { packages: true },
     orderBy: orderItems.id,
   });
   if (items.length === 0) notFound();
@@ -71,15 +70,9 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
 
       <article className="flex min-h-[297mm] flex-col bg-white text-[13px] text-gray-800 shadow-lg ring-1 ring-gray-200 [print-color-adjust:exact] print:min-h-0 print:shadow-none print:ring-0">
         {/* หัวกระดาษ: ชื่อเอกสารอย่างเดียว (ไม่แสดงข้อมูลบริษัท) */}
-        <header className="flex items-end justify-between border-b-4 border-accent-400 bg-brand-700 px-10 pt-9 pb-6 text-white">
-          <div>
-            <p className="text-[11px] font-semibold tracking-[0.3em] text-accent-300">SHIPPING SUMMARY</p>
-            <h1 className="mt-1 text-[34px] leading-[1.5] font-bold">ใบสรุปค่าขนส่ง</h1>
-          </div>
-          <div className="pb-1.5 text-right">
-            <p className="text-[11px] text-white/70">เลขที่อ้างอิง</p>
-            <p className="text-lg font-semibold tracking-wide">{order.code}</p>
-          </div>
+        <header className="border-b-4 border-accent-400 bg-white px-10 pt-9 pb-6">
+          <p className="text-[11px] font-semibold tracking-[0.3em] text-brand-600">SHIPPING SUMMARY</p>
+          <h1 className="mt-1 text-[34px] leading-[1.5] font-bold text-brand-700">ใบสรุปค่าขนส่ง</h1>
         </header>
 
         <div className="flex flex-1 flex-col px-10 pt-7 pb-8">
@@ -120,24 +113,20 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
               </tr>
             </thead>
             <tbody>
-              {items.map((i, n) => {
-                const trackings = [...new Set(i.packages.map((p) => p.chinaTrackingNo).filter(Boolean))];
-                return (
-                  <tr key={i.id} className="align-top [&>td]:border-b [&>td]:border-gray-100">
-                    <td className="px-3 py-2.5 text-center text-gray-500">{n + 1}</td>
-                    <td className="px-3 py-2.5">
-                      <p className="font-medium text-gray-900">
-                        {i.description}
-                        {i.quantity ? <span className="font-normal text-gray-500"> × {num(i.quantity)}</span> : null}
-                      </p>
-                      {trackings.length > 0 && <p className="mt-0.5 text-[11px] break-words text-gray-500">Tracking: {trackings.join(" · ")}</p>}
-                    </td>
-                    <td className="px-3 py-2.5 text-right">{num(i.boxes)}</td>
-                    <td className="px-3 py-2.5 text-right">{num(i.weightKg, 2)}</td>
-                    <td className="px-3 py-2.5 text-right">{num(i.cbm, 4)}</td>
-                  </tr>
-                );
-              })}
+              {items.map((i, n) => (
+                <tr key={i.id} className="align-top [&>td]:border-b [&>td]:border-gray-100">
+                  <td className="px-3 py-2.5 text-center text-gray-500">{n + 1}</td>
+                  <td className="px-3 py-2.5">
+                    <p className="font-medium text-gray-900">
+                      {i.description}
+                      {i.quantity ? <span className="font-normal text-gray-500"> × {num(i.quantity)}</span> : null}
+                    </p>
+                  </td>
+                  <td className="px-3 py-2.5 text-right">{num(i.boxes)}</td>
+                  <td className="px-3 py-2.5 text-right">{num(i.weightKg, 2)}</td>
+                  <td className="px-3 py-2.5 text-right">{num(i.cbm, 4)}</td>
+                </tr>
+              ))}
             </tbody>
             <tfoot>
               <tr className="font-semibold [&>td]:border-t-2 [&>td]:border-brand-600">

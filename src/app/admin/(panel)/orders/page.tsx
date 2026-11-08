@@ -77,7 +77,7 @@ export default async function OrdersPage({ searchParams }: Props) {
                 <th className="py-2 pr-4">สถานะ</th>
                 <th className="py-2 pr-4">ยอดเงิน</th>
                 <th className="py-2 pr-4">สร้างเมื่อ</th>
-                <th className="py-2" aria-label="ลบ" />
+                <th className="py-2 text-center whitespace-nowrap">ใบเสนอราคา</th>
               </tr>
             </thead>
             <tbody>
@@ -119,7 +119,7 @@ export default async function OrdersPage({ searchParams }: Props) {
                     )}
                   </td>
                   <td className="py-2 pr-4 text-gray-500">{formatThaiDateTime(o.createdAt)}</td>
-                  <td className="py-2 text-right">
+                  <td className="py-2 text-center">
                     {/* ไอคอนใบเสนอราคา (เอกสาร) — ชี้ค้างจะขึ้นชื่อปุ่ม */}
                     <Link
                       href={`/admin/quote/${o.id}`}

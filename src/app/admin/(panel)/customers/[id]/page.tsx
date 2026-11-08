@@ -117,7 +117,12 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                         </span>
                         <span className="w-20 text-right text-gray-600">{i.quantity != null ? `× ${i.quantity}` : "-"}</span>
                         <span className="w-36 text-right text-gray-600">{i.unitPrice != null ? `@ ${formatMoney(i.unitPrice, o.currency)}` : ""}</span>
-                        <span className="w-28 text-right text-xs text-gray-500">{i.container ? `ตู้ ${i.container.code}` : "ยังไม่เข้าตู้"}</span>
+                        {/* สถานะรายการ: ส่งถึงลูกค้าแล้ว = สำเร็จ · ที่เหลือ = อยู่ระหว่างดำเนินการ */}
+                        {i.deliveredAt ? (
+                          <span className="w-40 text-right text-xs font-medium text-emerald-700">✓ สำเร็จ</span>
+                        ) : (
+                          <span className="w-40 text-right text-xs text-amber-700">อยู่ระหว่างดำเนินการ</span>
+                        )}
                       </li>
                     ))}
                     {o.items.length === 0 && <li className="py-2 text-gray-400">ไม่มีรายการสินค้า</li>}

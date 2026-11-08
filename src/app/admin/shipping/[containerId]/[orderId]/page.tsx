@@ -136,7 +136,7 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
                         {i.description}
                         {i.quantity ? <span className="font-normal text-gray-500"> × {num(i.quantity)}</span> : null}
                       </p>
-                      {trackings.length > 0 && <p className="mt-0.5 text-[11px] break-all text-gray-500">Tracking: {trackings.join(", ")}</p>}
+                      {trackings.length > 0 && <p className="mt-0.5 text-[11px] break-words text-gray-500">Tracking: {trackings.join(" · ")}</p>}
                     </td>
                     <td className="px-3 py-2.5 text-right">{num(i.boxes)}</td>
                     <td className="px-3 py-2.5 text-right">{num(i.weightKg, 2)}</td>

@@ -60,10 +60,10 @@ export function OrderFields({
           <MethodSelect defaultValue={order?.method} />
         </span>
       </Field>
-      {shipping}
       <Field label="บริษัทขนส่งที่รับงานต่อ">
         <input name="provider" defaultValue={order?.provider ?? ""} className="input" />
       </Field>
+      {shipping}
       <Field label="หมายเหตุถึงลูกค้า (แสดงในหน้าติดตามพัสดุ)" className="sm:col-span-2">
         <textarea name="note" rows={2} defaultValue={order?.note ?? ""} className="input" />
       </Field>

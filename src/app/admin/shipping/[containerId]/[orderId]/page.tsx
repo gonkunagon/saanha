@@ -71,13 +71,18 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
 
       <article className="flex min-h-[297mm] flex-col bg-white text-[13px] text-gray-800 shadow-lg ring-1 ring-gray-200 [print-color-adjust:exact] print:min-h-0 print:shadow-none print:ring-0">
         {/* หัวกระดาษ: ชื่อเอกสารอย่างเดียว (ไม่แสดงข้อมูลบริษัท) */}
-        <header className="mx-10 mt-8 flex flex-col items-center rounded-lg border-2 border-brand-600 px-8 pt-6 pb-5">
-          <h1 className="text-3xl leading-[1.6] font-bold text-brand-700">ใบสรุปค่าขนส่ง</h1>
-          <span className="my-2 h-0.5 w-16 rounded-full bg-accent-400" aria-hidden="true" />
-          <p className="pl-[0.35em] text-xs font-medium tracking-[0.35em] text-brand-600">SHIPPING SUMMARY</p>
+        <header className="flex items-end justify-between border-b-4 border-accent-400 bg-brand-700 px-10 pt-9 pb-6 text-white">
+          <div>
+            <p className="text-[11px] font-semibold tracking-[0.3em] text-accent-300">SHIPPING SUMMARY</p>
+            <h1 className="mt-1 text-[34px] leading-[1.5] font-bold">ใบสรุปค่าขนส่ง</h1>
+          </div>
+          <div className="pb-1.5 text-right">
+            <p className="text-[11px] text-white/70">เลขที่อ้างอิง</p>
+            <p className="text-lg font-semibold tracking-wide">{order.code}</p>
+          </div>
         </header>
 
-        <div className="flex flex-1 flex-col px-10 py-8">
+        <div className="flex flex-1 flex-col px-10 pt-7 pb-8">
           <dl className="grid grid-cols-4 divide-x divide-gray-200 rounded-lg border border-gray-200">
             {meta.map(([label, value]) => (
               <div key={label} className="px-4 py-2.5">

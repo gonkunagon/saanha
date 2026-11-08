@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { calcCbm } from "@/lib/cbm";
 import { lookupJjParcels } from "@/app/admin/(panel)/orders/jj-actions";
 
@@ -69,6 +69,26 @@ export function PackageFields({ prefix = "pkg_", defaults = [] }: { prefix?: str
   };
   const removeRow = (key: number) => setRows((rs) => (rs.length > 1 ? autoNumber(rs.filter((r) => r.key !== key)) : rs));
 
+  // กรอกจำนวนกล่อง N (> 1) แล้วออกจากช่อง = แตกเป็น N แถว แถวละ 1 กล่อง (คัดลอกน้ำหนัก/ขนาด, Tracking ต่อเลขให้เอง)
+  // แตกเฉพาะตอนเปลี่ยนค่า — คลิกผ่านช่องเดิมเฉย ๆ ไม่แตก
+  const MAX_SPLIT = 200;
+  const boxesAtFocus = useRef("");
+  const splitRow = (key: number) => {
+    const at = rows.findIndex((r) => r.key === key);
+    const row = rows[at];
+    const n = Math.floor(Number(row?.boxes));
+    if (!row || row.boxes === boxesAtFocus.current || !(n > 1) || n > MAX_SPLIT) return;
+    const base = row.tracking.trim();
+    const copies: Row[] = Array.from({ length: n }, (_, i) => {
+      if (i === 0) return { ...row, boxes: "1" };
+      const follow = at === 0 || row.auto; // ต่อเลขจากแถวแรกอัตโนมัติ
+      return { ...row, key: nextKey + i - 1, importKey: "", boxes: "1", auto: follow, tracking: follow ? "" : `${base}-${i}` };
+    });
+    setNextKey((k) => k + n - 1);
+    setRows((rs) => autoNumber([...rs.slice(0, at), ...copies, ...rs.slice(at + 1)]));
+    setMessage({ ok: true, text: `แตกเป็น ${n} แถว แถวละ 1 กล่องแล้ว` });
+  };
+
   // ดึงข้อมูลจาก JJ Cargo: แทนแถวนี้ด้วยพัสดุทุกกล่องของเลขนั้น (1 กล่อง = 1 แถว)
   const [fetchingKey, setFetchingKey] = useState<number | null>(null);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -134,7 +154,7 @@ export function PackageFields({ prefix = "pkg_", defaults = [] }: { prefix?: str
                   {fetchingKey === r.key ? "…" : "ดึง"}
                 </button>
               </div>
-              <input name={`${prefix}boxes`} type="number" min={0} value={r.boxes} onChange={(e) => update(r.key, "boxes", e.target.value)} placeholder="กล่อง" className={cell} aria-label="จำนวนกล่อง" />
+              <input name={`${prefix}boxes`} type="number" min={0} value={r.boxes} onChange={(e) => update(r.key, "boxes", e.target.value)} onFocus={(e) => (boxesAtFocus.current = e.target.value)} onBlur={() => splitRow(r.key)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), e.currentTarget.blur())} placeholder="กล่อง" className={cell} aria-label="จำนวนกล่อง" />
               <input name={`${prefix}weightKg`} type="number" step="0.01" min={0} value={r.weight} onChange={(e) => update(r.key, "weight", e.target.value)} placeholder="กก." className={cell} aria-label="น้ำหนักต่อกล่อง (กก.)" />
               {/* .input กว้างเต็มช่องเสมอ จึงคุมความกว้างด้วย span ที่ครอบ */}
               <div className="col-span-2 flex items-center gap-1 md:col-span-1">

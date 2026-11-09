@@ -64,6 +64,13 @@
       "when": 1794124996407,
       "tag": "0008_goofy_mojo",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794210721129,
+      "tag": "0009_handy_tyrannus",
+      "breakpoints": true
     }
   ]
 }

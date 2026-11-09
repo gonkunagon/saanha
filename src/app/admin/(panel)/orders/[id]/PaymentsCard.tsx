@@ -11,7 +11,7 @@ import { addPayment, deletePayment, updatePaymentRate } from "../actions";
 // ช่องทางการชำระ (เลือกจากรายการ)
 const PAYMENT_METHODS = ["โอนธนาคาร", "พร้อมเพย์", "เงินสด", "บัตรเครดิต / เดบิต", "Alipay", "WeChat Pay", "อื่นๆ"];
 
-type OrderMoney = Pick<Order, "id" | "currency" | "totalAmount" | "depositAmount" | "handlingFeePct">;
+type OrderMoney = Pick<Order, "id" | "currency" | "totalAmount" | "depositAmount" | "handlingFeePct" | "chinaShippingFee">;
 
 // การชำระเงินของออเดอร์: ยอดที่ลูกค้าโอน วันที่ชำระ ช่องทาง — กด "แก้ไขการชำระเงิน" (?pay=1) จึงเพิ่ม/ลบได้
 // ยอดที่โอนคนละสกุลกับออเดอร์ แสดง "คิดเป็น" สกุลออเดอร์ด้วย (ใช้หักยอดค้างชำระ)
@@ -19,7 +19,7 @@ export async function PaymentsCard({ order, payments, editing }: { order: OrderM
   const sorted = [...payments].sort((a, b) => a.paidAt.getTime() - b.paidAt.getTime());
   const cur = order.currency;
   const other = currencies.find((c) => c !== cur)!;
-  const grand = grandTotalOf(order.totalAmount, order.handlingFeePct);
+  const grand = grandTotalOf(order.totalAmount, order.handlingFeePct, order.chinaShippingFee);
   const balance = orderBalance(order, payments);
   // เรทใบเสนอราคาวันนี้ ใช้เป็นค่าตั้งต้นเมื่อไม่ได้กรอกเรทเอง
   const todayRate = editing ? (await getQuoteRate()).rate : null;

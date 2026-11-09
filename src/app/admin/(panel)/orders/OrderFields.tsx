@@ -52,6 +52,7 @@ export function OrderFields({
         totalAmount={order?.totalAmount}
         depositAmount={order?.depositAmount}
         handlingFeePct={order?.handlingFeePct}
+        chinaShippingFee={order?.chinaShippingFee}
         paymentsLinked={paymentsLinked}
         orderRate={order ? order.orderRate : todayRate}
       />

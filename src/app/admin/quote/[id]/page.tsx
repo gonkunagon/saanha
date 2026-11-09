@@ -76,9 +76,12 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
   });
   const allPriced = lines.length > 0 && lines.every((l) => l.amount != null);
   // รวมเป็นเงินทั้งสิ้น = ผลรวมแต่ละรายการ (ตรงกับตาราง) · ถ้าบางรายการไม่มีราคา ใช้ยอดเต็มของออเดอร์ × (1 + %)
-  const grandTotal = allPriced
+  const itemsTotal = allPriced
     ? round2(lines.reduce((s, l) => s + l.amount!, 0))
     : grandTotalOf(order.totalAmount, order.handlingFeePct);
+  // ค่าขนส่งภายในจีน (ร้านคิดค่าส่งมาโกดัง) แสดงแยกบรรทัด แล้วบวกเข้ารวมเป็นเงินทั้งสิ้น
+  const chinaShip = order.chinaShippingFee ?? 0;
+  const grandTotal = itemsTotal == null ? null : round2(itemsTotal + chinaShip);
   // ยอดเงินบาท (เฉพาะออเดอร์หยวน และตั้งเรทของวันนี้แล้ว)
   const thbTotal = rate != null && grandTotal != null ? round2(grandTotal * rate) : null;
 
@@ -197,7 +200,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
                   <td className="px-3 py-2 text-gray-600">รวม {order.items.length} รายการ</td>
                   <td className="px-3 py-2 text-right">{num(order.items.reduce((s, i) => s + (i.quantity ?? 0), 0) || null)}</td>
                   <td className="px-3 py-2" />
-                  <td className="px-3 py-2 text-right">{num(allPriced ? grandTotal : null, 2)}</td>
+                  <td className="px-3 py-2 text-right">{num(allPriced ? itemsTotal : null, 2)}</td>
                 </tr>
               </tfoot>
             )}
@@ -236,7 +239,19 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
             </div>
             {/* ค่าดำเนินการรวมอยู่ในราคาสินค้าแล้ว จึงแสดงแค่ยอดรวมทั้งสิ้น */}
             <dl className="self-start overflow-hidden rounded-lg border-2 border-brand-600">
-              <div className="flex items-center justify-between px-4 py-3.5 text-brand-700">
+              {chinaShip > 0 && (
+                <>
+                  <div className="flex justify-between px-4 py-2 text-[12px] text-gray-600">
+                    <dt>ค่าสินค้า</dt>
+                    <dd>{formatMoney(itemsTotal, order.currency)}</dd>
+                  </div>
+                  <div className="flex justify-between border-t border-gray-100 px-4 py-2 text-[12px] text-gray-600">
+                    <dt>ค่าขนส่งภายในจีน</dt>
+                    <dd>{formatMoney(chinaShip, order.currency)}</dd>
+                  </div>
+                </>
+              )}
+              <div className={`flex items-center justify-between px-4 py-3.5 text-brand-700 ${chinaShip > 0 ? "border-t-2 border-brand-600" : ""}`}>
                 <dt className="font-semibold">รวมเป็นเงินทั้งสิ้น</dt>
                 <dd className="text-lg font-bold">{formatMoney(grandTotal, order.currency)}</dd>
               </div>

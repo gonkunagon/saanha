@@ -141,10 +141,11 @@ function InfoSection({ title, tone, children }: { title: string; tone?: "money";
   );
 }
 
-function ProfitText({ order }: { order: { totalAmount: number | null; handlingFeePct: number; currency: CurrencyCode; orderRate: number | null } }) {
-  const total = grandTotalOf(order.totalAmount, order.handlingFeePct);
+// กำไร = รวมเป็นเงินทั้งสิ้น − ค่าสินค้า − ค่าขนส่งภายในจีน (ค่าส่งจ่ายต่อให้ร้าน ไม่ใช่กำไร)
+function ProfitText({ order }: { order: { totalAmount: number | null; handlingFeePct: number; chinaShippingFee: number | null; currency: CurrencyCode; orderRate: number | null } }) {
+  const total = grandTotalOf(order.totalAmount, order.handlingFeePct, order.chinaShippingFee);
   if (total == null || order.totalAmount == null) return null;
-  const profit = Math.round((total - order.totalAmount) * 100) / 100;
+  const profit = Math.round((total - order.totalAmount - (order.chinaShippingFee ?? 0)) * 100) / 100;
   return (
     <span className="font-semibold text-emerald-700">
       {formatMoney(profit, order.currency)}
@@ -365,9 +366,10 @@ export default async function OrderPage({ params, searchParams }: Props) {
 
             <InfoSection title="สรุปยอดชำระ" tone="money">
               <Info label="ค่าสินค้า (ยอดเต็ม)">{order.totalAmount != null && formatMoney(order.totalAmount, order.currency)}</Info>
+              <Info label="ค่าขนส่งภายใน (จีน)">{order.chinaShippingFee != null && formatMoney(order.chinaShippingFee, order.currency)}</Info>
               <Info label={`ค่าดำเนินการ ${order.handlingFeePct}%`}>{order.totalAmount != null && formatMoney(handlingFeeOf(order.totalAmount, order.handlingFeePct), order.currency)}</Info>
               <Info label="รวมเป็นเงินทั้งสิ้น">
-                {order.totalAmount != null && <b>{formatMoney(grandTotalOf(order.totalAmount, order.handlingFeePct), order.currency)}</b>}
+                {order.totalAmount != null && <b>{formatMoney(grandTotalOf(order.totalAmount, order.handlingFeePct, order.chinaShippingFee), order.currency)}</b>}
               </Info>
               <Info label="เรทตอนสั่งซื้อ">{order.orderRate != null && `${order.orderRate} บาท / หยวน`}</Info>
               {/* ยอดที่จ่ายแล้ว/ค้างชำระ คิดจากรายการชำระเงิน (ออเดอร์เก่าที่ยังไม่มีรายการ ใช้ช่องมัดจำ) */}

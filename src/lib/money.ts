@@ -24,9 +24,10 @@ export function handlingFeeOf(goodsTotal: number | null | undefined, pct: number
   if (goodsTotal == null) return null;
   return Math.round(goodsTotal * pct) / 100;
 }
-export function grandTotalOf(goodsTotal: number | null | undefined, pct: number): number | null {
+// รวมเป็นเงินทั้งสิ้น = ค่าสินค้า + ค่าดำเนินการ + ค่าขนส่งภายในจีน (ถ้ามี)
+export function grandTotalOf(goodsTotal: number | null | undefined, pct: number, chinaShipping?: number | null): number | null {
   const fee = handlingFeeOf(goodsTotal, pct);
-  return goodsTotal == null || fee == null ? null : Math.round((goodsTotal + fee) * 100) / 100;
+  return goodsTotal == null || fee == null ? null : Math.round((goodsTotal + fee + (chinaShipping ?? 0)) * 100) / 100;
 }
 
 // ยอดที่ลูกค้าจ่ายแล้ว (สกุลของออเดอร์): มีรายการชำระเงิน = รวมยอดที่คิดเป็นสกุลออเดอร์ · ยังไม่มี = ใช้ช่องมัดจำเดิม
@@ -35,10 +36,10 @@ export function paidOf(order: { depositAmount: number | null }, payments: { appl
   return Math.round(payments.reduce((s, p) => s + p.appliedAmount, 0) * 100) / 100;
 }
 
-// ยอดค้างชำระ = รวมเป็นเงินทั้งสิ้น (ค่าสินค้า + ค่าดำเนินการ) − ยอดที่จ่ายแล้ว
+// ยอดค้างชำระ = รวมเป็นเงินทั้งสิ้น (ค่าสินค้า + ค่าดำเนินการ + ค่าขนส่งภายในจีน) − ยอดที่จ่ายแล้ว
 export function orderBalance(
-  order: { totalAmount: number | null; depositAmount: number | null; handlingFeePct: number },
+  order: { totalAmount: number | null; depositAmount: number | null; handlingFeePct: number; chinaShippingFee: number | null },
   payments: { appliedAmount: number }[],
 ): number | null {
-  return balanceOf(grandTotalOf(order.totalAmount, order.handlingFeePct), paidOf(order, payments));
+  return balanceOf(grandTotalOf(order.totalAmount, order.handlingFeePct, order.chinaShippingFee), paidOf(order, payments));
 }

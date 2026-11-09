@@ -111,7 +111,7 @@ export default async function OrdersPage({ searchParams }: Props) {
                     {o.totalAmount != null ? (
                       <>
                         {/* ยอดเต็ม = ค่าสินค้า + ค่าดำเนินการ (ตรงกับรวมเป็นเงินทั้งสิ้นในใบเสนอราคา) */}
-                        <span className="block text-xs text-gray-500">เต็ม {formatMoney(grandTotalOf(o.totalAmount, o.handlingFeePct), o.currency)}</span>
+                        <span className="block text-xs text-gray-500">เต็ม {formatMoney(grandTotalOf(o.totalAmount, o.handlingFeePct, o.chinaShippingFee), o.currency)}</span>
                         <BalanceText balance={orderBalance(o, o.payments)} currency={o.currency} />
                       </>
                     ) : (

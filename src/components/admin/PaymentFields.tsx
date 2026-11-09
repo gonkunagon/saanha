@@ -10,6 +10,7 @@ type Props = {
   totalAmount?: number | null;
   depositAmount?: number | null;
   handlingFeePct?: number;
+  chinaShippingFee?: number | null;
   // ออเดอร์มีรายการชำระเงินแล้ว: ยอดจ่าย/ค้างคิดจากส่วน "การชำระเงิน" แทนช่องมัดจำ
   paymentsLinked?: boolean;
   // เรทหยวนตอนสั่งซื้อ (ออเดอร์ใหม่ = เรทใบเสนอราคาวันนี้ แก้ได้)
@@ -17,11 +18,12 @@ type Props = {
 };
 
 // ร้านค้า ค่าสินค้า (ยอดเต็ม / มัดจำ / ค้างชำระ คำนวณให้ทันทีที่พิมพ์) และค่าดำเนินการของร้าน (% ของค่าสินค้า)
-export function PaymentFields({ shopName, hideShopOnQuote = false, currency: initialCurrency = "THB", totalAmount, depositAmount, handlingFeePct = 5, paymentsLinked = false, orderRate }: Props) {
+export function PaymentFields({ shopName, hideShopOnQuote = false, currency: initialCurrency = "THB", totalAmount, depositAmount, handlingFeePct = 5, chinaShippingFee, paymentsLinked = false, orderRate }: Props) {
   const [currency, setCurrency] = useState<CurrencyCode>(initialCurrency);
   const [total, setTotal] = useState(totalAmount == null ? "" : String(totalAmount));
   const [deposit, setDeposit] = useState(depositAmount == null ? "" : String(depositAmount));
   const [pct, setPct] = useState(handlingFeePct);
+  const [ship, setShip] = useState(chinaShippingFee == null ? "" : String(chinaShippingFee));
   const goods = total === "" ? null : Number(total);
 
   const balance = balanceOf(total === "" ? null : Number(total), deposit === "" ? null : Number(deposit));
@@ -75,6 +77,11 @@ export function PaymentFields({ shopName, hideShopOnQuote = false, currency: ini
             </select>
           </span>
         </div>
+      </label>
+      {/* ร้านค้าจีนคิดค่าส่งมาโกดัง: บวกในรวมเป็นเงินทั้งสิ้น (ไม่คิดค่าดำเนินการ) */}
+      <label className="block">
+        <span className="mb-1 block text-sm text-gray-600">ค่าขนส่งภายใน (จีน) · {currencyLabel[currency]}</span>
+        <input name="chinaShippingFee" type="number" step="0.01" min={0} value={ship} onChange={(e) => setShip(e.target.value)} placeholder="ถ้าร้านคิดค่าส่งมาโกดัง" className="input" />
       </label>
       <label className="block">
         <span className="mb-1 block text-sm text-gray-600">เรทตอนสั่งซื้อ (บาท / 1 หยวน)</span>
@@ -142,8 +149,9 @@ export function PaymentFields({ shopName, hideShopOnQuote = false, currency: ini
             <span className="text-gray-400">ใส่ค่าสินค้าก่อน</span>
           ) : (
             <>
-              ค่าดำเนินการ {pct}% = <b>{formatMoney(handlingFeeOf(goods, pct), currency)}</b> · รวมทั้งสิ้น{" "}
-              <b className="text-brand-700">{formatMoney(grandTotalOf(goods, pct), currency)}</b>
+              ค่าดำเนินการ {pct}% = <b>{formatMoney(handlingFeeOf(goods, pct), currency)}</b>
+              {Number(ship) > 0 && <> · ค่าขนส่งภายในจีน <b>{formatMoney(Number(ship), currency)}</b></>} · รวมทั้งสิ้น{" "}
+              <b className="text-brand-700">{formatMoney(grandTotalOf(goods, pct, Number(ship) || null), currency)}</b>
             </>
           )}
         </p>

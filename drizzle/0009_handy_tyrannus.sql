@@ -1,0 +1,1 @@
+ALTER TABLE "orders" ADD COLUMN "china_shipping_fee" double precision;

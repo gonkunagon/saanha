@@ -71,6 +71,13 @@
       "when": 1794210721129,
       "tag": "0009_handy_tyrannus",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794211972465,
+      "tag": "0010_adorable_arachne",
+      "breakpoints": true
     }
   ]
 }

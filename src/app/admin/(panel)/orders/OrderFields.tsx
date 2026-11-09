@@ -51,6 +51,7 @@ export function OrderFields({
         currency={order?.currency}
         totalAmount={order?.totalAmount}
         depositAmount={order?.depositAmount}
+        balancePaidAmount={order?.balancePaidAmount}
         handlingFeePct={order?.handlingFeePct}
         chinaShippingFee={order?.chinaShippingFee}
         paymentsLinked={paymentsLinked}

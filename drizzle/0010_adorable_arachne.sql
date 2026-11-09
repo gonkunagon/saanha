@@ -1,0 +1,1 @@
+ALTER TABLE "orders" ADD COLUMN "balance_paid_amount" double precision;

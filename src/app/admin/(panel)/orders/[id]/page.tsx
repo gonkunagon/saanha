@@ -373,7 +373,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
               </Info>
               <Info label="เรทตอนสั่งซื้อ">{order.orderRate != null && `${order.orderRate} บาท / หยวน`}</Info>
               {/* ยอดที่จ่ายแล้ว/ค้างชำระ คิดจากรายการชำระเงิน (ออเดอร์เก่าที่ยังไม่มีรายการ ใช้ช่องมัดจำ) */}
-              <Info label={order.payments.length ? "ชำระแล้ว" : "มัดจำค่าสินค้า"}>
+              <Info label={order.payments.length || order.balancePaidAmount != null ? "ชำระแล้ว" : "มัดจำค่าสินค้า"}>
                 {paidOf(order, order.payments) != null && formatMoney(paidOf(order, order.payments), order.currency)}
               </Info>
               <Info label="ยอดค้างชำระ">

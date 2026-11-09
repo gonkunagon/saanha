@@ -86,6 +86,8 @@ export const orders = pgTable("orders", {
   currency: text("currency", { enum: currencies }).notNull().default("THB"),
   totalAmount: doublePrecision("total_amount"),
   depositAmount: doublePrecision("deposit_amount"),
+  // ยอดที่ลูกค้าชำระส่วนที่เหลือ (ใช้คู่กับมัดจำ เมื่อออเดอร์ยังไม่มีรายการชำระเงิน)
+  balancePaidAmount: doublePrecision("balance_paid_amount"),
   serviceFee: doublePrecision("service_fee"), // เลิกใช้แล้ว (ค่าบริการเป็นบาท) — แทนด้วย handlingFeePct ด้านล่าง
   // ค่าดำเนินการของร้าน คิดเป็น % ของยอดรวมค่าสินค้า (เลือกได้ 0–8%) — สกุลเงินเดียวกับค่าสินค้า
   handlingFeePct: integer("handling_fee_pct").notNull().default(5),

@@ -31,14 +31,18 @@ export function grandTotalOf(goodsTotal: number | null | undefined, pct: number,
 }
 
 // ยอดที่ลูกค้าจ่ายแล้ว (สกุลของออเดอร์): มีรายการชำระเงิน = รวมยอดที่คิดเป็นสกุลออเดอร์ · ยังไม่มี = ใช้ช่องมัดจำเดิม
-export function paidOf(order: { depositAmount: number | null }, payments: { appliedAmount: number }[]): number | null {
-  if (payments.length === 0) return order.depositAmount;
+// ยังไม่มีรายการชำระเงิน = มัดจำ + ชำระยอดที่เหลือ (ว่างทั้งคู่ = ไม่รู้)
+export function paidOf(order: { depositAmount: number | null; balancePaidAmount: number | null }, payments: { appliedAmount: number }[]): number | null {
+  if (payments.length === 0) {
+    if (order.depositAmount == null && order.balancePaidAmount == null) return null;
+    return Math.round(((order.depositAmount ?? 0) + (order.balancePaidAmount ?? 0)) * 100) / 100;
+  }
   return Math.round(payments.reduce((s, p) => s + p.appliedAmount, 0) * 100) / 100;
 }
 
 // ยอดค้างชำระ = รวมเป็นเงินทั้งสิ้น (ค่าสินค้า + ค่าดำเนินการ + ค่าขนส่งภายในจีน) − ยอดที่จ่ายแล้ว
 export function orderBalance(
-  order: { totalAmount: number | null; depositAmount: number | null; handlingFeePct: number; chinaShippingFee: number | null },
+  order: { totalAmount: number | null; depositAmount: number | null; balancePaidAmount: number | null; handlingFeePct: number; chinaShippingFee: number | null },
   payments: { appliedAmount: number }[],
 ): number | null {
   return balanceOf(grandTotalOf(order.totalAmount, order.handlingFeePct, order.chinaShippingFee), paidOf(order, payments));

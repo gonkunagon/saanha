@@ -11,7 +11,7 @@ import { addPayment, deletePayment, updatePaymentRate } from "../actions";
 // ช่องทางการชำระ (เลือกจากรายการ)
 const PAYMENT_METHODS = ["โอนธนาคาร", "พร้อมเพย์", "เงินสด", "บัตรเครดิต / เดบิต", "Alipay", "WeChat Pay", "อื่นๆ"];
 
-type OrderMoney = Pick<Order, "id" | "currency" | "totalAmount" | "depositAmount" | "handlingFeePct" | "chinaShippingFee">;
+type OrderMoney = Pick<Order, "id" | "currency" | "totalAmount" | "depositAmount" | "balancePaidAmount" | "handlingFeePct" | "chinaShippingFee">;
 
 // การชำระเงินของออเดอร์: ยอดที่ลูกค้าโอน วันที่ชำระ ช่องทาง — กด "แก้ไขการชำระเงิน" (?pay=1) จึงเพิ่ม/ลบได้
 // ยอดที่โอนคนละสกุลกับออเดอร์ แสดง "คิดเป็น" สกุลออเดอร์ด้วย (ใช้หักยอดค้างชำระ)

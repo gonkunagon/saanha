@@ -9,6 +9,7 @@ type Props = {
   currency?: CurrencyCode;
   totalAmount?: number | null;
   depositAmount?: number | null;
+  balancePaidAmount?: number | null;
   handlingFeePct?: number;
   chinaShippingFee?: number | null;
   // ออเดอร์มีรายการชำระเงินแล้ว: ยอดจ่าย/ค้างคิดจากส่วน "การชำระเงิน" แทนช่องมัดจำ
@@ -18,7 +19,7 @@ type Props = {
 };
 
 // ร้านค้า ค่าสินค้า (ยอดเต็ม / มัดจำ / ค้างชำระ คำนวณให้ทันทีที่พิมพ์) และค่าดำเนินการของร้าน (% ของค่าสินค้า)
-export function PaymentFields({ shopName, hideShopOnQuote = false, currency: initialCurrency = "THB", totalAmount, depositAmount, handlingFeePct = 5, chinaShippingFee, paymentsLinked = false, orderRate }: Props) {
+export function PaymentFields({ shopName, hideShopOnQuote = false, currency: initialCurrency = "THB", totalAmount, depositAmount, balancePaidAmount, handlingFeePct = 5, chinaShippingFee, paymentsLinked = false, orderRate }: Props) {
   const [currency, setCurrency] = useState<CurrencyCode>(initialCurrency);
   const [total, setTotal] = useState(totalAmount == null ? "" : String(totalAmount));
   const [deposit, setDeposit] = useState(depositAmount == null ? "" : String(depositAmount));
@@ -26,7 +27,12 @@ export function PaymentFields({ shopName, hideShopOnQuote = false, currency: ini
   const [ship, setShip] = useState(chinaShippingFee == null ? "" : String(chinaShippingFee));
   const goods = total === "" ? null : Number(total);
 
-  const balance = balanceOf(total === "" ? null : Number(total), deposit === "" ? null : Number(deposit));
+  const [rest, setRest] = useState(balancePaidAmount == null ? "" : String(balancePaidAmount));
+  // ยอดค้างชำระ = รวมเป็นเงินทั้งสิ้น (ค่าสินค้า + ค่าดำเนินการ + ค่าขนส่งภายในจีน) − มัดจำ − ชำระยอดที่เหลือ
+  const grand = grandTotalOf(goods, pct, Number(ship) || null);
+  const balance = balanceOf(grand, (Number(deposit) || 0) + (Number(rest) || 0));
+  // ยอดที่เหลือหลังหักมัดจำ (ใช้กับปุ่ม "ใส่ยอดที่เหลือ")
+  const afterDeposit = balanceOf(grand, Number(deposit) || 0);
   const overpaid = balance != null && balance < 0;
 
   return (
@@ -91,8 +97,9 @@ export function PaymentFields({ shopName, hideShopOnQuote = false, currency: ini
       </label>
       {paymentsLinked ? (
         <div className="lg:col-span-2">
-          {/* เก็บค่ามัดจำเดิมไว้ ไม่ให้หายตอนบันทึก */}
+          {/* เก็บค่ามัดจำ / ยอดที่เหลือเดิมไว้ ไม่ให้หายตอนบันทึก */}
           <input type="hidden" name="depositAmount" value={deposit} />
+          <input type="hidden" name="balancePaidAmount" value={rest} />
           <span className="mb-1 block text-sm text-gray-600">ยอดชำระ / ค้างชำระ</span>
           <p className="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-600">คำนวณจากส่วน &quot;การชำระเงิน&quot; ด้านบน (ช่องมัดจำไม่ใช้แล้วสำหรับออเดอร์นี้)</p>
         </div>
@@ -110,8 +117,28 @@ export function PaymentFields({ shopName, hideShopOnQuote = false, currency: ini
               className="input"
             />
           </label>
+          {/* อยู่ใต้ช่องมัดจำ (คอลัมน์ที่ 4) */}
+          <div className="lg:col-start-4 lg:row-start-3">
+            <span className="mb-1 flex items-baseline justify-between gap-2 text-sm text-gray-600">
+              ชำระยอดที่เหลือ
+              {afterDeposit != null && afterDeposit > 0 && (
+                <button type="button" onClick={() => setRest(String(afterDeposit))} className="text-xs font-medium text-brand-600 hover:underline">
+                  ใส่ยอดที่เหลือ {formatMoney(afterDeposit, currency)}
+                </button>
+              )}
+            </span>
+            <input
+              name="balancePaidAmount"
+              type="number"
+              step="0.01"
+              min={0}
+              value={rest}
+              onChange={(e) => setRest(e.target.value)}
+              className="input"
+            />
+          </div>
           <div>
-            <span className="mb-1 block text-sm text-gray-600">ค่าสินค้าค้างชำระ (คำนวณอัตโนมัติ)</span>
+            <span className="mb-1 block text-sm text-gray-600">ยอดค้างชำระ (คำนวณอัตโนมัติ)</span>
             <p
               className={`rounded-lg px-3 py-2 font-semibold ${
                 balance == null
@@ -126,7 +153,7 @@ export function PaymentFields({ shopName, hideShopOnQuote = false, currency: ini
               {balance == null
                 ? "ใส่ยอดเงินเต็มก่อน"
                 : overpaid
-                  ? `มัดจำเกินยอดเต็ม ${formatMoney(-balance, currency)}`
+                  ? `ชำระเกินยอดรวม ${formatMoney(-balance, currency)}`
                   : balance === 0
                     ? "ชำระครบแล้ว"
                     : formatMoney(balance, currency)}

@@ -19,4 +19,4 @@ Goods imported into Thailand are subject to **import duty** (rate depends on the
 - VAT can be claimed as input tax if you are a VAT-registered company
 - Suits companies that need documents for their accounts
 
-> TODO: state which option(s) the company offers and the conditions
+> **SAANHA uses the all-in option**: our per-kg and per-CBM rates already include import duty and customs clearance, with no hidden fees. If you need an import declaration in your company name, please contact us.

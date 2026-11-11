@@ -50,9 +50,11 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
   const isCny = order.currency === "CNY";
   const issued = order.quotedAt ?? order.createdAt;
   const issuedToday = sameBangkokDay(issued, now);
-  const q = isCny && issuedToday ? await getQuoteRate(now) : null;
-  const rate = isCny ? (issuedToday ? q?.rate ?? null : order.quoteRate ?? order.orderRate) : null;
-  if (isCny && issuedToday && rate != null && order.quoteRate !== rate) {
+  // กรอกเรทตอนสร้างออเดอร์แล้ว = ใช้เรทนั้นในใบเลย (แก้ที่หน้าแก้ไขออเดอร์) · ไม่กรอก = ใช้เรทของวันนี้ตามเดิม
+  const fromOrder = isCny && order.orderRate != null;
+  const q = isCny && issuedToday && !fromOrder ? await getQuoteRate(now) : null;
+  const rate = isCny ? (fromOrder ? order.orderRate : issuedToday ? q?.rate ?? null : order.quoteRate) : null;
+  if (isCny && issuedToday && !fromOrder && rate != null && order.quoteRate !== rate) {
     // ไม่นับเป็นการแก้ไขออเดอร์ (คง updatedAt เดิม)
     await db.update(orders).set({ quoteRate: rate, updatedAt: order.updatedAt }).where(eq(orders.id, order.id));
   }
@@ -100,6 +102,14 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
       </div>
 
       {q && <RateBox q={q} />}
+      {fromOrder && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-900 ring-1 ring-emerald-200 print:hidden">
+          <span>
+            เรทที่ใช้ในใบเสนอราคา: <b>1 หยวน = {rate} บาท</b> (เรทที่กรอกในออเดอร์)
+          </span>
+          <Link href={`/admin/orders/${order.id}?edit=1`} className="font-medium text-brand-600 hover:underline">แก้เรทที่หน้าออเดอร์</Link>
+        </div>
+      )}
       {locked && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900 print:hidden">
           <span>
@@ -109,7 +119,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
           <form action={reissueQuote}>
             <input type="hidden" name="orderId" value={order.id} />
             <ConfirmButton
-              message={`ออกใบเสนอราคาใหม่เป็นวันนี้${isCny ? " (ใช้เรทวันนี้)" : ""}? วันเปิดบิลเดิม ${thaiDate(issued)} จะถูกแทนที่`}
+              message={`ออกใบเสนอราคาใหม่เป็นวันนี้${isCny && !fromOrder ? " (ใช้เรทวันนี้)" : ""}? วันเปิดบิลเดิม ${thaiDate(issued)} จะถูกแทนที่`}
               className="rounded-lg border border-amber-400 bg-white px-3 py-1.5 text-sm font-medium hover:bg-amber-100"
             >
               ออกใบใหม่เป็นวันนี้

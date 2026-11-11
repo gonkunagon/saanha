@@ -8,7 +8,8 @@
     "services": "Services",
     "calculator": "Shipping calculator",
     "track": "Track shipment",
-    "kb": "Guides & FAQ",
+    "kb": "Guides",
+    "faq": "FAQ",
     "quote": "Get a quote"
   },
   "home": {
@@ -150,7 +151,7 @@
     "title": "Frequently asked questions",
     "subtitle": "The questions our customers ask most. Can't find your answer? Message us on LINE.",
     "readMore": "Read more",
-    "all": "See all questions",
+    "all": "Browse the full guide",
     "items": [
       {
         "q": "How long does it take to receive goods from China?",

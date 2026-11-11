@@ -12,6 +12,7 @@ export function Footer({ locale, dict, nav }: Props) {
     { href: "/services", label: nav.services },
     { href: "/calculator", label: nav.calculator },
     { href: "/track", label: nav.track },
+    { href: "/faq", label: nav.faq },
     { href: "/kb", label: nav.kb },
     { href: "/quote", label: nav.quote },
   ];

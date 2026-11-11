@@ -12,6 +12,7 @@ export function Header({ locale, nav }: Props) {
     { href: "/services", label: nav.services },
     { href: "/calculator", label: nav.calculator },
     { href: "/track", label: nav.track },
+    { href: "/faq", label: nav.faq },
     { href: "/kb", label: nav.kb },
   ];
 

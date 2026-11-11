@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
 
-// คำถามที่พบบ่อย (หน้าแรก): กดคำถามแล้วคำตอบเลื่อนลงมา · มี JSON-LD แบบ FAQPage ให้ Google อ่านได้
+// คำถามที่พบบ่อย (หน้า /faq): กดคำถามแล้วคำตอบเลื่อนลงมา · มี JSON-LD แบบ FAQPage ให้ Google อ่านได้
 export function FaqSection({ locale, faq }: { locale: Locale; faq: Dictionary["faq"] }) {
   const jsonLd = {
     "@context": "https://schema.org",
@@ -14,11 +14,9 @@ export function FaqSection({ locale, faq }: { locale: Locale; faq: Dictionary["f
     })),
   };
   return (
-    <section className="mx-auto max-w-4xl px-4 py-16">
+    <section className="mx-auto max-w-4xl px-4 py-12">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-      <h2 className="text-center text-2xl font-bold">{faq.title}</h2>
-      <p className="mt-2 text-center text-gray-600">{faq.subtitle}</p>
-      <div className="mt-8 divide-y divide-gray-200 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="divide-y divide-gray-200 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
         {faq.items.map((item) => (
           <details key={item.q} className="group">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-semibold hover:bg-gray-50 [&::-webkit-details-marker]:hidden">

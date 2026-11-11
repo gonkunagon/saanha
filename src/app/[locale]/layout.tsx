@@ -46,7 +46,7 @@ export default async function LocaleLayout({ children, params }: Props) {
       <body className="flex min-h-screen flex-col font-sans">
         <Header locale={locale} nav={dict.nav} />
         <main className="flex-1">{children}</main>
-        <Footer locale={locale} dict={dict.footer} />
+        <Footer locale={locale} dict={dict.footer} nav={dict.nav} />
         <LineButton label={dict.line.button} />
       </body>
     </html>

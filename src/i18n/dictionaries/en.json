@@ -149,7 +149,10 @@
   "footer": {
     "contact": "Contact",
     "privacy": "Privacy policy",
-    "rights": "All rights reserved"
+    "rights": "All rights reserved",
+    "tagline": "Your one-stop China import service: sourcing, ordering, supplier payment and shipping to your door.",
+    "menu": "Menu",
+    "addLine": "Chat with us on LINE"
   },
   "line": {
     "button": "Chat on LINE"

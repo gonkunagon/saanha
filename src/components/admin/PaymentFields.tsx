@@ -19,7 +19,7 @@ type Props = {
 };
 
 // ร้านค้า ค่าสินค้า (ยอดเต็ม / มัดจำ / ค้างชำระ คำนวณให้ทันทีที่พิมพ์) และค่าดำเนินการของร้าน (% ของค่าสินค้า)
-export function PaymentFields({ shopName, hideShopOnQuote = false, currency: initialCurrency = "THB", totalAmount, depositAmount, balancePaidAmount, handlingFeePct = 5, chinaShippingFee, paymentsLinked = false, orderRate }: Props) {
+export function PaymentFields({ shopName, hideShopOnQuote = false, currency: initialCurrency = "CNY", totalAmount, depositAmount, balancePaidAmount, handlingFeePct = 5, chinaShippingFee, paymentsLinked = false, orderRate }: Props) {
   const [currency, setCurrency] = useState<CurrencyCode>(initialCurrency);
   const [total, setTotal] = useState(totalAmount == null ? "" : String(totalAmount));
   const [deposit, setDeposit] = useState(depositAmount == null ? "" : String(depositAmount));

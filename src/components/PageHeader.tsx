@@ -7,7 +7,7 @@ type Props = {
   children?: React.ReactNode; // เช่น ลิงก์ย้อนกลับ หรือชื่อหมวด
 };
 
-export function PageHeader({ title, subtitle, width = "max-w-6xl", children }: Props) {
+export function PageHeader({ title, subtitle, width = "max-w-7xl", children }: Props) {
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-brand-800 via-brand-700 to-brand-500 text-white">
       <div className="pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10" />

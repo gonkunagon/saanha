@@ -42,7 +42,7 @@ export default async function LocaleLayout({ children, params }: Props) {
   const dict = getDictionary(locale);
 
   return (
-    <html lang={locale} className={fontVariables}>
+    <html lang={locale} className={`${fontVariables} site`}>
       <body className="flex min-h-screen flex-col font-sans">
         <Header locale={locale} nav={dict.nav} />
         <main className="flex-1">{children}</main>

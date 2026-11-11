@@ -51,7 +51,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         {/* ไล่เงาทับภาพ ให้ตัวหนังสืออ่านง่าย */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-950/50 to-transparent md:bg-transparent md:bg-gradient-to-l md:from-slate-950/85 md:via-slate-950/45 md:to-transparent" />
         {/* จอกว้าง: สูง 42% ของความกว้างจอ (ไม่เกินความสูงจอ) ทุกขนาดจอจึงเห็นภาพเท่ากัน รวมโลโก้ SAANHA บนรถ */}
-        <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-4 pt-14 pb-56 md:min-h-[min(42vw,calc(100svh-4rem))] md:grid-cols-2 md:content-center md:py-20">
+        <div className="relative mx-auto grid max-w-7xl items-center gap-8 px-4 pt-14 pb-56 md:min-h-[min(42vw,calc(100svh-4rem))] md:grid-cols-2 md:content-center md:py-20">
           <div className="text-center md:col-start-2 md:text-left [text-shadow:0_2px_12px_rgb(0_0_0/0.45)]">
             {/* ภาษาไทยไม่มีช่องว่างระหว่างคำ จึงห่อแต่ละวลีไว้ไม่ให้ตัดกลางวลี */}
             <h1 className="text-3xl leading-tight font-bold md:text-5xl">
@@ -77,7 +77,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       {/* จุดเด่น */}
       <section className="border-b border-brand-100 bg-white">
-        <ul className="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-4 py-8 md:grid-cols-4">
+        <ul className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-4 py-8 md:grid-cols-4">
           {dict.home.features.map((f, i) => {
             const Icon = featureIcons[i];
             return (
@@ -96,14 +96,14 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       </section>
 
       {/* บริการ */}
-      <section className="mx-auto max-w-6xl px-4 py-16">
+      <section className="mx-auto max-w-7xl px-4 py-16">
         <h2 className="mb-8 text-center text-2xl font-bold">{dict.services.title}</h2>
         <ServiceGrid items={dict.services.items} />
       </section>
 
       {/* วิธีขนส่ง */}
       <section className="bg-brand-50">
-        <div className="mx-auto max-w-6xl px-4 py-16">
+        <div className="mx-auto max-w-7xl px-4 py-16">
           <h2 className="text-center text-2xl font-bold">{dict.home.methodsTitle}</h2>
           <p className="mt-2 mb-10 text-center text-gray-600">{dict.home.methodsSubtitle}</p>
           <div className="grid gap-6 md:grid-cols-2">
@@ -140,7 +140,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       </section>
 
       {/* ขั้นตอน */}
-      <section className="mx-auto max-w-6xl px-4 py-16">
+      <section className="mx-auto max-w-7xl px-4 py-16">
         <h2 className="mb-8 text-center text-2xl font-bold">{dict.home.stepsTitle}</h2>
         <ol className="grid gap-6 md:grid-cols-4">
           {dict.home.steps.map((step, i) => {
@@ -163,7 +163,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       {/* ปิดท้าย */}
       <section className="px-4 pb-16">
-        <div className="relative mx-auto max-w-6xl overflow-hidden rounded-2xl bg-gradient-to-r from-brand-700 to-brand-500 px-6 py-10 text-center text-white md:py-12">
+        <div className="relative mx-auto max-w-7xl overflow-hidden rounded-2xl bg-gradient-to-r from-brand-700 to-brand-500 px-6 py-10 text-center text-white md:py-12">
           <div className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-accent-400/25" />
           <h2 className="relative text-2xl font-bold md:text-3xl">{dict.home.ctaTitle}</h2>
           <p className="relative mt-2 text-brand-100">{dict.home.ctaBody}</p>

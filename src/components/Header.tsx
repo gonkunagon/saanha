@@ -17,7 +17,7 @@ export function Header({ locale, nav }: Props) {
 
   return (
     <header className="sticky top-0 z-10 border-b border-gray-100 bg-white/95 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
         <Link href={`/${locale}`} aria-label={site.name}>
           <Logo />
         </Link>

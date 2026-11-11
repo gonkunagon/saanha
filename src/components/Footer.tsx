@@ -17,7 +17,7 @@ export function Footer({ locale, dict, nav }: Props) {
   ];
   return (
     <footer className="border-t-4 border-accent-400 bg-slate-900 text-slate-300">
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 text-sm md:grid-cols-[1.4fr_1fr_1fr]">
+      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 text-sm md:grid-cols-[1.4fr_1fr_1fr]">
         <div>
           <Logo markClassName="text-accent-400" textClassName="text-white" />
           <p className="mt-3 max-w-sm leading-6 text-slate-400">{dict.tagline}</p>

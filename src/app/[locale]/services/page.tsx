@@ -23,7 +23,7 @@ export default async function ServicesPage({ params }: Props) {
   return (
     <>
       <PageHeader title={dict.services.title} subtitle={dict.services.subtitle} />
-      <section className="mx-auto max-w-6xl px-4 py-12">
+      <section className="mx-auto max-w-7xl px-4 py-12">
         <ServiceGrid items={dict.services.items} />
         <div className="mt-10 text-center">
           <Link href={`/${locale}/quote`} className="btn-cta">{dict.home.ctaQuote}</Link>

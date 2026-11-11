@@ -6,6 +6,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { transitDays, type ShippingMethod } from "@/config/rates";
 import { site } from "@/config/site";
 import { ServiceGrid } from "@/components/ServiceGrid";
+import { FaqSection } from "@/components/FaqSection";
 import heroImage from "@/assets/hero.webp";
 import seaImage from "@/assets/sea.webp";
 import truckImage from "@/assets/truck.webp";
@@ -161,8 +162,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </ol>
       </section>
 
+      {/* คำถามที่พบบ่อย */}
+      <div className="bg-gray-50">
+        <FaqSection locale={locale} faq={dict.faq} />
+      </div>
+
       {/* ปิดท้าย */}
-      <section className="px-4 pb-16">
+      <section className="px-4 py-16">
         <div className="relative mx-auto max-w-7xl overflow-hidden rounded-2xl bg-gradient-to-r from-brand-700 to-brand-500 px-6 py-10 text-center text-white md:py-12">
           <div className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-accent-400/25" />
           <h2 className="relative text-2xl font-bold md:text-3xl">{dict.home.ctaTitle}</h2>

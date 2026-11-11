@@ -146,6 +146,59 @@
     "success": "Request received. Our team will contact you soon.",
     "error": "Could not send. Please try again or contact us on LINE."
   },
+  "faq": {
+    "title": "Frequently asked questions",
+    "subtitle": "The questions our customers ask most. Can't find your answer? Message us on LINE.",
+    "readMore": "Read more",
+    "all": "See all questions",
+    "items": [
+      {
+        "q": "How long does it take to receive goods from China?",
+        "a": "China–Thailand transit takes about 5–7 days by truck and 12–18 days by sea, counted from when the goods leave our China warehouse. Including the time for the supplier to deliver to our warehouse and local delivery in Thailand, the total is roughly 8–17 days by truck and 15–28 days by sea. Chinese holidays such as Chinese New Year can cause delays.",
+        "href": "/kb/total-timeline"
+      },
+      {
+        "q": "Is shipping charged by weight or by volume?",
+        "a": "We calculate both by weight (kg) and by volume (CBM) and charge whichever is higher. Heavy, compact goods are usually charged by weight; light, bulky goods by volume. CBM = width × length × height (cm) × number of boxes ÷ 1,000,000. Try a quick estimate on our shipping calculator.",
+        "href": "/kb/shipping-cost"
+      },
+      {
+        "q": "Does the shipping rate include import tax?",
+        "a": "Our all-in shipping rate already includes import duty and customs clearance, with no hidden fees. Companies that need an import declaration and tax documents in their own name should contact us for a case-by-case quote.",
+        "href": "/kb/import-tax"
+      },
+      {
+        "q": "Can I order from 1688 or Taobao myself and ship to your warehouse?",
+        "a": "Yes. Ask our team on LINE for your customer code and our China warehouse address, use it as the shipping address in the store with your customer code after the recipient name, then send us the Chinese tracking number of each order so the warehouse can receive and consolidate your goods correctly.",
+        "href": "/kb/warehouse-address"
+      },
+      {
+        "q": "How does supplier payment work?",
+        "a": "Send us the recipient's account (Alipay, WeChat Pay or Chinese bank account) and the amount in CNY. We tell you the amount in baht; once you transfer and send the slip, we pay the supplier and send you proof of payment. This service is only for paying Chinese suppliers. We do not offer currency exchange.",
+        "href": "/kb/supplier-payment"
+      },
+      {
+        "q": "What items can't you ship?",
+        "a": "We do not ship weapons or replicas, narcotics, e-cigarettes, counterfeit goods, flammable or hazardous chemicals, or live animals. For goods that need a Thai licence, such as food and cosmetics (FDA), electrical appliances (TISI) or wireless devices (NBTC), please check with us before ordering.",
+        "href": "/kb/prohibited-items"
+      },
+      {
+        "q": "What if my goods are damaged or not as ordered?",
+        "a": "When goods arrive at our China warehouse we check the box count and outer condition. If we find a problem we tell you before shipping and help you arrange an exchange or return with the supplier. For fragile or high-value items we recommend a wooden crate and insurance, and please record a video when opening every box.",
+        "href": "/kb/qc-inspection"
+      },
+      {
+        "q": "How are goods delivered once they reach Thailand?",
+        "a": "Delivery is free within Bangkok. For the surrounding provinces the fee depends on the volume of goods, and we ship nationwide through private couriers. You can also pick up at our warehouse.",
+        "href": "/kb/domestic-delivery"
+      },
+      {
+        "q": "How can I track my order?",
+        "a": "Open the Track page on our website and enter your order number and the last 4 digits of your phone number. You will see the latest status of every item, from our China warehouse and container loading to arrival in Thailand and delivery.",
+        "href": "/track"
+      }
+    ]
+  },
   "footer": {
     "contact": "Contact",
     "privacy": "Privacy policy",

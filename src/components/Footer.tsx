@@ -6,7 +6,7 @@ import { Logo } from "./Logo";
 
 type Props = { locale: Locale; dict: Dictionary["footer"]; nav: Dictionary["nav"] };
 
-// ท้ายเว็บ 3 คอลัมน์: แบรนด์ + คำโปรย + ปุ่ม LINE · เมนู · ติดต่อเรา
+// ท้ายเว็บ 3 คอลัมน์: แบรนด์ + คำโปรย · เมนู · ติดต่อเรา
 export function Footer({ locale, dict, nav }: Props) {
   const links = [
     { href: "/services", label: nav.services },
@@ -23,14 +23,6 @@ export function Footer({ locale, dict, nav }: Props) {
           <Logo markClassName="text-accent-400" textClassName="text-white" />
           <p className="mt-3 max-w-sm leading-6 text-slate-400">{dict.tagline}</p>
           {site.showAddress && <p className="mt-2">{site.address[locale]}</p>}
-          <a
-            href={site.lineUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#06C755] px-4 py-2 font-semibold text-white hover:bg-[#05b34c]"
-          >
-            {dict.addLine} {site.lineId}
-          </a>
         </div>
         <div>
           <p className="font-semibold text-white">{dict.menu}</p>

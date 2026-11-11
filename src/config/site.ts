@@ -2,7 +2,7 @@
 export const site = {
   name: "SAANHA",
   url: "https://saanha.com", // ใช้กับ sitemap และรูปตอนแชร์ลิงก์
-  phone: "061-545-2358",
+  phone: "095-956-9666",
   lineId: "@saanha", // LINE OA "SAANHA สรรหา" (basic ID @540tsqtl)
   lineUrl: "https://line.me/R/ti/p/%40saanha", // ลิงก์เพิ่มเพื่อน — แก้ให้ตรงกับ lineId
   email: "contact@example.com", // TODO: ใส่อีเมลจริง

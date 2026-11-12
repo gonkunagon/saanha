@@ -31,6 +31,31 @@ export function grandTotalOf(goodsTotal: number | null | undefined, pct: number,
 }
 
 // ยอดที่ลูกค้าจ่ายแล้ว (สกุลของออเดอร์): มีรายการชำระเงิน = รวมยอดที่คิดเป็นสกุลออเดอร์ · ยังไม่มี = ใช้ช่องมัดจำเดิม
+// ยอดเงิน 2 ฝั่งของออเดอร์ (สกุลของออเดอร์)
+export type OrderSides = {
+  totalAmount: number | null; // ค่าสินค้าที่จ่ายร้าน
+  chinaShippingFee: number | null; // ค่าขนส่งในจีนที่จ่ายร้าน
+  customerGoodsAmount: number | null; // ค่าสินค้าที่คิดลูกค้า (ว่าง = ค่าสินค้า + ค่าดำเนินการ % แบบเดิม)
+  customerChinaShipping: number | null; // ค่าขนส่งในจีนที่คิดลูกค้า (ว่าง = เท่าที่จ่ายร้าน)
+  handlingFeePct: number;
+};
+const r2 = (n: number) => Math.round(n * 100) / 100;
+// ยอดที่จ่ายร้านค้า = ค่าสินค้า + ค่าขนส่งในจีน
+export function supplierTotalOf(o: Pick<OrderSides, "totalAmount" | "chinaShippingFee">): number | null {
+  return o.totalAmount == null ? null : r2(o.totalAmount + (o.chinaShippingFee ?? 0));
+}
+export function customerGoodsOf(o: OrderSides): number | null {
+  return o.customerGoodsAmount ?? grandTotalOf(o.totalAmount, o.handlingFeePct);
+}
+export function customerShippingOf(o: OrderSides): number | null {
+  return o.customerChinaShipping ?? o.chinaShippingFee;
+}
+// รวมเป็นเงินทั้งสิ้น (ยอดที่คิดลูกค้า) = ค่าสินค้าที่คิดลูกค้า + ค่าขนส่งในจีนที่คิดลูกค้า
+export function customerTotalOf(o: OrderSides): number | null {
+  const goods = customerGoodsOf(o);
+  return goods == null ? null : r2(goods + (customerShippingOf(o) ?? 0));
+}
+
 // ยังไม่มีรายการชำระเงิน = มัดจำ + ชำระยอดที่เหลือ (ว่างทั้งคู่ = ไม่รู้)
 export function paidOf(order: { depositAmount: number | null; balancePaidAmount: number | null }, payments: { appliedAmount: number }[]): number | null {
   if (payments.length === 0) {
@@ -40,10 +65,10 @@ export function paidOf(order: { depositAmount: number | null; balancePaidAmount:
   return Math.round(payments.reduce((s, p) => s + p.appliedAmount, 0) * 100) / 100;
 }
 
-// ยอดค้างชำระ = รวมเป็นเงินทั้งสิ้น (ค่าสินค้า + ค่าดำเนินการ + ค่าขนส่งภายในจีน) − ยอดที่จ่ายแล้ว
+// ยอดค้างชำระ = รวมเป็นเงินทั้งสิ้นที่คิดลูกค้า − ยอดที่จ่ายแล้ว
 export function orderBalance(
-  order: { totalAmount: number | null; depositAmount: number | null; balancePaidAmount: number | null; handlingFeePct: number; chinaShippingFee: number | null },
+  order: OrderSides & { depositAmount: number | null; balancePaidAmount: number | null },
   payments: { appliedAmount: number }[],
 ): number | null {
-  return balanceOf(grandTotalOf(order.totalAmount, order.handlingFeePct, order.chinaShippingFee), paidOf(order, payments));
+  return balanceOf(customerTotalOf(order), paidOf(order, payments));
 }

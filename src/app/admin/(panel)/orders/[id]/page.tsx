@@ -16,7 +16,7 @@ import { ItemPriceForm } from "./ItemPriceForm";
 import { PaymentsCard } from "./PaymentsCard";
 import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
 import { BalanceText } from "@/components/admin/ui";
-import { currencyLabel, formatMoney, grandTotalOf, handlingFeeOf, orderBalance, paidOf, type CurrencyCode } from "@/lib/money";
+import { currencyLabel, customerGoodsOf, customerShippingOf, customerTotalOf, formatMoney, orderBalance, paidOf, supplierTotalOf, type CurrencyCode, type OrderSides } from "@/lib/money";
 import { StageUpdateForm, type ContainerOption } from "./StageUpdateForm";
 import { PackageFields } from "@/components/admin/PackageFields";
 import { deleteItemImage, uploadItemImages } from "../image-actions";
@@ -141,19 +141,28 @@ function InfoSection({ title, tone, children }: { title: string; tone?: "money";
   );
 }
 
-// กำไร = รวมเป็นเงินทั้งสิ้น − ค่าสินค้า − ค่าขนส่งภายในจีน (ค่าส่งจ่ายต่อให้ร้าน ไม่ใช่กำไร)
-function ProfitText({ order }: { order: { totalAmount: number | null; handlingFeePct: number; chinaShippingFee: number | null; currency: CurrencyCode; orderRate: number | null } }) {
-  const total = grandTotalOf(order.totalAmount, order.handlingFeePct, order.chinaShippingFee);
-  if (total == null || order.totalAmount == null) return null;
-  const profit = Math.round((total - order.totalAmount - (order.chinaShippingFee ?? 0)) * 100) / 100;
-  return (
-    <span className="font-semibold text-emerald-700">
-      {formatMoney(profit, order.currency)}
-      {order.currency === "CNY" && order.orderRate != null && (
-        <span className="ml-1 text-xs font-normal text-gray-500">(≈ {formatMoney(Math.round(profit * order.orderRate * 100) / 100, "THB")})</span>
-      )}
-    </span>
-  );
+// ยอดเป็นบาท: ออเดอร์บาทใช้ยอดเดิม · ออเดอร์หยวนคูณเรท (ไม่มีเรท = ไม่รู้)
+const toThb = (amount: number | null, rate: number | null, currency: CurrencyCode) =>
+  amount == null ? null : currency === "THB" ? amount : rate != null ? Math.round(amount * rate * 100) / 100 : null;
+
+// กำไร (บาท) = ยอดที่คิดลูกค้าเป็นบาท (เรทลูกค้า) − ยอดที่จ่ายร้านเป็นบาท (เรทที่เราจ่าย)
+function ProfitText({ order }: { order: OrderSides & { currency: CurrencyCode; orderRate: number | null; costRate: number | null } }) {
+  const sell = customerTotalOf(order);
+  const cost = supplierTotalOf(order);
+  if (sell == null || cost == null) return null;
+  const sellThb = toThb(sell, order.orderRate, order.currency);
+  const costThb = toThb(cost, order.costRate, order.currency);
+  if (sellThb == null || costThb == null) {
+    // ยังไม่ครบเรท: แสดงส่วนต่างเป็นหยวนไปก่อน
+    return (
+      <span className="font-semibold text-emerald-700">
+        {formatMoney(Math.round((sell - cost) * 100) / 100, order.currency)}
+        <span className="ml-1 text-xs font-normal text-amber-700">(ใส่{order.orderRate == null ? "เรทคิดลูกค้า" : "เรทที่เราจ่าย"}เพื่อคิดเป็นบาท)</span>
+      </span>
+    );
+  }
+  const profit = Math.round((sellThb - costThb) * 100) / 100;
+  return <span className={`font-semibold ${profit < 0 ? "text-brand-700" : "text-emerald-700"}`}>{formatMoney(profit, "THB")}</span>;
 }
 
 function Info({ label, children, wide }: { label: string; children: React.ReactNode; wide?: boolean }) {
@@ -364,14 +373,31 @@ export default async function OrderPage({ params, searchParams }: Props) {
               <Info label="บริษัทขนส่งที่รับงานต่อ">{order.provider}</Info>
             </InfoSection>
 
-            <InfoSection title="สรุปยอดชำระ" tone="money">
-              <Info label="ค่าสินค้า (ยอดเต็ม)">{order.totalAmount != null && formatMoney(order.totalAmount, order.currency)}</Info>
-              <Info label="ค่าขนส่งภายใน (จีน)">{order.chinaShippingFee != null && formatMoney(order.chinaShippingFee, order.currency)}</Info>
-              <Info label={`ค่าดำเนินการ ${order.handlingFeePct}%`}>{order.totalAmount != null && formatMoney(handlingFeeOf(order.totalAmount, order.handlingFeePct), order.currency)}</Info>
-              <Info label="รวมเป็นเงินทั้งสิ้น">
-                {order.totalAmount != null && <b>{formatMoney(grandTotalOf(order.totalAmount, order.handlingFeePct, order.chinaShippingFee), order.currency)}</b>}
+            {/* ยอดเงิน 2 ฝั่ง: จ่ายร้านค้า (ต้นทุน) กับ คิดลูกค้า — ราคาและเรทไม่เท่ากัน */}
+            <InfoSection title="ยอดที่จ่ายร้านค้า">
+              <Info label="ค่าสินค้า (จ่ายร้าน)">{order.totalAmount != null && formatMoney(order.totalAmount, order.currency)}</Info>
+              <Info label="ค่าขนส่งภายในจีน (จ่ายร้าน)">{order.chinaShippingFee != null && formatMoney(order.chinaShippingFee, order.currency)}</Info>
+              <Info label="รวมจ่ายร้าน">{supplierTotalOf(order) != null && <b>{formatMoney(supplierTotalOf(order), order.currency)}</b>}</Info>
+              {order.currency === "CNY" && (
+                <>
+                  <Info label="เรทที่เราจ่าย">{order.costRate != null && `${order.costRate} บาท / หยวน`}</Info>
+                  <Info label="คิดเป็นเงินบาท">{toThb(supplierTotalOf(order), order.costRate, order.currency) != null && formatMoney(toThb(supplierTotalOf(order), order.costRate, order.currency), "THB")}</Info>
+                </>
+              )}
+            </InfoSection>
+
+            <InfoSection title="ยอดที่คิดลูกค้า" tone="money">
+              <Info label={order.customerGoodsAmount == null && order.handlingFeePct > 0 ? `ค่าสินค้า (คิดลูกค้า · รวมค่าดำเนินการ ${order.handlingFeePct}%)` : "ค่าสินค้า (คิดลูกค้า)"}>
+                {customerGoodsOf(order) != null && formatMoney(customerGoodsOf(order), order.currency)}
               </Info>
-              <Info label="เรทตอนสั่งซื้อ">{order.orderRate != null && `${order.orderRate} บาท / หยวน`}</Info>
+              <Info label="ค่าขนส่งภายในจีน (คิดลูกค้า)">{customerShippingOf(order) != null && formatMoney(customerShippingOf(order), order.currency)}</Info>
+              <Info label="รวมเป็นเงินทั้งสิ้น">{customerTotalOf(order) != null && <b>{formatMoney(customerTotalOf(order), order.currency)}</b>}</Info>
+              {order.currency === "CNY" && (
+                <>
+                  <Info label="เรทคิดลูกค้า">{order.orderRate != null && `${order.orderRate} บาท / หยวน`}</Info>
+                  <Info label="คิดเป็นเงินบาท">{toThb(customerTotalOf(order), order.orderRate, order.currency) != null && <b>{formatMoney(toThb(customerTotalOf(order), order.orderRate, order.currency), "THB")}</b>}</Info>
+                </>
+              )}
               {/* ยอดที่จ่ายแล้ว/ค้างชำระ คิดจากรายการชำระเงิน (ออเดอร์เก่าที่ยังไม่มีรายการ ใช้ช่องมัดจำ) */}
               <Info label={order.payments.length || order.balancePaidAmount != null ? "ชำระแล้ว" : "มัดจำค่าสินค้า"}>
                 {paidOf(order, order.payments) != null && formatMoney(paidOf(order, order.payments), order.currency)}
@@ -379,7 +405,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
               <Info label="ยอดค้างชำระ">
                 <BalanceText balance={orderBalance(order, order.payments)} currency={order.currency} />
               </Info>
-              {/* เฉพาะแอดมิน: กำไร = ยอดที่คิดลูกค้า (รวมเป็นเงินทั้งสิ้น) − ยอดที่สั่งซื้อ (ค่าสินค้า ยอดเต็ม) — หยวนแสดงเป็นบาทตามเรทตอนสั่งซื้อด้วย */}
+              {/* เฉพาะแอดมิน: กำไร = ยอดที่คิดลูกค้า (บาท) − ยอดที่จ่ายร้าน (บาท) */}
               {user.role === "admin" && (<Info label="กำไร / ส่วนต่าง">
                 <ProfitText order={order} />
               </Info>)}

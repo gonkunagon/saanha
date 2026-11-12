@@ -3,7 +3,7 @@ import { Card, Field } from "@/components/admin/ui";
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { currencies, type Order, type Payment } from "@/db/schema";
 import { formatThaiDateTime, nowLocalInputValue } from "@/lib/datetime";
-import { currencyLabel, formatMoney, grandTotalOf, orderBalance, paidOf } from "@/lib/money";
+import { currencyLabel, customerTotalOf, formatMoney, orderBalance, paidOf } from "@/lib/money";
 import { thaiBanks } from "@/lib/banks";
 import { getQuoteRate } from "@/lib/settings";
 import { addPayment, deletePayment, updatePaymentRate } from "../actions";
@@ -11,7 +11,7 @@ import { addPayment, deletePayment, updatePaymentRate } from "../actions";
 // ช่องทางการชำระ (เลือกจากรายการ)
 const PAYMENT_METHODS = ["โอนธนาคาร", "พร้อมเพย์", "เงินสด", "บัตรเครดิต / เดบิต", "Alipay", "WeChat Pay", "อื่นๆ"];
 
-type OrderMoney = Pick<Order, "id" | "currency" | "totalAmount" | "depositAmount" | "balancePaidAmount" | "handlingFeePct" | "chinaShippingFee">;
+type OrderMoney = Pick<Order, "id" | "currency" | "totalAmount" | "depositAmount" | "balancePaidAmount" | "handlingFeePct" | "chinaShippingFee" | "customerGoodsAmount" | "customerChinaShipping">;
 
 // การชำระเงินของออเดอร์: ยอดที่ลูกค้าโอน วันที่ชำระ ช่องทาง — กด "แก้ไขการชำระเงิน" (?pay=1) จึงเพิ่ม/ลบได้
 // ยอดที่โอนคนละสกุลกับออเดอร์ แสดง "คิดเป็น" สกุลออเดอร์ด้วย (ใช้หักยอดค้างชำระ)
@@ -19,7 +19,7 @@ export async function PaymentsCard({ order, payments, editing }: { order: OrderM
   const sorted = [...payments].sort((a, b) => a.paidAt.getTime() - b.paidAt.getTime());
   const cur = order.currency;
   const other = currencies.find((c) => c !== cur)!;
-  const grand = grandTotalOf(order.totalAmount, order.handlingFeePct, order.chinaShippingFee);
+  const grand = customerTotalOf(order);
   const balance = orderBalance(order, payments);
   // เรทใบเสนอราคาวันนี้ ใช้เป็นค่าตั้งต้นเมื่อไม่ได้กรอกเรทเอง
   const todayRate = editing ? (await getQuoteRate()).rate : null;

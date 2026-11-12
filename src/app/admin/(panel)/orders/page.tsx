@@ -7,7 +7,7 @@ import { summarizeOrder } from "@/lib/orders";
 import { formatThaiDateTime } from "@/lib/datetime";
 import { itemStages, stageLabelsTh, type ItemStage } from "@/lib/stages";
 import { BalanceText, Card, StageBadge, methodLabel } from "@/components/admin/ui";
-import { formatMoney, grandTotalOf, orderBalance } from "@/lib/money";
+import { customerTotalOf, formatMoney, orderBalance } from "@/lib/money";
 import { SyncJjButton } from "./SyncJjButton";
 import { getSyncStatus } from "@/lib/jjsync";
 
@@ -111,7 +111,7 @@ export default async function OrdersPage({ searchParams }: Props) {
                     {o.totalAmount != null ? (
                       <>
                         {/* ยอดเต็ม = ค่าสินค้า + ค่าดำเนินการ (ตรงกับรวมเป็นเงินทั้งสิ้นในใบเสนอราคา) */}
-                        <span className="block text-xs text-gray-500">เต็ม {formatMoney(grandTotalOf(o.totalAmount, o.handlingFeePct, o.chinaShippingFee), o.currency)}</span>
+                        <span className="block text-xs text-gray-500">เต็ม {formatMoney(customerTotalOf(o), o.currency)}</span>
                         <BalanceText balance={orderBalance(o, o.payments)} currency={o.currency} />
                       </>
                     ) : (

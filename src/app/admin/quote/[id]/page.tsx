@@ -7,7 +7,7 @@ import { db } from "@/db";
 import { orders } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { site } from "@/config/site";
-import { currencyLabel, formatMoney, grandTotalOf } from "@/lib/money";
+import { currencyLabel, customerGoodsOf, customerShippingOf, formatMoney } from "@/lib/money";
 import { amountInThaiWords } from "@/lib/thaiText";
 import { methodLabel } from "@/components/admin/ui";
 import { LogoMark } from "@/components/Logo";
@@ -62,15 +62,19 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
   const validUntil = isCny ? issued : new Date(issued.getTime() + VALID_DAYS * 86_400_000);
   const c = order.customer;
   const fullName = c && [c.firstName, c.lastName].filter(Boolean).join(" ");
-  // ลูกค้าไม่เห็นค่าดำเนินการแยก: บวก % ค่าดำเนินการเข้าไปในราคาต่อหน่วยเลย
-  const markup = 1 + order.handlingFeePct / 100;
+  // ราคาลูกค้า: กรอกค่าสินค้าที่คิดลูกค้าไว้ = ปรับราคาต่อหน่วยตามสัดส่วน (ราคาลูกค้า ÷ ค่าสินค้าที่จ่ายร้าน)
+  // ออเดอร์เก่า = บวก % ค่าดำเนินการเข้าไปในราคาต่อหน่วย (ลูกค้าไม่เห็นค่าดำเนินการแยก)
+  const markup =
+    order.customerGoodsAmount != null && order.totalAmount ? order.customerGoodsAmount / order.totalAmount : 1 + order.handlingFeePct / 100;
   const round2 = (n: number) => Math.round(n * 100) / 100;
   // ราคาต่อหน่วย (ก่อนบวกค่าดำเนินการ): ใช้ราคาที่กรอกในรายการ
   // ถ้าไม่มีราคาเลยสักรายการ และออเดอร์มีสินค้ารายการเดียวที่รู้จำนวน → ยอดเต็ม ÷ จำนวน
   const anyPriced = order.items.some((i) => i.unitPrice != null);
   const baseUnitPrice = (i: (typeof order.items)[number]) =>
     i.unitPrice ??
-    (!anyPriced && order.items.length === 1 && order.totalAmount != null && i.quantity ? order.totalAmount / i.quantity : null);
+    (!anyPriced && order.items.length === 1 && order.totalAmount != null && i.quantity ? order.totalAmount / i.quantity : null) ??
+    // ไม่มีค่าสินค้าที่จ่ายร้าน แต่มีราคาลูกค้า + สินค้ารายการเดียว → ราคาลูกค้า ÷ จำนวน (markup = 1)
+    (order.items.length === 1 && order.totalAmount == null && order.customerGoodsAmount != null && i.quantity ? order.customerGoodsAmount / i.quantity : null);
   const lines = order.items.map((i) => {
     const base = baseUnitPrice(i);
     const unit = base == null ? null : round2(base * markup);
@@ -78,11 +82,9 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
   });
   const allPriced = lines.length > 0 && lines.every((l) => l.amount != null);
   // รวมเป็นเงินทั้งสิ้น = ผลรวมแต่ละรายการ (ตรงกับตาราง) · ถ้าบางรายการไม่มีราคา ใช้ยอดเต็มของออเดอร์ × (1 + %)
-  const itemsTotal = allPriced
-    ? round2(lines.reduce((s, l) => s + l.amount!, 0))
-    : grandTotalOf(order.totalAmount, order.handlingFeePct);
-  // ค่าขนส่งภายในจีน (ร้านคิดค่าส่งมาโกดัง) แสดงแยกบรรทัด แล้วบวกเข้ารวมเป็นเงินทั้งสิ้น
-  const chinaShip = order.chinaShippingFee ?? 0;
+  const itemsTotal = allPriced ? round2(lines.reduce((s, l) => s + l.amount!, 0)) : customerGoodsOf(order);
+  // ค่าขนส่งภายในจีนที่คิดลูกค้า แสดงแยกบรรทัด แล้วบวกเข้ารวมเป็นเงินทั้งสิ้น
+  const chinaShip = customerShippingOf(order) ?? 0;
   const grandTotal = itemsTotal == null ? null : round2(itemsTotal + chinaShip);
   // ยอดเงินบาท (เฉพาะออเดอร์หยวน และตั้งเรทของวันนี้แล้ว)
   const thbTotal = rate != null && grandTotal != null ? round2(grandTotal * rate) : null;

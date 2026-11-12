@@ -93,6 +93,12 @@ export const orders = pgTable("orders", {
   handlingFeePct: integer("handling_fee_pct").notNull().default(5),
   // ค่าขนส่งภายในจีน (ร้านค้าจีนคิดค่าส่งมาโกดัง) — สกุลเดียวกับค่าสินค้า · บวกในรวมเป็นเงินทั้งสิ้น ไม่คิดค่าดำเนินการ ไม่นับเป็นกำไร
   chinaShippingFee: doublePrecision("china_shipping_fee"),
+  // ยอดเงิน 2 ฝั่ง — ฝั่งจ่ายร้าน: totalAmount (ค่าสินค้า) + chinaShippingFee ที่เรทต้นทุน costRate
+  // ฝั่งคิดลูกค้า: customerGoodsAmount + customerChinaShipping ที่เรทลูกค้า orderRate
+  // (ว่าง = ออเดอร์เก่า: ราคาลูกค้า = ค่าสินค้า + handlingFeePct% · ค่าส่งในจีนเท่าที่จ่ายร้าน)
+  costRate: doublePrecision("cost_rate"),
+  customerGoodsAmount: doublePrecision("customer_goods_amount"),
+  customerChinaShipping: doublePrecision("customer_china_shipping"),
   // เรทหยวนตอนสั่งซื้อ (บาทต่อ 1 หยวน) — จดไว้ดูว่าตอนสั่งของเรทเท่าไหร่ (ไม่ได้ใช้คำนวณยอด)
   orderRate: doublePrecision("order_rate"),
   // วันเปิดบิล = วันที่สร้างออเดอร์ · quotedAt มีค่าเมื่อกด "ออกใบใหม่เป็นวันนี้" · quoteRate = เรทหยวนที่ใช้ในใบ (ล็อกเมื่อพ้นวันเปิดบิล)

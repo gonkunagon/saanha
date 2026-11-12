@@ -41,10 +41,14 @@ const toRow = (p: PackageInput, key: number): Row => ({
 });
 const rowCbm = (r: Row) => calcCbm(Number(r.w) || null, Number(r.l) || null, Number(r.h) || null, Number(r.boxes) || null);
 
-// เลขพัสดุจีนของแถวที่ระบบตั้งให้ = เลขแถวแรก + "-ลำดับ" เช่น 0010883 → 0010883-1, 0010883-2
+// เลขพัสดุจีนของแถวที่ระบบตั้งให้ ต่อจากแถวแรก:
+// แถวแรกลงท้าย "-1" (แตกจากจำนวนกล่อง) เช่น 33333-1 → 33333-2, 33333-3
+// แถวแรกเป็นเลขเปล่า เช่น 0010883 → 0010883-1, 0010883-2
 function autoNumber(rows: Row[]): Row[] {
-  const base = rows[0]?.tracking.trim() ?? "";
-  return rows.map((r, i) => (i > 0 && r.auto ? { ...r, tracking: base ? `${base}-${i}` : "" } : r));
+  const first = rows[0]?.tracking.trim() ?? "";
+  const run = first.match(/^(.+)-1$/);
+  const tracking = (i: number) => (!first ? "" : run ? `${run[1]}-${i + 1}` : `${first}-${i}`);
+  return rows.map((r, i) => (i > 0 && r.auto ? { ...r, tracking: tracking(i) } : r));
 }
 
 // พัสดุย่อยของรายการสินค้า: เพิ่มได้หลายแถว แต่ละแถว = กล่องขนาดเดียวกัน
@@ -69,7 +73,8 @@ export function PackageFields({ prefix = "pkg_", defaults = [] }: { prefix?: str
   };
   const removeRow = (key: number) => setRows((rs) => (rs.length > 1 ? autoNumber(rs.filter((r) => r.key !== key)) : rs));
 
-  // กรอกจำนวนกล่อง N (> 1) แล้วออกจากช่อง = แตกเป็น N แถว แถวละ 1 กล่อง (คัดลอกน้ำหนัก/ขนาด, Tracking ต่อเลขให้เอง)
+  // กรอกจำนวนกล่อง N (> 1) แล้วออกจากช่อง = แตกเป็น N แถว แถวละ 1 กล่อง (คัดลอกน้ำหนัก/ขนาด)
+  // Tracking รันเลขตั้งแต่แถวแรก: 33333 × 3 กล่อง → 33333-1, 33333-2, 33333-3
   // แตกเฉพาะตอนเปลี่ยนค่า — คลิกผ่านช่องเดิมเฉย ๆ ไม่แตก
   const MAX_SPLIT = 200;
   const boxesAtFocus = useRef("");
@@ -80,9 +85,10 @@ export function PackageFields({ prefix = "pkg_", defaults = [] }: { prefix?: str
     if (!row || row.boxes === boxesAtFocus.current || !(n > 1) || n > MAX_SPLIT) return;
     const base = row.tracking.trim();
     const copies: Row[] = Array.from({ length: n }, (_, i) => {
-      if (i === 0) return { ...row, boxes: "1" };
+      const own = base && (at === 0 || !row.auto); // แถวนี้มีเลขของตัวเอง → รันเลข -1, -2, ...
+      if (i === 0) return { ...row, boxes: "1", tracking: own ? `${base}-1` : row.tracking };
       const follow = at === 0 || row.auto; // ต่อเลขจากแถวแรกอัตโนมัติ
-      return { ...row, key: nextKey + i - 1, importKey: "", boxes: "1", auto: follow, tracking: follow ? "" : `${base}-${i}` };
+      return { ...row, key: nextKey + i - 1, importKey: "", boxes: "1", auto: follow, tracking: follow ? "" : `${base}-${i + 1}` };
     });
     setNextKey((k) => k + n - 1);
     setRows((rs) => autoNumber([...rs.slice(0, at), ...copies, ...rs.slice(at + 1)]));

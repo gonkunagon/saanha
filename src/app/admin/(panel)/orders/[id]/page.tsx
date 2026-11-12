@@ -490,11 +490,10 @@ export default async function OrderPage({ params, searchParams }: Props) {
         {order.items.length > 0 && (
           <>
             {/* ตารางรายการสินค้า: ชื่อสินค้า · จำนวน · ราคาซื้อ · ราคาขาย (ต่อหน่วย แก้ได้ในช่อง) + แถวรวมทุกรายการ */}
-            <div className="mb-4 overflow-x-auto rounded-lg border border-gray-200">
-              <table className="w-full min-w-[44rem] text-sm">
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
+              <table className="w-full min-w-[40rem] text-sm">
                 <thead className="bg-gray-50 text-left text-xs text-gray-500">
                   <tr>
-                    <th className="w-10 px-3 py-2" />
                     <th className="px-3 py-2">ชื่อสินค้า</th>
                     <th className="w-24 px-3 py-2 text-right">จำนวน</th>
                     <th className="w-40 px-3 py-2 text-right">ราคาซื้อ / หน่วย ({currencyLabel[order.currency]})</th>
@@ -507,17 +506,6 @@ export default async function OrderPage({ params, searchParams }: Props) {
                     const at = itemStageDates(item, item.container)[stage];
                     return (
                       <tr key={item.id} className="align-top">
-                        <td className="px-3 py-3">
-                          <input
-                            type="checkbox"
-                            name="itemId"
-                            value={item.id}
-                            form={STAGE_FORM}
-                            defaultChecked={stage !== "delivered"}
-                            className="mt-1 h-5 w-5 accent-brand-600"
-                            aria-label={`เลือก ${item.description}`}
-                          />
-                        </td>
                         <td className="px-3 py-3">
                           <ItemDetails item={item} />
                           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
@@ -542,7 +530,6 @@ export default async function OrderPage({ params, searchParams }: Props) {
                 </tbody>
                 <tfoot className="border-t-2 border-gray-300 bg-gray-50 font-semibold">
                   <tr>
-                    <td />
                     <td className="px-3 py-2">รวมทุกรายการ</td>
                     <td className="px-3 py-2 text-right">{itemTotals.qty.toLocaleString("th-TH")}</td>
                     <td className="px-3 py-2 text-right">{itemTotals.buy == null ? "-" : formatMoney(itemTotals.buy, order.currency)}</td>
@@ -552,16 +539,6 @@ export default async function OrderPage({ params, searchParams }: Props) {
               </table>
             </div>
 
-            <StageUpdateForm
-              key={summary.stage} // บันทึกแล้ว ขยับค่าเริ่มต้นไปขั้นถัดไปเอง
-              formId={STAGE_FORM}
-              orderId={order.id}
-              defaultStage={nextStage}
-              defaultAt={nowLocalInputValue()}
-              containerOptions={containerOptions}
-              sharedContainerNote={sharedContainerNote}
-              hasItemsInContainer={order.items.some((i) => i.containerId)}
-            />
           </>
         )}
       </Card>

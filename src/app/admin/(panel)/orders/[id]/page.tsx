@@ -132,9 +132,11 @@ function ProductLink({ href }: { href: string }) {
 
 // แสดงข้อมูล 1 ช่อง (ไม่มีค่า = ขีด)
 // กรอบย่อยในข้อมูลออเดอร์ (หัวข้อ + ช่องข้อมูล 3 คอลัมน์) — กรอบสรุปยอดชำระพื้นสีอ่อนให้เห็นเด่น
-function InfoSection({ title, tone, children }: { title: string; tone?: "money"; children: React.ReactNode }) {
+// tone: money = ยอดที่คิดลูกค้า (เหลือง) · cost = ยอดที่จ่ายร้านค้า (เขียว)
+function InfoSection({ title, tone, children }: { title: string; tone?: "money" | "cost"; children: React.ReactNode }) {
+  const toneClass = tone === "money" ? "border-accent-300 bg-accent-300/10" : tone === "cost" ? "border-emerald-300 bg-emerald-50" : "border-gray-200";
   return (
-    <section className={`rounded-lg border p-4 ${tone === "money" ? "border-accent-300 bg-accent-300/10" : "border-gray-200"}`}>
+    <section className={`rounded-lg border p-4 ${toneClass}`}>
       <h3 className="mb-3 text-sm font-semibold text-gray-800">{title}</h3>
       <dl className="grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2 lg:grid-cols-3">{children}</dl>
     </section>
@@ -374,7 +376,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
             </InfoSection>
 
             {/* ยอดเงิน 2 ฝั่ง: จ่ายร้านค้า (ต้นทุน) กับ คิดลูกค้า — ราคาและเรทไม่เท่ากัน */}
-            <InfoSection title="ยอดที่จ่ายร้านค้า">
+            <InfoSection title="ยอดที่จ่ายร้านค้า" tone="cost">
               <Info label="ค่าสินค้า (จ่ายร้าน)">{order.totalAmount != null && formatMoney(order.totalAmount, order.currency)}</Info>
               <Info label="ค่าขนส่งภายในจีน (จ่ายร้าน)">{order.chinaShippingFee != null && formatMoney(order.chinaShippingFee, order.currency)}</Info>
               <Info label="รวมจ่ายร้าน">{supplierTotalOf(order) != null && <b>{formatMoney(supplierTotalOf(order), order.currency)}</b>}</Info>

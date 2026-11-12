@@ -29,9 +29,10 @@ const numOrNull = (v: string) => (v.trim() === "" ? null : Number(v));
 const thb = (amount: number | null, rate: number | null, currency: CurrencyCode) =>
   amount == null ? null : currency === "THB" ? amount : rate ? Math.round(amount * rate * 100) / 100 : null;
 
-function Box({ title, note, children }: { title: string; note: string; children: React.ReactNode }) {
+// tone เดียวกับหน้าแสดงออเดอร์: จ่ายร้านค้า = เขียว · คิดลูกค้า = เหลือง
+function Box({ title, note, tone, children }: { title: string; note: string; tone: "cost" | "money"; children: React.ReactNode }) {
   return (
-    <fieldset className="grid gap-4 rounded-lg border border-gray-200 p-4 sm:col-span-2 sm:grid-cols-2 lg:col-span-4 lg:grid-cols-4">
+    <fieldset className={`grid gap-4 rounded-lg border p-4 sm:col-span-2 sm:grid-cols-2 lg:col-span-4 lg:grid-cols-4 ${tone === "cost" ? "border-emerald-300 bg-emerald-50" : "border-accent-300 bg-accent-300/10"}`}>
       <legend className="px-1 text-sm font-semibold text-gray-800">
         {title} <span className="font-normal text-gray-500">· {note}</span>
       </legend>
@@ -40,7 +41,7 @@ function Box({ title, note, children }: { title: string; note: string; children:
   );
 }
 
-const LOCKED = "bg-gray-50 text-gray-700";
+const LOCKED = "bg-gray-100 text-gray-700";
 const FROM_TABLE = "คิดจากตารางรายการสินค้า";
 function Num({ label, name, value, onChange, placeholder, step = "0.01", locked }: { label: string; name: string; value: string; onChange: (v: string) => void; placeholder?: string; step?: string; locked?: boolean }) {
   return (
@@ -120,7 +121,7 @@ export function PaymentFields(p: Props) {
 
       <input type="hidden" name="handlingFeePct" value={pct} />
 
-      <Box title="ยอดที่จ่ายร้านค้า" note="ต้นทุนของเรา ลูกค้าไม่เห็น">
+      <Box title="ยอดที่จ่ายร้านค้า" note="ต้นทุนของเรา ลูกค้าไม่เห็น" tone="cost">
         <label className="block">
           <span className="mb-1 block text-sm text-gray-600">ค่าสินค้า (จ่ายร้าน)</span>
           {/* .input กว้างเต็มช่องเสมอ จึงคุมความกว้างด้วย span ที่ครอบ */}
@@ -143,7 +144,7 @@ export function PaymentFields(p: Props) {
         <Calc label="รวมจ่ายร้าน" amount={supplier} baht={thb(supplier, numOrNull(costRate), currency)} currency={currency} />
       </Box>
 
-      <Box title="ยอดที่คิดลูกค้า" note="ใช้ในใบเสนอราคาและยอดค้างชำระ">
+      <Box title="ยอดที่คิดลูกค้า" note="ใช้ในใบเสนอราคาและยอดค้างชำระ" tone="money">
         <Num
           label={`ค่าสินค้า (คิดลูกค้า) · ${cur}`}
           name="customerGoodsAmount"

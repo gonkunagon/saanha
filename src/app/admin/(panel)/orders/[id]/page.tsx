@@ -319,7 +319,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
               href={`/admin/orders/${order.id}?edit=1`}
               className="inline-flex items-center gap-1.5 rounded-lg border border-brand-600 px-3 py-1.5 text-sm font-medium text-brand-600 hover:bg-brand-50"
             >
-              ✏️ แก้ไข / อัปเดตสถานะ
+              ✏️ แก้ไขข้อมูลออเดอร์
             </Link>
           }
         >

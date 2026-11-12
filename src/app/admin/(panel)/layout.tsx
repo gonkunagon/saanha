@@ -9,6 +9,7 @@ const nav = [
   { href: "/admin/containers", label: "ตู้" },
   { href: "/admin/customers", label: "ลูกค้า" },
   { href: "/admin/users", label: "พนักงาน", adminOnly: true },
+  { href: "/admin/dashboard", label: "Dashboard", adminOnly: true },
 ];
 
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {

@@ -72,3 +72,23 @@ export function orderBalance(
 ): number | null {
   return balanceOf(customerTotalOf(order), paidOf(order, payments));
 }
+
+// ยอดเป็นบาท: ออเดอร์บาทใช้ยอดเดิม · ออเดอร์หยวนคูณเรท (ไม่มีเรท = ไม่รู้)
+export function toThb(amount: number | null, rate: number | null, currency: CurrencyCode): number | null {
+  if (amount == null) return null;
+  if (currency === "THB") return amount;
+  return rate != null ? r2(amount * rate) : null;
+}
+
+// กำไรของออเดอร์ (บาท) = ยอดที่คิดลูกค้า × เรทลูกค้า − ยอดที่จ่ายร้าน × เรทที่เราจ่าย
+// ค่าใดไม่ครบ = null (missing บอกว่าขาดอะไร)
+export function orderProfit(o: OrderSides & { currency: CurrencyCode; orderRate: number | null; costRate: number | null }) {
+  const sell = customerTotalOf(o);
+  const cost = supplierTotalOf(o);
+  const sellThb = toThb(sell, o.orderRate, o.currency);
+  const costThb = toThb(cost, o.costRate, o.currency);
+  const missing =
+    sell == null ? "ยังไม่มียอดที่คิดลูกค้า" : cost == null ? "ยังไม่มียอดที่จ่ายร้าน" : sellThb == null ? "ยังไม่ใส่เรทคิดลูกค้า" : costThb == null ? "ยังไม่ใส่เรทที่เราจ่าย" : null;
+  const profit = sellThb != null && costThb != null ? r2(sellThb - costThb) : null;
+  return { sell, cost, sellThb, costThb, profit, missing };
+}

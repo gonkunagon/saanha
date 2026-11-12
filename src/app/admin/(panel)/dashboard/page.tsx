@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { orders } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth";
 import { Card, BalanceText } from "@/components/admin/ui";
-import { formatMoney, orderBalance, orderProfit, toThb } from "@/lib/money";
+import { formatMoney, orderBalance, orderProfit, shopPaidRateOf, toThb } from "@/lib/money";
 import { formatThaiDateTime } from "@/lib/datetime";
 
 // Dashboard (เฉพาะแอดมิน): สรุปยอดขาย ต้นทุน กำไร ของแต่ละออเดอร์ เลือกดูรายเดือนได้ (นับตามวันที่สร้างออเดอร์ เวลาไทย)
@@ -31,14 +31,15 @@ function Stat({ label, value, note, tone }: { label: string; value: string; note
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
   await requireAdmin();
   const sp = await searchParams;
-  const all = await db.query.orders.findMany({ with: { payments: { columns: { appliedAmount: true } } }, orderBy: desc(orders.createdAt) });
+  const all = await db.query.orders.findMany({ with: { payments: { columns: { appliedAmount: true, amount: true, currency: true, direction: true } } }, orderBy: desc(orders.createdAt) });
 
   const months = [...new Set([monthKey(new Date()), ...all.map((o) => monthKey(o.createdAt))])].sort().reverse();
   const month = sp.m === "all" ? "all" : sp.m && months.includes(sp.m) ? sp.m : months[0];
   const list = all.filter((o) => month === "all" || monthKey(o.createdAt) === month);
 
   const rows = list.map((o) => {
-    const p = orderProfit(o);
+    // เรทที่เราจ่าย: กรอกไว้ในออเดอร์ หรือเรทเฉลี่ยจากรายการจ่ายร้าน
+    const p = orderProfit({ ...o, costRate: o.costRate ?? shopPaidRateOf(o.payments) });
     const balance = orderBalance(o, o.payments);
     return { o, ...p, balance, balanceThb: balance != null && balance > 0 ? toThb(balance, o.orderRate, o.currency) : null };
   });

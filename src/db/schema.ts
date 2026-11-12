@@ -179,8 +179,13 @@ export const itemImages = pgTable("item_images", {
 });
 
 // การชำระเงินของออเดอร์ (ลูกค้าโอนได้หลายครั้ง เช่น มัดจำ + ส่วนที่เหลือ) — ยอดที่โอน วันที่ชำระ ช่องทาง
+// ทิศทางเงิน: in = ลูกค้าโอนเข้าบัญชีเรา · out = เราโอนจ่ายร้านค้าจีน
+export const paymentDirections = ["in", "out"] as const;
+export type PaymentDirection = (typeof paymentDirections)[number];
+
 export const payments = pgTable("payments", {
   id: id(),
+  direction: text("direction", { enum: paymentDirections }).notNull().default("in"),
   orderId: integer("order_id")
     .notNull()
     .references(() => orders.id, { onDelete: "cascade" }),
@@ -192,7 +197,7 @@ export const payments = pgTable("payments", {
   // คนละสกุล = แปลงด้วยเรทใบเสนอราคาวันที่บันทึก (rate = บาทต่อ 1 หยวน) หรือที่พนักงานกรอกเอง
   appliedAmount: doublePrecision("applied_amount").notNull(),
   rate: doublePrecision("rate"),
-  bank: text("bank"), // ธนาคารที่ลูกค้าโอนมา (รายชื่อใน src/lib/banks.ts) — ไม่โอนผ่านธนาคาร = ว่าง
+  bank: text("bank"), // บัญชีธนาคารของเรา: in = ลูกค้าโอนเข้าบัญชีนี้ · out = เราจ่ายออกจากบัญชีนี้ (รายชื่อใน src/lib/banks.ts)
   note: text("note"),
   createdAt: createdAt(),
 });

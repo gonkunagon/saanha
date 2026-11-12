@@ -1,0 +1,1 @@
+ALTER TABLE "payments" ADD COLUMN "direction" text DEFAULT 'in' NOT NULL;

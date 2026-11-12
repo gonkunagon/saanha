@@ -13,10 +13,10 @@ import { OrderFields } from "../OrderFields";
 import { listCustomersForPicker } from "@/lib/customers";
 import { deleteItem, updateItem, updateOrder } from "../actions";
 import { ItemPriceCells } from "./ItemPriceForm";
-import { PaymentsCard } from "./PaymentsCard";
+import { PaymentsPanel } from "./PaymentsCard";
 import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
 import { BalanceText } from "@/components/admin/ui";
-import { currencyLabel, customerGoodsOf, customerShippingOf, customerTotalOf, formatMoney, orderBalance, paidOf, supplierTotalOf, type CurrencyCode, type OrderSides } from "@/lib/money";
+import { balanceOf, currencyLabel, customerGoodsOf, customerShippingOf, customerTotalOf, formatMoney, orderBalance, paidOf, shopPaidOf, shopPaidRateOf, supplierTotalOf, type CurrencyCode, type OrderSides } from "@/lib/money";
 import { StageUpdateForm, type ContainerOption } from "./StageUpdateForm";
 import { PackageFields } from "@/components/admin/PackageFields";
 import { deleteItemImage, uploadItemImages } from "../image-actions";
@@ -133,12 +133,13 @@ function ProductLink({ href }: { href: string }) {
 // แสดงข้อมูล 1 ช่อง (ไม่มีค่า = ขีด)
 // กรอบย่อยในข้อมูลออเดอร์ (หัวข้อ + ช่องข้อมูล 3 คอลัมน์) — กรอบสรุปยอดชำระพื้นสีอ่อนให้เห็นเด่น
 // tone: money = ยอดที่คิดลูกค้า (เหลือง) · cost = ยอดที่จ่ายร้านค้า (เขียว)
-function InfoSection({ title, tone, children }: { title: string; tone?: "money" | "cost"; children: React.ReactNode }) {
+function InfoSection({ title, tone, children, footer }: { title: string; tone?: "money" | "cost"; children: React.ReactNode; footer?: React.ReactNode }) {
   const toneClass = tone === "money" ? "border-accent-300 bg-accent-300/10" : tone === "cost" ? "border-emerald-300 bg-emerald-50" : "border-gray-200";
   return (
     <section className={`rounded-lg border p-4 ${toneClass}`}>
       <h3 className="mb-3 text-sm font-semibold text-gray-800">{title}</h3>
       <dl className="grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2 lg:grid-cols-3">{children}</dl>
+      {footer}
     </section>
   );
 }
@@ -247,7 +248,8 @@ export default async function OrderPage({ params, searchParams }: Props) {
   const sp = await searchParams;
   const editing = sp.edit === "1";
   // ?pay=1 = เพิ่ม/ลบการชำระเงินในหน้าดูออเดอร์ (ไม่อยู่ในหน้าแก้ไขออเดอร์)
-  const editingPayments = sp.pay === "1";
+  // ?pay=in = แก้รายการรับเงินจากลูกค้า · ?pay=out = แก้รายการจ่ายร้านค้า (pay=1 เดิม = in)
+  const payEditing = sp.pay === "out" ? "out" : sp.pay === "in" || sp.pay === "1" ? "in" : null;
   const order = await db.query.orders.findFirst({
     where: eq(orders.id, Number(id)),
     // รูปสินค้าโหลดแค่ id (ตัวรูปดึงผ่าน /admin/item-image/<id>)
@@ -255,6 +257,10 @@ export default async function OrderPage({ params, searchParams }: Props) {
   });
   if (!order) notFound();
   const customers = await listCustomersForPicker();
+  // เงินเข้า (ลูกค้าโอน) / เงินออก (จ่ายร้าน) · เรทที่เราจ่าย = ที่กรอกในออเดอร์ หรือเรทเฉลี่ยจากรายการจ่ายร้าน
+  const inPayments = order.payments.filter((p) => p.direction !== "out");
+  const shopPaid = shopPaidOf(order.payments);
+  const costRate = order.costRate ?? shopPaidRateOf(order.payments);
 
   // ตู้ที่ยังไม่ถึงไทย ให้เลือกในรายการตู้ (ตู้ของวิธีขนส่งเดียวกันขึ้นก่อน)
   const openContainers = await db.query.containers.findMany({
@@ -376,19 +382,26 @@ export default async function OrderPage({ params, searchParams }: Props) {
             </InfoSection>
 
             {/* ยอดเงิน 2 ฝั่ง: จ่ายร้านค้า (ต้นทุน) กับ คิดลูกค้า — ราคาและเรทไม่เท่ากัน */}
-            <InfoSection title="ยอดที่จ่ายร้านค้า" tone="cost">
+            <InfoSection title="ยอดที่จ่ายร้านค้า" tone="cost" footer={<PaymentsPanel order={order} payments={order.payments} direction="out" editing={payEditing === "out"} />}>
               <Info label="ค่าสินค้า (จ่ายร้าน)">{order.totalAmount != null && formatMoney(order.totalAmount, order.currency)}</Info>
               <Info label="ค่าขนส่งภายในจีน (จ่ายร้าน)">{order.chinaShippingFee != null && formatMoney(order.chinaShippingFee, order.currency)}</Info>
               <Info label="รวมจ่ายร้าน">{supplierTotalOf(order) != null && <b>{formatMoney(supplierTotalOf(order), order.currency)}</b>}</Info>
               {order.currency === "CNY" && (
                 <>
-                  <Info label="เรทที่เราจ่าย">{order.costRate != null && `${order.costRate} บาท / หยวน`}</Info>
-                  <Info label="คิดเป็นเงินบาท">{toThb(supplierTotalOf(order), order.costRate, order.currency) != null && formatMoney(toThb(supplierTotalOf(order), order.costRate, order.currency), "THB")}</Info>
+                  <Info label="เรทที่เราจ่าย">
+                    {costRate != null && `${costRate} บาท / หยวน`}
+                    {order.costRate == null && costRate != null && <span className="ml-1 text-xs text-gray-500">(เฉลี่ยจากรายการจ่าย)</span>}
+                  </Info>
+                  <Info label="คิดเป็นเงินบาท">{toThb(supplierTotalOf(order), costRate, order.currency) != null && formatMoney(toThb(supplierTotalOf(order), costRate, order.currency), "THB")}</Info>
                 </>
               )}
+              <Info label="จ่ายร้านแล้ว">{shopPaid != null && formatMoney(shopPaid, order.currency)}</Info>
+              <Info label="ค้างจ่ายร้าน">
+                {shopPaid != null && supplierTotalOf(order) != null && <BalanceText balance={balanceOf(supplierTotalOf(order), shopPaid)} currency={order.currency} />}
+              </Info>
             </InfoSection>
 
-            <InfoSection title="ยอดที่คิดลูกค้า" tone="money">
+            <InfoSection title="ยอดที่คิดลูกค้า" tone="money" footer={<PaymentsPanel order={order} payments={order.payments} direction="in" editing={payEditing === "in"} />}>
               <Info label={order.customerGoodsAmount == null && order.handlingFeePct > 0 ? `ค่าสินค้า (คิดลูกค้า · รวมค่าดำเนินการ ${order.handlingFeePct}%)` : "ค่าสินค้า (คิดลูกค้า)"}>
                 {customerGoodsOf(order) != null && formatMoney(customerGoodsOf(order), order.currency)}
               </Info>
@@ -401,7 +414,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
                 </>
               )}
               {/* ยอดที่จ่ายแล้ว/ค้างชำระ คิดจากรายการชำระเงิน (ออเดอร์เก่าที่ยังไม่มีรายการ ใช้ช่องมัดจำ) */}
-              <Info label={order.payments.length || order.balancePaidAmount != null ? "ชำระแล้ว" : "มัดจำค่าสินค้า"}>
+              <Info label={inPayments.length || order.balancePaidAmount != null ? "ชำระแล้ว" : "มัดจำค่าสินค้า"}>
                 {paidOf(order, order.payments) != null && formatMoney(paidOf(order, order.payments), order.currency)}
               </Info>
               <Info label="ยอดค้างชำระ">
@@ -409,7 +422,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
               </Info>
               {/* เฉพาะแอดมิน: กำไร = ยอดที่คิดลูกค้า (บาท) − ยอดที่จ่ายร้าน (บาท) */}
               {user.role === "admin" && (<Info label="กำไร / ส่วนต่าง">
-                <ProfitText order={order} />
+                <ProfitText order={{ ...order, costRate }} />
               </Info>)}
             </InfoSection>
 
@@ -420,7 +433,6 @@ export default async function OrderPage({ params, searchParams }: Props) {
           </div>
         </Card>
 
-        <PaymentsCard order={order} payments={order.payments} editing={editingPayments} />
 
         <Card title={`รายการสินค้า (${order.items.length}) · ส่งแล้ว ${summary.deliveredCount}/${summary.itemCount}`}>
           {order.items.length === 0 ? (
@@ -547,7 +559,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
             // ค่าสินค้าตามตารางรายการสินค้า (ถ้ามีราคา) — ช่องในฟอร์มเป็นแบบอ่านอย่างเดียว
             order={{ ...order, totalAmount: itemTotals.buy ?? order.totalAmount, customerGoodsAmount: itemTotals.sell ?? order.customerGoodsAmount }}
             customers={customers}
-            paymentsLinked={order.payments.length > 0}
+            paymentsLinked={order.payments.some((p) => p.direction !== "out")}
             goodsFromItems={{ buy: order.items.some((i) => i.unitPrice != null), sell: order.items.some((i) => i.sellPrice != null) }}
             shipping={
               order.items.length > 0 && (

@@ -33,7 +33,7 @@ export default async function OrdersPage({ searchParams }: Props) {
       : undefined,
     orderBy: desc(orders.createdAt),
     limit: 200,
-    with: { items: { with: { container: true, packages: { columns: { chinaTrackingNo: true } } } }, payments: { columns: { appliedAmount: true } } },
+    with: { items: { with: { container: true, packages: { columns: { chinaTrackingNo: true } } } }, payments: { columns: { appliedAmount: true, amount: true, currency: true, direction: true } } },
   });
 
   const rows = list

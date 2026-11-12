@@ -57,7 +57,10 @@ export function customerTotalOf(o: OrderSides): number | null {
 }
 
 // ยังไม่มีรายการชำระเงิน = มัดจำ + ชำระยอดที่เหลือ (ว่างทั้งคู่ = ไม่รู้)
-export function paidOf(order: { depositAmount: number | null; balancePaidAmount: number | null }, payments: { appliedAmount: number }[]): number | null {
+type PaymentLike = { appliedAmount: number; direction: string };
+export function paidOf(order: { depositAmount: number | null; balancePaidAmount: number | null }, allPayments: PaymentLike[]): number | null {
+  // นับเฉพาะเงินที่ลูกค้าโอนเข้า (ไม่นับที่เราจ่ายร้าน)
+  const payments = allPayments.filter((p) => p.direction !== "out");
   if (payments.length === 0) {
     if (order.depositAmount == null && order.balancePaidAmount == null) return null;
     return Math.round(((order.depositAmount ?? 0) + (order.balancePaidAmount ?? 0)) * 100) / 100;
@@ -68,7 +71,7 @@ export function paidOf(order: { depositAmount: number | null; balancePaidAmount:
 // ยอดค้างชำระ = รวมเป็นเงินทั้งสิ้นที่คิดลูกค้า − ยอดที่จ่ายแล้ว
 export function orderBalance(
   order: OrderSides & { depositAmount: number | null; balancePaidAmount: number | null },
-  payments: { appliedAmount: number }[],
+  payments: PaymentLike[],
 ): number | null {
   return balanceOf(customerTotalOf(order), paidOf(order, payments));
 }
@@ -91,4 +94,16 @@ export function orderProfit(o: OrderSides & { currency: CurrencyCode; orderRate:
     sell == null ? "ยังไม่มียอดที่คิดลูกค้า" : cost == null ? "ยังไม่มียอดที่จ่ายร้าน" : sellThb == null ? "ยังไม่ใส่เรทคิดลูกค้า" : costThb == null ? "ยังไม่ใส่เรทที่เราจ่าย" : null;
   const profit = sellThb != null && costThb != null ? r2(sellThb - costThb) : null;
   return { sell, cost, sellThb, costThb, profit, missing };
+}
+
+// เงินที่เราจ่ายร้านค้าแล้ว (สกุลของออเดอร์) และเรทเฉลี่ยที่จ่ายจริง (บาทที่โอน ÷ หยวนที่ได้) — ไม่มีรายการ = null
+export function shopPaidOf(payments: { appliedAmount: number; direction: string }[]): number | null {
+  const out = payments.filter((p) => p.direction === "out");
+  return out.length ? r2(out.reduce((s, p) => s + p.appliedAmount, 0)) : null;
+}
+export function shopPaidRateOf(payments: { amount: number; currency: string; appliedAmount: number; direction: string }[]): number | null {
+  const out = payments.filter((p) => p.direction === "out" && p.currency === "THB" && p.appliedAmount > 0);
+  if (!out.length) return null;
+  const cny = out.reduce((s, p) => s + p.appliedAmount, 0);
+  return Math.round((out.reduce((s, p) => s + p.amount, 0) / cny) * 10000) / 10000;
 }

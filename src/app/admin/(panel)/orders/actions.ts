@@ -434,8 +434,9 @@ export async function addPayment(fd: FormData) {
   const amount = toNum(fd.get("amount"));
   const paymentMethod = text(fd, "method");
   if (!orderId || amount == null || amount <= 0 || !paymentMethod) return;
-  const order = await db.query.orders.findFirst({ where: eq(orders.id, orderId), columns: { currency: true } });
+  const order = await db.query.orders.findFirst({ where: eq(orders.id, orderId), columns: { currency: true, orderRate: true, costRate: true } });
   if (!order) return;
+  const direction = fd.get("direction") === "out" ? ("out" as const) : ("in" as const);
   const c = String(fd.get("currency"));
   const currency: Currency = (currencies as readonly string[]).includes(c) ? (c as Currency) : "THB";
   // ยอดที่คิดเป็นสกุลของออเดอร์: สกุลเดียวกันใช้ยอดเดิม · คนละสกุลแปลงด้วยเรทที่กรอกเอง หรือเรทใบเสนอราคาของวันนี้
@@ -443,13 +444,16 @@ export async function addPayment(fd: FormData) {
   let rate: number | null = null;
   if (currency !== order.currency) {
     const manual = toNum(fd.get("rate"));
-    rate = manual != null && manual > 0 ? manual : (await getQuoteRate()).rate;
+    // เว้นว่าง = เรทของออเดอร์ฝั่งนั้น (รับจากลูกค้า = เรทคิดลูกค้า · จ่ายร้าน = เรทที่เราจ่าย) · ไม่มี = เรทใบเสนอราคาวันนี้
+    const sideRate = direction === "in" ? order.orderRate : order.costRate;
+    rate = manual != null && manual > 0 ? manual : sideRate ?? (await getQuoteRate()).rate;
     if (!rate) return; // ไม่มีเรทวันนี้และไม่ได้กรอกเรท — บันทึกไม่ได้
     rate = Math.round(rate * 10000) / 10000;
     appliedAmount = convertPaid(amount, currency, rate);
   }
   await db.insert(payments).values({
     orderId,
+    direction,
     amount,
     currency,
     appliedAmount,

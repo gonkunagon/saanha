@@ -29,7 +29,7 @@ export default async function CustomerPage({
   const list = await db.query.orders.findMany({
     where: eq(orders.customerId, customer.id),
     orderBy: desc(orders.createdAt),
-    with: { items: { with: { container: true } }, payments: { columns: { appliedAmount: true } } },
+    with: { items: { with: { container: true } }, payments: { columns: { appliedAmount: true, amount: true, currency: true, direction: true } } },
   });
 
   // ยอดสั่งซื้อรวม / ค้างชำระรวม แยกตามสกุลเงิน

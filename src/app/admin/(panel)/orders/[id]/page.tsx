@@ -354,14 +354,44 @@ export default async function OrderPage({ params, searchParams }: Props) {
                 <p className="text-sm text-gray-500">ยังไม่มีรายการสินค้า — กด &quot;แก้ไข&quot; เพื่อเพิ่ม</p>
               ) : (
                 <ul className="divide-y divide-gray-100">
-                  {order.items.map((item) => (
-                    <li key={item.id} className="py-3 first:pt-0 last:pb-0">
-                      <ItemDetails item={item} />
+                  {order.items.map((item, idx) => (
+                    <li key={item.id} className="flex gap-3 py-3 first:pt-0 last:pb-0">
+                      {/* เลือกรายการที่จะอัปเดตสถานะ (ฟอร์มอัปเดตสถานะด้านล่าง) */}
+                      <input
+                        type="checkbox"
+                        name="itemId"
+                        value={item.id}
+                        form={STAGE_FORM}
+                        defaultChecked={stages[idx] !== "delivered"}
+                        className="mt-1 h-5 w-5 shrink-0 accent-brand-600"
+                        aria-label={`เลือก ${item.description}`}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <ItemDetails item={item} />
+                        <div className="mt-1 flex flex-wrap items-center gap-x-3 text-xs text-gray-500">
+                          <StageBadge stage={stages[idx]} />
+                          <span>{formatThaiDateTime(itemStageDates(item, item.container)[stages[idx]])}</span>
+                        </div>
+                      </div>
                     </li>
                   ))}
                 </ul>
               )}
             </section>
+
+            {/* อัปเดตสถานะได้เลยจากหน้านี้ (ไม่ต้องกดแก้ไข) */}
+            {order.items.length > 0 && (
+              <StageUpdateForm
+                key={summary.stage}
+                formId={STAGE_FORM}
+                orderId={order.id}
+                defaultStage={nextStage}
+                defaultAt={nowLocalInputValue()}
+                containerOptions={containerOptions}
+                sharedContainerNote={sharedContainerNote}
+                hasItemsInContainer={order.items.some((i) => i.containerId)}
+              />
+            )}
 
             <InfoSection title="ข้อมูลขนส่ง">
               <Info label="วิธีขนส่ง">{methodLabel(order.method)}</Info>

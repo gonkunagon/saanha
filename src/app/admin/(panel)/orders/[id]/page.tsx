@@ -365,6 +365,24 @@ export default async function OrderPage({ params, searchParams }: Props) {
               <Info label="Platform (ภายใน)">{order.platform}</Info>
             </InfoSection>
 
+            {/* รายการสินค้า (ใต้ข้อมูลลูกค้า) — ตู้และสถานะดูได้ที่ข้อมูลขนส่ง / ป้ายข้างเลขออเดอร์ */}
+            <section className="rounded-lg border border-gray-200 p-4">
+              <h3 className="mb-3 text-sm font-semibold text-gray-800">
+                รายการสินค้า ({order.items.length}) · ส่งแล้ว {summary.deliveredCount}/{summary.itemCount}
+              </h3>
+              {order.items.length === 0 ? (
+                <p className="text-sm text-gray-500">ยังไม่มีรายการสินค้า — กด &quot;แก้ไข&quot; เพื่อเพิ่ม</p>
+              ) : (
+                <ul className="divide-y divide-gray-100">
+                  {order.items.map((item) => (
+                    <li key={item.id} className="py-3 first:pt-0 last:pb-0">
+                      <ItemDetails item={item} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
             <InfoSection title="ข้อมูลขนส่ง">
               <Info label="วิธีขนส่ง">{methodLabel(order.method)}</Info>
               <Info label="ตู้">
@@ -433,21 +451,6 @@ export default async function OrderPage({ params, searchParams }: Props) {
           </div>
         </Card>
 
-
-        <Card title={`รายการสินค้า (${order.items.length}) · ส่งแล้ว ${summary.deliveredCount}/${summary.itemCount}`}>
-          {order.items.length === 0 ? (
-            <p className="text-sm text-gray-500">ยังไม่มีรายการสินค้า — กด &quot;แก้ไข&quot; เพื่อเพิ่ม</p>
-          ) : (
-            <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200">
-              {/* ตู้และสถานะแสดงด้านบนแล้ว (ข้อมูลขนส่ง / ป้ายสถานะข้างเลขออเดอร์) */}
-              {order.items.map((item) => (
-                <li key={item.id} className="p-3">
-                  <ItemDetails item={item} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
 
         <p className="text-xs text-gray-400">
           สร้างเมื่อ {formatThaiDateTime(order.createdAt)} · แก้ไขล่าสุด {formatThaiDateTime(order.updatedAt)}

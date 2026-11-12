@@ -35,10 +35,11 @@ export function CreateOrderForm({ children }: { children: React.ReactNode }) {
           {rows.map((key, i) => (
             <div key={key} className="space-y-2 rounded-lg border border-gray-200 p-3">
               <input type="hidden" name="itemKey" value={key} />
-              <div className="grid gap-2 sm:grid-cols-[3fr_1fr_1fr_auto]">
+              <div className="grid gap-2 sm:grid-cols-[3fr_1fr_1fr_1fr_auto]">
                 <input name="itemDescription" placeholder={`ชื่อสินค้า ${i + 1}`} className="input" required={i === 0} />
                 <input name="itemQuantity" type="number" min={0} placeholder="จำนวน" className="input" />
-                <input name="itemUnitPrice" type="number" step="0.01" min={0} placeholder="ราคาต่อหน่วย" className="input" />
+                <input name="itemUnitPrice" type="number" step="0.01" min={0} placeholder="ราคาซื้อ/หน่วย" className="input" />
+                <input name="itemSellPrice" type="number" step="0.01" min={0} placeholder="ราคาขาย/หน่วย" className="input" />
                 <button
                   type="button"
                   onClick={() => removeRow(key)}

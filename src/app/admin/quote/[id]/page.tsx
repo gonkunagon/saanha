@@ -77,7 +77,8 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
     (order.items.length === 1 && order.totalAmount == null && order.customerGoodsAmount != null && i.quantity ? order.customerGoodsAmount / i.quantity : null);
   const lines = order.items.map((i) => {
     const base = baseUnitPrice(i);
-    const unit = base == null ? null : round2(base * markup);
+    // มีราคาขายต่อหน่วยของรายการ = ใช้ราคานั้นตรงๆ · ไม่มี = ราคาซื้อ × สัดส่วนราคาลูกค้า (หรือ % ค่าดำเนินการ)
+    const unit = i.sellPrice ?? (base == null ? null : round2(base * markup));
     return { item: i, unit, amount: unit == null ? null : round2(unit * (i.quantity ?? 1)) };
   });
   const allPriced = lines.length > 0 && lines.every((l) => l.amount != null);

@@ -126,7 +126,8 @@ export const orderItems = pgTable("order_items", {
   spec: text("spec"), // รายละเอียด / ขนาด / สี ของสินค้า (แสดงในหน้ารายละเอียดสินค้าของใบเสนอราคา)
   productUrl: text("product_url"), // ลิงก์หน้าสินค้า (1688 / Taobao ฯลฯ) ใช้ภายใน เผื่อลูกค้าสั่งซ้ำ — ลูกค้าไม่เห็น
   quantity: integer("quantity"),
-  unitPrice: doublePrecision("unit_price"), // ราคาต่อหน่วย (สกุลเงินเดียวกับค่าสินค้าของออเดอร์) ใช้ในใบเสนอราคา
+  unitPrice: doublePrecision("unit_price"), // ราคาซื้อต่อหน่วย (จ่ายร้าน · สกุลเงินเดียวกับค่าสินค้าของออเดอร์)
+  sellPrice: doublePrecision("sell_price"), // ราคาขายต่อหน่วย (คิดลูกค้า) — ใช้ในใบเสนอราคา
   // ยอดรวมจากพัสดุทุกแถวใน item_packages (คำนวณใหม่ทุกครั้งที่บันทึก)
   boxes: integer("boxes"),
   weightKg: doublePrecision("weight_kg"),

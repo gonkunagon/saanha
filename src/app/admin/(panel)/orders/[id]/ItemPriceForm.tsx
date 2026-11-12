@@ -3,51 +3,60 @@
 import { useEffect, useState, useTransition } from "react";
 import { updateItemPrice } from "../actions";
 
-// แก้ราคาต่อหน่วยในรายการสินค้า — กดบันทึกแล้วขึ้น "บันทึกแล้ว" สักครู่ ให้รู้ว่าบันทึกสำเร็จ
-export function ItemPriceForm({ itemId, unitPrice, placeholder }: { itemId: number; unitPrice: number | null; placeholder: string }) {
+const fmt = (n: number) => n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// ช่องราคาซื้อ / ราคาขาย (ต่อหน่วย) ในตารางรายการสินค้า — แก้แล้วออกจากช่อง (หรือกด Enter) = บันทึกเอง
+// ใต้ช่องแสดงยอดรวมของแถว (จำนวน × ราคา)
+export function ItemPriceCells({ itemId, quantity, unitPrice, sellPrice }: { itemId: number; quantity: number | null; unitPrice: number | null; sellPrice: number | null }) {
+  const [buy, setBuy] = useState(unitPrice == null ? "" : String(unitPrice));
+  const [sell, setSell] = useState(sellPrice == null ? "" : String(sellPrice));
+  const [saved, setSaved] = useState<"unitPrice" | "sellPrice" | null>(null);
   const [pending, startTransition] = useTransition();
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (!saved) return;
-    const t = setTimeout(() => setSaved(false), 3000);
+    const t = setTimeout(() => setSaved(null), 2500);
     return () => clearTimeout(t);
   }, [saved]);
 
-  return (
-    <form
-      action={(fd) =>
-        startTransition(async () => {
-          await updateItemPrice(fd);
-          setSaved(true);
-        })
-      }
-      className="flex items-center gap-1.5"
-    >
-      <input type="hidden" name="itemId" value={itemId} />
-      <label className="text-xs text-gray-500" htmlFor={`price-${itemId}`}>ราคา/หน่วย</label>
-      <span className="w-28">
+  const save = (field: "unitPrice" | "sellPrice", value: string, original: number | null) => {
+    if ((value.trim() === "" ? null : Number(value)) === original) return;
+    const fd = new FormData();
+    fd.set("itemId", String(itemId));
+    fd.set(field, value);
+    startTransition(async () => {
+      await updateItemPrice(fd);
+      setSaved(field);
+    });
+  };
+
+  const cell = (field: "unitPrice" | "sellPrice", value: string, set: (v: string) => void, original: number | null, label: string) => {
+    const amount = value.trim() === "" ? null : Number(value) * (quantity ?? 1);
+    return (
+      <td className="px-3 py-3 align-top">
         <input
-          id={`price-${itemId}`}
-          name="unitPrice"
           type="number"
           step="0.01"
           min={0}
-          defaultValue={unitPrice ?? ""}
-          placeholder={placeholder}
-          onChange={() => setSaved(false)}
-          className="input py-1 text-sm"
+          value={value}
+          onChange={(e) => set(e.target.value)}
+          onBlur={() => save(field, value, original)}
+          onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), e.currentTarget.blur())}
+          disabled={pending}
+          aria-label={label}
+          className="input py-1 text-right text-sm"
         />
-      </span>
-      <button
-        disabled={pending}
-        className="rounded border border-brand-600 px-2 py-1 text-xs font-medium text-brand-600 hover:bg-brand-50 disabled:opacity-50"
-      >
-        {pending ? "กำลังบันทึก…" : "บันทึก"}
-      </button>
-      {saved && (
-        <span role="status" className="text-xs font-medium whitespace-nowrap text-green-700">✓ บันทึกสำเร็จ</span>
-      )}
-    </form>
+        <p className="mt-1 text-right text-xs text-gray-500">
+          {saved === field ? <span className="font-medium text-green-700">✓ บันทึกแล้ว</span> : amount != null && !Number.isNaN(amount) ? `รวม ${fmt(amount)}` : " "}
+        </p>
+      </td>
+    );
+  };
+
+  return (
+    <>
+      {cell("unitPrice", buy, setBuy, unitPrice, "ราคาซื้อต่อหน่วย")}
+      {cell("sellPrice", sell, setSell, sellPrice, "ราคาขายต่อหน่วย")}
+    </>
   );
 }

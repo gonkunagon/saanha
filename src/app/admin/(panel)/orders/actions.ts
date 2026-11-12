@@ -163,6 +163,7 @@ export async function createOrder(_prev: string | null, fd: FormData): Promise<s
           productUrl: url(fd.getAll("itemProductUrl")[i]),
           quantity: toInt(fd.getAll("itemQuantity")[i]),
           unitPrice: toNum(fd.getAll("itemUnitPrice")[i]),
+          sellPrice: toNum(fd.getAll("itemSellPrice")[i]),
           ...packageTotals(packages),
         },
         packages,
@@ -266,9 +267,16 @@ export async function addItem(fd: FormData) {
 
 // แก้ไขรายละเอียด/วันที่ของรายการ (ใช้แก้ข้อมูลผิด)
 // แก้แค่ราคาต่อหน่วย (ช่องในรายการสินค้าหน้าแก้ไขออเดอร์) — เว้นว่าง = ลบราคา
+// ราคาซื้อ / ราคาขายต่อหน่วย (ส่งมาเฉพาะช่องที่แก้)
 export async function updateItemPrice(fd: FormData) {
   await requireUser();
-  await db.update(orderItems).set({ unitPrice: toNum(fd.get("unitPrice")) }).where(eq(orderItems.id, Number(fd.get("itemId"))));
+  await db
+    .update(orderItems)
+    .set({
+      unitPrice: fd.has("unitPrice") ? toNum(fd.get("unitPrice")) : undefined,
+      sellPrice: fd.has("sellPrice") ? toNum(fd.get("sellPrice")) : undefined,
+    })
+    .where(eq(orderItems.id, Number(fd.get("itemId"))));
   refresh();
 }
 

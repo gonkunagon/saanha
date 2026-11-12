@@ -116,6 +116,20 @@
       "out_for_delivery": "Out for delivery",
       "delivered": "Delivered"
     },
+    "stageNotes": {
+      "ordered": "We have received your order and are placing it with the Chinese supplier",
+      "in_production": "The supplier is producing your goods",
+      "china_warehouse": "Our China warehouse has received and checked your goods",
+      "china_warehouseBoxes": "Our China warehouse has received {boxes} boxes and checked them",
+      "loaded": "Your goods are loaded into a container, waiting to depart",
+      "loadedContainer": "Your goods are loaded into container {container}, waiting to depart",
+      "departed": "The container has departed {method}, about {days} days",
+      "customs": "The container has reached the Thai border and is clearing customs",
+      "thai_warehouse": "Your goods have arrived at our Thailand warehouse and are being prepared for delivery",
+      "out_for_delivery": "Your goods are on the way to your delivery address",
+      "delivered": "Delivered. Thank you for choosing SAANHA"
+    },
+    "stageMethods": {"truck": "by truck", "sea": "by sea"},
     "help": "Questions about your shipment? Contact us on LINE"
   },
   "kb": {

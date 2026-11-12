@@ -8,13 +8,31 @@ import { formatThaiDateTime } from "@/lib/datetime";
 import { site } from "@/config/site";
 import { CheckIcon } from "./icons";
 import { StageScene } from "./StageScene";
+import { transitDays } from "@/config/rates";
+import type { ItemStage } from "@/lib/stages";
+
+// ข้อความอธิบายใต้หัวข้อของขั้นที่ผ่านแล้ว — เติมจำนวนกล่อง / เลขตู้ / วิธีขนส่ง / ระยะเวลา จากข้อมูลจริง
+function stageNote(stage: ItemStage, group: TrackingGroup, method: string, t: Dictionary["track"]): string {
+  const n = t.stageNotes;
+  const fill = (text: string, vars: Record<string, string | number>) => text.replace(/{(w+)}/g, (_, k) => String(vars[k] ?? ""));
+  if (stage === "china_warehouse") {
+    const boxes = group.items.reduce((sum, i) => sum + (i.boxes ?? 0), 0);
+    return boxes > 0 ? fill(n.china_warehouseBoxes, { boxes }) : n.china_warehouse;
+  }
+  if (stage === "loaded") return group.container ? fill(n.loadedContainer, { container: group.container.code }) : n.loaded;
+  if (stage === "departed") {
+    const m = method === "sea" ? "sea" : "truck";
+    return fill(n.departed, { method: t.stageMethods[m], days: transitDays[m] });
+  }
+  return n[stage];
+}
 
 type Status = "idle" | "loading" | "notFound" | "tooMany" | "error";
 
 type Props = { locale: Locale; t: Dictionary["track"]; cal: Dictionary["calculator"] };
 
 // ไทม์ไลน์ของสินค้าแต่ละตู้
-function Timeline({ group, locale, t }: { group: TrackingGroup; locale: Locale; t: Dictionary["track"] }) {
+function Timeline({ group, method, locale, t }: { group: TrackingGroup; method: string; locale: Locale; t: Dictionary["track"] }) {
   const doneCount = group.stages.filter((s) => s.at).length;
   return (
     <ol>
@@ -41,6 +59,7 @@ function Timeline({ group, locale, t }: { group: TrackingGroup; locale: Locale; 
                 {t.stages[s.stage]}
               </p>
               <p className="text-sm text-gray-500">{s.at ? formatThaiDateTime(new Date(s.at), locale) : t.waiting}</p>
+              {done && <p className="mt-0.5 text-sm text-gray-600">{stageNote(s.stage, group, method, t)}</p>}
             </div>
           </li>
         );
@@ -162,7 +181,7 @@ export function TrackingForm({ locale, t, cal }: Props) {
                   ))}
                 </ul>
               </div>
-              <Timeline group={g} locale={locale} t={t} />
+              <Timeline group={g} method={g.container?.method ?? order.method} locale={locale} t={t} />
             </div>
           ))}
         </div>

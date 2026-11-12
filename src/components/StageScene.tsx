@@ -5,7 +5,6 @@ import type { ItemStage } from "@/lib/stages";
 // ขั้น "ออกจากจีน" เลือกรถ / เรือ ตามวิธีขนส่ง · ผู้ใช้ที่ตั้งค่าลดภาพเคลื่อนไหว ภาพจะนิ่ง
 
 const R = "#b91c1c"; // brand-600
-const RL = "#fde8eb";
 const INK = "#2b2d31";
 const G = "#e9eaec";
 const G2 = "#c9ccd1";
@@ -247,21 +246,21 @@ function Scene({ stage, sea, clipId }: { stage: ItemStage; sea: boolean; clipId:
   }
 }
 
-export function StageScene({ stage, method, label }: { stage: ItemStage; method: string; label: string }) {
+// ภาพขนาดเล็ก วางบนแถบสีแดงหัวผลการค้นหา (วงกลมพื้นขาว)
+export function StageScene({ stage, method, label, className = "" }: { stage: ItemStage; method: string; label: string; className?: string }) {
   const clipId = `ss-clip-${useId().replace(/:/g, "")}`;
   return (
-    <figure className="mb-5 rounded-xl bg-gray-50 px-4 pt-3 pb-4 text-center">
+    <>
       <style href="stage-scene" precedence="default">{css}</style>
-      <svg viewBox="0 0 240 150" className="ss mx-auto block h-auto w-full max-w-xs" role="img" aria-label={label}>
+      <svg viewBox="30 8 180 136" className={`ss ${className}`} role="img" aria-label={label}>
         <defs>
           <clipPath id={clipId}>
             <circle cx="120" cy="78" r="62" />
           </clipPath>
         </defs>
-        <circle cx="120" cy="78" r="62" fill={stage === "delivered" ? "#e3f5ec" : RL} />
+        <circle cx="120" cy="78" r="62" fill={stage === "delivered" ? "#e3f5ec" : "#ffffff"} />
         <Scene stage={stage} sea={method === "sea"} clipId={clipId} />
       </svg>
-      <figcaption className="mt-1 font-semibold text-brand-700">{label}</figcaption>
-    </figure>
+    </>
   );
 }

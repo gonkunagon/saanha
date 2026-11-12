@@ -113,12 +113,16 @@ export function TrackingForm({ locale, t, cal }: Props) {
       {order && (
         <div className="space-y-4">
           <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-            <div className="bg-gradient-to-r from-brand-700 to-brand-500 px-6 py-5 text-white">
-              <p className="text-sm text-brand-100">{t.trackingNo}</p>
-              <p className="text-2xl font-bold tracking-wide">{order.code}</p>
-              <p className="mt-3 inline-block rounded-full bg-accent-400 px-3 py-1 text-sm font-semibold text-brand-800">
-                {t.currentStatus}: {t.stages[order.stage]}
-              </p>
+            <div className="flex items-center justify-between gap-4 bg-gradient-to-r from-brand-700 to-brand-500 px-6 py-5 text-white">
+              <div>
+                <p className="text-sm text-brand-100">{t.trackingNo}</p>
+                <p className="text-2xl font-bold tracking-wide">{order.code}</p>
+                <p className="mt-3 inline-block rounded-full bg-accent-400 px-3 py-1 text-sm font-semibold text-brand-800">
+                  {t.currentStatus}: {t.stages[order.stage]}
+                </p>
+              </div>
+              {/* ภาพเคลื่อนไหวของสถานะล่าสุด */}
+              <StageScene stage={order.stage} method={order.method} label={t.stages[order.stage]} className="h-20 w-auto shrink-0 sm:h-24" />
             </div>
             <dl className="grid grid-cols-3 gap-4 px-6 py-4 text-sm">
               <div>
@@ -158,11 +162,6 @@ export function TrackingForm({ locale, t, cal }: Props) {
                   ))}
                 </ul>
               </div>
-              {(() => {
-                // ภาพเคลื่อนไหวของสถานะล่าสุดในตู้นี้ (ยังไม่มีขั้นไหน = รับออเดอร์)
-                const current = [...g.stages].reverse().find((s) => s.at)?.stage ?? "ordered";
-                return <StageScene stage={current} method={g.container?.method ?? order.method} label={t.stages[current]} />;
-              })()}
               <Timeline group={g} locale={locale} t={t} />
             </div>
           ))}

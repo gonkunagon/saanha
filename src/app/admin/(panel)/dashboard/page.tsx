@@ -74,7 +74,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <Stat label="ยอดขาย (คิดลูกค้า)" value={baht(sales)} />
         <Stat label="ต้นทุน (จ่ายร้าน)" value={baht(cost)} />
         <Stat label="กำไร" value={baht(profit)} note={margin == null ? undefined : `อัตรากำไร ${margin.toFixed(1)}%`} tone={profit < 0 ? "loss" : "profit"} />
-        <Stat label="ยอดค้างชำระ" value={baht(owingThb)} note={`${owing.length} ออเดอร์`} tone={owing.length ? "warn" : undefined} />
+        <Stat
+          label="ยอดค้างชำระ"
+          value={baht(owingThb)}
+          note={`${owing.length} ออเดอร์${owing.some((r) => r.balanceThb == null) ? " (บางออเดอร์ยังไม่มีเรท ไม่ได้รวมเป็นบาท)" : ""}`}
+          tone={owing.length ? "warn" : undefined}
+        />
       </div>
 
       {incomplete.length > 0 && (

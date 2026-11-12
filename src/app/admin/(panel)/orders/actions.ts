@@ -147,6 +147,7 @@ function orderFields(fd: FormData) {
     orderRate: fd.has("orderRate") ? toNum(fd.get("orderRate")) : undefined,
     method: method(fd),
     provider: text(fd, "provider"),
+    deliveryAddress: fd.has("deliveryAddress") ? text(fd, "deliveryAddress") : undefined,
     note: text(fd, "note"),
     internalNote: text(fd, "internalNote"),
   };

@@ -72,6 +72,9 @@ export function OrderFields({
       <Field label="บริษัทขนส่งที่รับงานต่อ">
         <input name="provider" defaultValue={order?.provider ?? ""} className="input" />
       </Field>
+      <Field label="ที่อยู่จัดส่งสินค้า" className="sm:col-span-2">
+        <textarea name="deliveryAddress" rows={2} defaultValue={order?.deliveryAddress ?? ""} placeholder="เว้นว่าง = ใช้ที่อยู่ในข้อมูลลูกค้า" className="input" />
+      </Field>
       {shipping}
       <Field label="หมายเหตุถึงลูกค้า (แสดงในหน้าติดตามพัสดุ)" className="sm:col-span-2">
         <textarea name="note" rows={2} defaultValue={order?.note ?? ""} className="input" />

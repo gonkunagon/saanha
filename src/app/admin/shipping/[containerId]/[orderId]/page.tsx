@@ -95,7 +95,7 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
             <InfoBox title="รายละเอียดการขนส่ง / Shipment">
               <p><span className="inline-block w-28 text-gray-500">เลขคำสั่งซื้อ</span>{order.purchaseOrderNo ?? "-"}</p>
               <p><span className="inline-block w-28 text-gray-500">ตู้</span>{container.code}</p>
-              <p className="flex"><span className="w-28 shrink-0 text-gray-500">ที่อยู่ในการจัดส่ง</span><span className="whitespace-pre-line">{c?.address || "-"}</span></p>
+              <p className="flex"><span className="w-28 shrink-0 text-gray-500">ที่อยู่ในการจัดส่ง</span><span className="whitespace-pre-line">{order.deliveryAddress || c?.address || "-"}</span></p>
             </InfoBox>
           </div>
 

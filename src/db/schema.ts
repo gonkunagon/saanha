@@ -107,6 +107,8 @@ export const orders = pgTable("orders", {
   shippingRate: doublePrecision("shipping_rate"),
   quoteRate: doublePrecision("quote_rate"),
   provider: text("provider"),
+  // ที่อยู่จัดส่งสินค้าของออเดอร์นี้ — ว่าง = ใช้ที่อยู่ในข้อมูลลูกค้า
+  deliveryAddress: text("delivery_address"),
   externalId: text("external_id"),
   note: text("note"), // หมายเหตุที่ลูกค้าเห็นในหน้าติดตามพัสดุ
   internalNote: text("internal_note"), // หมายเหตุภายใน ลูกค้าไม่เห็น

@@ -233,7 +233,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
   const order = await db.query.orders.findFirst({
     where: eq(orders.id, Number(id)),
     // รูปสินค้าโหลดแค่ id (ตัวรูปดึงผ่าน /admin/item-image/<id>)
-    with: { items: { with: { container: true, packages: true, images: { columns: { id: true } } } }, payments: true },
+    with: { items: { with: { container: true, packages: true, images: { columns: { id: true } } } }, payments: true, customer: { columns: { address: true } } },
   });
   if (!order) notFound();
   const customers = await listCustomersForPicker();
@@ -377,6 +377,11 @@ export default async function OrderPage({ params, searchParams }: Props) {
                 {order.items.length > 0 && order.items.every((i) => !i.container) && <span className="text-gray-400">ยังไม่เข้าตู้</span>}
               </Info>
               <Info label="บริษัทขนส่งที่รับงานต่อ">{order.provider}</Info>
+              {/* ที่อยู่ของออเดอร์นี้ ไม่ได้กรอก = ที่อยู่ในข้อมูลลูกค้า */}
+              <Info label="ที่อยู่จัดส่งสินค้า" wide>
+                {order.deliveryAddress || order.customer?.address}
+                {!order.deliveryAddress && order.customer?.address && <span className="ml-1 text-xs text-gray-500">(จากข้อมูลลูกค้า)</span>}
+              </Info>
             </InfoSection>
 
             {/* ยอดเงิน 2 ฝั่ง: จ่ายร้านค้า (ต้นทุน) กับ คิดลูกค้า — ราคาและเรทไม่เท่ากัน */}

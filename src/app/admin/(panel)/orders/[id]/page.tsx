@@ -16,7 +16,7 @@ import { ItemPriceCells } from "./ItemPriceForm";
 import { PaymentsPanel } from "./PaymentsCard";
 import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
 import { BalanceText } from "@/components/admin/ui";
-import { balanceOf, currencyLabel, customerGoodsOf, customerShippingOf, customerTotalOf, formatMoney, orderBalance, paidOf, shopPaidOf, shopPaidRateOf, supplierTotalOf, type CurrencyCode, type OrderSides } from "@/lib/money";
+import { balanceOf, currencyLabel, customerGoodsOf, customerShippingOf, customerTotalOf, formatMoney, orderBalance, paidOf, shopPaidOf, shopPaidRateOf, supplierTotalOf, type CurrencyCode } from "@/lib/money";
 import { StageUpdateForm, type ContainerOption } from "./StageUpdateForm";
 import { PackageFields } from "@/components/admin/PackageFields";
 import { deleteItemImage, uploadItemImages } from "../image-actions";
@@ -148,26 +148,6 @@ function InfoSection({ title, tone, children, footer }: { title: string; tone?: 
 const toThb = (amount: number | null, rate: number | null, currency: CurrencyCode) =>
   amount == null ? null : currency === "THB" ? amount : rate != null ? Math.round(amount * rate * 100) / 100 : null;
 
-// กำไร (บาท) = ยอดที่คิดลูกค้าเป็นบาท (เรทลูกค้า) − ยอดที่จ่ายร้านเป็นบาท (เรทที่เราจ่าย)
-function ProfitText({ order }: { order: OrderSides & { currency: CurrencyCode; orderRate: number | null; costRate: number | null } }) {
-  const sell = customerTotalOf(order);
-  const cost = supplierTotalOf(order);
-  if (sell == null || cost == null) return null;
-  const sellThb = toThb(sell, order.orderRate, order.currency);
-  const costThb = toThb(cost, order.costRate, order.currency);
-  if (sellThb == null || costThb == null) {
-    // ยังไม่ครบเรท: แสดงส่วนต่างเป็นหยวนไปก่อน
-    return (
-      <span className="font-semibold text-emerald-700">
-        {formatMoney(Math.round((sell - cost) * 100) / 100, order.currency)}
-        <span className="ml-1 text-xs font-normal text-amber-700">(ใส่{order.orderRate == null ? "เรทคิดลูกค้า" : "เรทที่เราจ่าย"}เพื่อคิดเป็นบาท)</span>
-      </span>
-    );
-  }
-  const profit = Math.round((sellThb - costThb) * 100) / 100;
-  return <span className={`font-semibold ${profit < 0 ? "text-brand-700" : "text-emerald-700"}`}>{formatMoney(profit, "THB")}</span>;
-}
-
 function Info({ label, children, wide }: { label: string; children: React.ReactNode; wide?: boolean }) {
   const empty = children == null || children === "" || children === false;
   return (
@@ -243,7 +223,7 @@ type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ edit?: s
 
 // ปกติแสดงข้อมูลอย่างเดียว · กด "แก้ไข" (?edit=1) จึงเปิดฟอร์มอัปเดตสถานะ / เพิ่ม-แก้รายการ / แก้ข้อมูลออเดอร์
 export default async function OrderPage({ params, searchParams }: Props) {
-  const user = await requireUser();
+  await requireUser();
   const { id } = await params;
   const sp = await searchParams;
   const editing = sp.edit === "1";
@@ -438,10 +418,6 @@ export default async function OrderPage({ params, searchParams }: Props) {
               <Info label="ยอดค้างชำระ">
                 <BalanceText balance={orderBalance(order, order.payments)} currency={order.currency} />
               </Info>
-              {/* เฉพาะแอดมิน: กำไร = ยอดที่คิดลูกค้า (บาท) − ยอดที่จ่ายร้าน (บาท) */}
-              {user.role === "admin" && (<Info label="กำไร / ส่วนต่าง">
-                <ProfitText order={{ ...order, costRate }} />
-              </Info>)}
             </InfoSection>
 
             <dl className="grid gap-x-6 gap-y-4 px-1 text-sm sm:grid-cols-2 lg:grid-cols-3">

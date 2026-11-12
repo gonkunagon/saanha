@@ -111,6 +111,21 @@ async function savePackages(tx: Tx, itemId: number, pkgs: PackageRow[]) {
 
 // ---- ออเดอร์ ----
 
+// ค่าสินค้าของออเดอร์ตามตารางรายการสินค้า: มีราคาซื้อสักรายการ → ค่าสินค้า (จ่ายร้าน) = Σ จำนวน × ราคาซื้อ
+// มีราคาขายสักรายการ → ค่าสินค้า (คิดลูกค้า) = Σ จำนวน × ราคาขาย · ไม่มีราคาเลย = ไม่แตะ (ใช้ยอดที่กรอกในฟอร์ม)
+async function syncGoodsFromItems(tx: Tx, orderId: number) {
+  const items = await tx
+    .select({ quantity: orderItems.quantity, unitPrice: orderItems.unitPrice, sellPrice: orderItems.sellPrice })
+    .from(orderItems)
+    .where(eq(orderItems.orderId, orderId));
+  const sum = (pick: (i: (typeof items)[number]) => number | null) =>
+    items.some((i) => pick(i) != null) ? Math.round(items.reduce((s, i) => s + (pick(i) ?? 0) * (i.quantity ?? 1), 0) * 100) / 100 : undefined;
+  const totalAmount = sum((i) => i.unitPrice);
+  const customerGoodsAmount = sum((i) => i.sellPrice);
+  if (totalAmount === undefined && customerGoodsAmount === undefined) return;
+  await tx.update(orders).set({ totalAmount, customerGoodsAmount }).where(eq(orders.id, orderId));
+}
+
 function orderFields(fd: FormData) {
   return {
     purchaseOrderNo: text(fd, "purchaseOrderNo"),
@@ -184,6 +199,7 @@ export async function createOrder(_prev: string | null, fd: FormData): Promise<s
           const [created] = await tx.insert(orderItems).values({ ...item, orderId: row.id }).returning({ id: orderItems.id });
           await savePackages(tx, created.id, packages);
         }
+        await syncGoodsFromItems(tx, row.id);
         return row.id;
       });
     } catch (err) {
@@ -220,6 +236,8 @@ export async function updateOrder(fd: FormData) {
         .set({ ...packageTotals(packages), containerId: container?.id ?? null })
         .where(eq(orderItems.id, itemId));
     }
+    // รายการสินค้ามีราคาแล้ว = ค่าสินค้าตามตาราง (ช่องในฟอร์มเป็นแบบอ่านอย่างเดียว)
+    await syncGoodsFromItems(tx, id);
   });
   refresh();
   redirect(`/admin/orders/${id}`); // บันทึกแล้วกลับไปหน้าแสดงข้อมูล
@@ -261,6 +279,7 @@ export async function addItem(fd: FormData) {
       })
       .returning({ id: orderItems.id });
     await savePackages(tx, created.id, packages);
+    await syncGoodsFromItems(tx, Number(fd.get("orderId")));
   });
   refresh();
 }
@@ -270,13 +289,17 @@ export async function addItem(fd: FormData) {
 // ราคาซื้อ / ราคาขายต่อหน่วย (ส่งมาเฉพาะช่องที่แก้)
 export async function updateItemPrice(fd: FormData) {
   await requireUser();
-  await db
-    .update(orderItems)
-    .set({
-      unitPrice: fd.has("unitPrice") ? toNum(fd.get("unitPrice")) : undefined,
-      sellPrice: fd.has("sellPrice") ? toNum(fd.get("sellPrice")) : undefined,
-    })
-    .where(eq(orderItems.id, Number(fd.get("itemId"))));
+  await db.transaction(async (tx) => {
+    const [item] = await tx
+      .update(orderItems)
+      .set({
+        unitPrice: fd.has("unitPrice") ? toNum(fd.get("unitPrice")) : undefined,
+        sellPrice: fd.has("sellPrice") ? toNum(fd.get("sellPrice")) : undefined,
+      })
+      .where(eq(orderItems.id, Number(fd.get("itemId"))))
+      .returning({ orderId: orderItems.orderId });
+    if (item) await syncGoodsFromItems(tx, item.orderId);
+  });
   refresh();
 }
 
@@ -298,6 +321,8 @@ export async function updateItem(fd: FormData) {
         // วันที่ของสถานะ + เลขพัสดุในไทย ไม่แก้ที่นี่ (อัปเดตผ่าน applyStage) — ไม่ส่งมา = คงค่าเดิม
       })
       .where(eq(orderItems.id, itemId));
+    const [row] = await tx.select({ orderId: orderItems.orderId }).from(orderItems).where(eq(orderItems.id, itemId));
+    if (row) await syncGoodsFromItems(tx, row.orderId);
   });
   refresh();
 }
@@ -309,7 +334,8 @@ export async function deleteItem(fd: FormData) {
     await rememberDeletedImports(tx, eq(itemPackages.itemId, itemId));
     await tx.delete(itemPackages).where(eq(itemPackages.itemId, itemId));
     await tx.delete(itemImages).where(eq(itemImages.itemId, itemId));
-    await tx.delete(orderItems).where(eq(orderItems.id, itemId));
+    const [gone] = await tx.delete(orderItems).where(eq(orderItems.id, itemId)).returning({ orderId: orderItems.orderId });
+    if (gone) await syncGoodsFromItems(tx, gone.orderId);
   });
   refresh();
 }

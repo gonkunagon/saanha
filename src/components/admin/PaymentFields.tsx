@@ -20,6 +20,8 @@ type Props = {
   paymentsLinked?: boolean;
   // เรทคิดลูกค้า (ออเดอร์ใหม่ = เรทใบเสนอราคาวันนี้ แก้ได้)
   orderRate?: number | null;
+  // ค่าสินค้าคิดจากตารางรายการสินค้า (ราคาซื้อ / ราคาขาย × จำนวน) — ช่องอ่านอย่างเดียว แก้ราคาที่ตาราง
+  goodsFromItems?: { buy: boolean; sell: boolean };
 };
 
 const str = (v: number | null | undefined) => (v == null ? "" : String(v));
@@ -38,11 +40,14 @@ function Box({ title, note, children }: { title: string; note: string; children:
   );
 }
 
-function Num({ label, name, value, onChange, placeholder, step = "0.01" }: { label: string; name: string; value: string; onChange: (v: string) => void; placeholder?: string; step?: string }) {
+const LOCKED = "bg-gray-50 text-gray-700";
+const FROM_TABLE = "คิดจากตารางรายการสินค้า";
+function Num({ label, name, value, onChange, placeholder, step = "0.01", locked }: { label: string; name: string; value: string; onChange: (v: string) => void; placeholder?: string; step?: string; locked?: boolean }) {
   return (
     <label className="block">
       <span className="mb-1 block text-sm text-gray-600">{label}</span>
-      <input name={name} type="number" step={step} min={0} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="input" />
+      <input name={name} type="number" step={step} min={0} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} readOnly={locked} className={`input ${locked ? LOCKED : ""}`} />
+      {locked && <span className="mt-1 block text-xs text-gray-500">{FROM_TABLE}</span>}
     </label>
   );
 }
@@ -121,7 +126,7 @@ export function PaymentFields(p: Props) {
           {/* .input กว้างเต็มช่องเสมอ จึงคุมความกว้างด้วย span ที่ครอบ */}
           <div className="flex gap-1">
             <span className="min-w-0 flex-1">
-              <input name="totalAmount" type="number" step="0.01" min={0} value={goods} onChange={(e) => setGoods(e.target.value)} className="input" />
+              <input name="totalAmount" type="number" step="0.01" min={0} value={goods} onChange={(e) => setGoods(e.target.value)} readOnly={p.goodsFromItems?.buy} className={`input ${p.goodsFromItems?.buy ? LOCKED : ""}`} />
             </span>
             <span className="w-24 shrink-0">
               <select name="currency" value={currency} onChange={(e) => setCurrency(e.target.value as CurrencyCode)} className="input" aria-label="สกุลเงิน">
@@ -131,6 +136,7 @@ export function PaymentFields(p: Props) {
               </select>
             </span>
           </div>
+          {p.goodsFromItems?.buy && <span className="mt-1 block text-xs text-gray-500">{FROM_TABLE}</span>}
         </label>
         <Num label={`ค่าขนส่งภายในจีน (จ่ายร้าน) · ${cur}`} name="chinaShippingFee" value={ship} onChange={setShip} placeholder="ถ้าร้านคิดค่าส่งมาโกดัง" />
         <Num label="เรทที่เราจ่าย (บาท / 1 หยวน)" name="costRate" value={costRate} onChange={setCostRate} placeholder="เช่น 5.00" step="0.0001" />
@@ -144,6 +150,7 @@ export function PaymentFields(p: Props) {
           value={custGoods}
           onChange={setCustGoods}
           placeholder={pct > 0 ? `เว้นว่าง = ค่าสินค้า + ${pct}%` : "ราคาที่คิดลูกค้า"}
+          locked={p.goodsFromItems?.sell}
         />
         <Num label={`ค่าขนส่งภายในจีน (คิดลูกค้า) · ${cur}`} name="customerChinaShipping" value={custShip} onChange={setCustShip} placeholder="เว้นว่าง = เท่าที่จ่ายร้าน" />
         <Num label="เรทคิดลูกค้า (บาท / 1 หยวน)" name="orderRate" value={rate} onChange={setRate} placeholder="เช่น 5.20" step="0.0001" />

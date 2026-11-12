@@ -542,9 +542,11 @@ export default async function OrderPage({ params, searchParams }: Props) {
         <form action={updateOrder} className="grid gap-4 sm:grid-cols-2">
           <input type="hidden" name="id" value={order.id} />
           <OrderFields
-            order={order}
+            // ค่าสินค้าตามตารางรายการสินค้า (ถ้ามีราคา) — ช่องในฟอร์มเป็นแบบอ่านอย่างเดียว
+            order={{ ...order, totalAmount: itemTotals.buy ?? order.totalAmount, customerGoodsAmount: itemTotals.sell ?? order.customerGoodsAmount }}
             customers={customers}
             paymentsLinked={order.payments.length > 0}
+            goodsFromItems={{ buy: order.items.some((i) => i.unitPrice != null), sell: order.items.some((i) => i.sellPrice != null) }}
             shipping={
               order.items.length > 0 && (
                 <div className="space-y-3 sm:col-span-2">

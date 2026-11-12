@@ -13,12 +13,14 @@ export function OrderFields({
   paymentsLinked,
   todayRate,
   shipping,
+  goodsFromItems,
 }: {
   order?: Order;
   customers: PickerCustomer[];
   preselectId?: number;
   paymentsLinked?: boolean;
   todayRate?: number | null;
+  goodsFromItems?: { buy: boolean; sell: boolean }; // ค่าสินค้าคิดจากตารางรายการสินค้า (ช่องอ่านอย่างเดียว)
   shipping?: React.ReactNode; // พัสดุ / ตู้ ของแต่ละรายการ (หน้าแก้ไขออเดอร์) — แสดงใต้วิธีขนส่ง
 }) {
   return (
@@ -57,6 +59,8 @@ export function OrderFields({
         costRate={order?.costRate}
         customerGoodsAmount={order?.customerGoodsAmount}
         customerChinaShipping={order?.customerChinaShipping}
+        goodsFromItems={goodsFromItems}
+        key={`${order?.totalAmount}-${order?.customerGoodsAmount}`}
         paymentsLinked={paymentsLinked}
         orderRate={order ? order.orderRate : todayRate}
       />

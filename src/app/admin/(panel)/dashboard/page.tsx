@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { orders } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth";
 import { Card, BalanceText } from "@/components/admin/ui";
-import { formatMoney, orderBalance, orderProfit, shopPaidRateOf, toThb } from "@/lib/money";
+import { formatMoney, orderBalance, customerPaidRateOf, orderProfit, shopPaidRateOf, toThb } from "@/lib/money";
 import { formatThaiDateTime } from "@/lib/datetime";
 
 // Dashboard (เฉพาะแอดมิน): สรุปยอดขาย ต้นทุน กำไร ของแต่ละออเดอร์ เลือกดูรายเดือนได้ (นับตามวันที่สร้างออเดอร์ เวลาไทย)
@@ -38,10 +38,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const list = all.filter((o) => month === "all" || monthKey(o.createdAt) === month);
 
   const rows = list.map((o) => {
-    // เรทที่เราจ่าย: กรอกไว้ในออเดอร์ หรือเรทเฉลี่ยจากรายการจ่ายร้าน
-    const p = orderProfit({ ...o, costRate: o.costRate ?? shopPaidRateOf(o.payments) });
+    // เรทที่เราจ่าย / เรทคิดลูกค้า: กรอกไว้ในออเดอร์ หรือเรทเฉลี่ยจากรายการจ่ายร้าน / รับเงินลูกค้า
+    const p = orderProfit({ ...o, costRate: o.costRate ?? shopPaidRateOf(o.payments), orderRate: o.orderRate ?? customerPaidRateOf(o.payments) });
     const balance = orderBalance(o, o.payments);
-    return { o, ...p, balance, balanceThb: balance != null && balance > 0 ? toThb(balance, o.orderRate, o.currency) : null };
+    return { o, ...p, balance, balanceThb: balance != null && balance > 0 ? toThb(balance, o.orderRate ?? customerPaidRateOf(o.payments), o.currency) : null };
   });
   const counted = rows.filter((r) => r.profit != null);
   const sum = (pick: (r: (typeof rows)[number]) => number | null) => counted.reduce((s, r) => s + (pick(r) ?? 0), 0);

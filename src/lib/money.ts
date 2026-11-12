@@ -101,8 +101,16 @@ export function shopPaidOf(payments: { appliedAmount: number; direction: string 
   const out = payments.filter((p) => p.direction === "out");
   return out.length ? r2(out.reduce((s, p) => s + p.appliedAmount, 0)) : null;
 }
-export function shopPaidRateOf(payments: { amount: number; currency: string; appliedAmount: number; direction: string }[]): number | null {
-  const out = payments.filter((p) => p.direction === "out" && p.currency === "THB" && p.appliedAmount > 0);
+type RatePayment = { amount: number; currency: string; appliedAmount: number; direction: string };
+export function shopPaidRateOf(payments: RatePayment[]): number | null {
+  return paidRateOf(payments, "out");
+}
+// เรทคิดลูกค้าเฉลี่ยจากเงินที่ลูกค้าโอนเข้า (บาทที่โอน ÷ หยวนที่ได้) — ใช้เมื่อออเดอร์ไม่ได้กรอกเรทคิดลูกค้า
+export function customerPaidRateOf(payments: RatePayment[]): number | null {
+  return paidRateOf(payments, "in");
+}
+function paidRateOf(payments: RatePayment[], direction: "in" | "out"): number | null {
+  const out = payments.filter((p) => (direction === "out" ? p.direction === "out" : p.direction !== "out") && p.currency === "THB" && p.appliedAmount > 0);
   if (!out.length) return null;
   const cny = out.reduce((s, p) => s + p.appliedAmount, 0);
   return Math.round((out.reduce((s, p) => s + p.amount, 0) / cny) * 10000) / 10000;

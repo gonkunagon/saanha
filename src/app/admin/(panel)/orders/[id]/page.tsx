@@ -17,7 +17,7 @@ import { ItemPriceCells } from "./ItemPriceForm";
 import { PaymentsPanel } from "./PaymentsCard";
 import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
 import { BalanceText } from "@/components/admin/ui";
-import { balanceOf, currencyLabel, customerGoodsOf, customerShippingOf, customerTotalOf, formatMoney, orderBalance, paidOf, shopPaidOf, shopPaidRateOf, supplierTotalOf, type CurrencyCode } from "@/lib/money";
+import { balanceOf, currencyLabel, customerGoodsOf, customerShippingOf, customerTotalOf, formatMoney, orderBalance, paidOf, customerPaidRateOf, shopPaidOf, shopPaidRateOf, supplierTotalOf, type CurrencyCode } from "@/lib/money";
 import { StageUpdateForm, type ContainerOption } from "./StageUpdateForm";
 import { PackageFields } from "@/components/admin/PackageFields";
 import { deleteItemImage, uploadItemImages } from "../image-actions";
@@ -242,6 +242,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
   const inPayments = order.payments.filter((p) => p.direction !== "out");
   const shopPaid = shopPaidOf(order.payments);
   const costRate = order.costRate ?? shopPaidRateOf(order.payments);
+  const sellRate = order.orderRate ?? customerPaidRateOf(order.payments); // ไม่ได้กรอกเรทคิดลูกค้า = เรทเฉลี่ยจากรายการรับเงิน
 
   // ตู้ที่ยังไม่ถึงไทย ให้เลือกในรายการตู้ (ตู้ของวิธีขนส่งเดียวกันขึ้นก่อน)
   const openContainers = await db.query.containers.findMany({
@@ -445,8 +446,11 @@ export default async function OrderPage({ params, searchParams }: Props) {
               <Info label="รวมเป็นเงินทั้งสิ้น">{customerTotalOf(order) != null && <b>{formatMoney(customerTotalOf(order), order.currency)}</b>}</Info>
               {order.currency === "CNY" && (
                 <>
-                  <Info label="เรทคิดลูกค้า">{order.orderRate != null && `${order.orderRate} บาท / หยวน`}</Info>
-                  <Info label="คิดเป็นเงินบาท">{toThb(customerTotalOf(order), order.orderRate, order.currency) != null && <b>{formatMoney(toThb(customerTotalOf(order), order.orderRate, order.currency), "THB")}</b>}</Info>
+                  <Info label="เรทคิดลูกค้า">
+                    {sellRate != null && `${sellRate} บาท / หยวน`}
+                    {order.orderRate == null && sellRate != null && <span className="ml-1 text-xs text-gray-500">(เฉลี่ยจากรายการรับเงิน)</span>}
+                  </Info>
+                  <Info label="คิดเป็นเงินบาท">{toThb(customerTotalOf(order), sellRate, order.currency) != null && <b>{formatMoney(toThb(customerTotalOf(order), sellRate, order.currency), "THB")}</b>}</Info>
                 </>
               )}
               {/* ยอดที่จ่ายแล้ว/ค้างชำระ คิดจากรายการชำระเงิน (ออเดอร์เก่าที่ยังไม่มีรายการ ใช้ช่องมัดจำ) */}

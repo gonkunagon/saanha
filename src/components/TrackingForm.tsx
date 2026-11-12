@@ -7,6 +7,7 @@ import type { TrackingGroup, TrackingView } from "@/lib/orders";
 import { formatThaiDateTime } from "@/lib/datetime";
 import { site } from "@/config/site";
 import { CheckIcon } from "./icons";
+import { StageScene } from "./StageScene";
 
 type Status = "idle" | "loading" | "notFound" | "tooMany" | "error";
 
@@ -157,6 +158,11 @@ export function TrackingForm({ locale, t, cal }: Props) {
                   ))}
                 </ul>
               </div>
+              {(() => {
+                // ภาพเคลื่อนไหวของสถานะล่าสุดในตู้นี้ (ยังไม่มีขั้นไหน = รับออเดอร์)
+                const current = [...g.stages].reverse().find((s) => s.at)?.stage ?? "ordered";
+                return <StageScene stage={current} method={g.container?.method ?? order.method} label={t.stages[current]} />;
+              })()}
               <Timeline group={g} locale={locale} t={t} />
             </div>
           ))}

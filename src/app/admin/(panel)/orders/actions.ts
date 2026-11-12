@@ -241,7 +241,7 @@ export async function updateOrder(fd: FormData) {
     await syncGoodsFromItems(tx, id);
   });
   refresh();
-  redirect(`/admin/orders/${id}`); // บันทึกแล้วกลับไปหน้าแสดงข้อมูล
+  redirect(`/admin/orders/${id}?saved=1`); // บันทึกแล้วกลับไปหน้าแสดงข้อมูล + แจ้ง "แก้ไขเสร็จสิ้น"
 }
 
 export async function deleteOrder(fd: FormData) {

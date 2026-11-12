@@ -10,6 +10,7 @@ import { itemStageDates, itemStages, optionalStages, stageIndex, stageLabelsTh, 
 import { Card, Field, StageBadge, methodLabel } from "@/components/admin/ui";
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { OrderFields } from "../OrderFields";
+import { SavedNotice } from "./SavedNotice";
 import { listCustomersForPicker } from "@/lib/customers";
 import { deleteItem, updateItem, updateOrder } from "../actions";
 import { ItemPriceCells } from "./ItemPriceForm";
@@ -219,7 +220,7 @@ function ContainerLink({ item }: { item: ItemWithPackages }) {
   );
 }
 
-type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ edit?: string; pay?: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ edit?: string; pay?: string; saved?: string }> };
 
 // ปกติแสดงข้อมูลอย่างเดียว · กด "แก้ไข" (?edit=1) จึงเปิดฟอร์มอัปเดตสถานะ / เพิ่ม-แก้รายการ / แก้ข้อมูลออเดอร์
 export default async function OrderPage({ params, searchParams }: Props) {
@@ -282,7 +283,8 @@ export default async function OrderPage({ params, searchParams }: Props) {
         <h1 className="text-2xl font-bold">{order.code}</h1>
         <StageBadge stage={summary.stage} />
         <span className="ml-auto flex items-center gap-3">
-          {editing && <Link href={`/admin/orders/${order.id}`} className="btn-secondary">✓ เสร็จแล้ว</Link>}
+          {/* ปุ่มบันทึกบนหัว = ส่งฟอร์มแก้ไขออเดอร์ด้านล่าง */}
+          {editing && <button form="order-edit-form" className="btn-primary">💾 บันทึก</button>}
           <Link href={`/admin/quote/${order.id}`} target="_blank" className="btn-secondary">📄 ใบเสนอราคา</Link>
           <DeleteOrderButton
             orderId={order.id}
@@ -293,6 +295,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
           />
         </span>
       </div>
+      {sp.saved === "1" && <SavedNotice />}
       {!order.customerPhone && (
         <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
           ⚠️ ยังไม่มีเบอร์โทรลูกค้า ลูกค้าจะเช็คสถานะเองไม่ได้ —{" "}
@@ -544,7 +547,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
       </Card>
 
       <Card title="แก้ไขข้อมูลออเดอร์">
-        <form action={updateOrder} className="grid gap-4 sm:grid-cols-2">
+        <form id="order-edit-form" action={updateOrder} className="grid gap-4 sm:grid-cols-2">
           <input type="hidden" name="id" value={order.id} />
           <OrderFields
             // ค่าสินค้าตามตารางรายการสินค้า (ถ้ามีราคา) — ช่องในฟอร์มเป็นแบบอ่านอย่างเดียว

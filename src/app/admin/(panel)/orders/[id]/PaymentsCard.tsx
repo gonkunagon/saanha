@@ -31,6 +31,14 @@ const TEXT: Record<PaymentDirection, { title: string; empty: string; date: strin
     defaultRate: "เรทที่เราจ่าย",
   },
 };
+// ออเดอร์ฝากส่ง: เงินออก = จ่ายบริษัทขนส่ง
+const CARRIER_TEXT = {
+  ...TEXT.out,
+  title: "การจ่ายเงินบริษัทขนส่ง",
+  empty: "ยังไม่มีรายการจ่ายเงินบริษัทขนส่ง",
+  add: "+ บันทึกจ่ายเงินบริษัทขนส่ง",
+  paid: "รวมจ่ายบริษัทขนส่งแล้ว",
+};
 
 // รายการเงินเข้า/ออกของออเดอร์ (แสดงในกล่อง "ยอดที่คิดลูกค้า" / "ยอดที่จ่ายร้านค้า")
 // in = ลูกค้าโอนเข้าบัญชีเรา (หักยอดค้างชำระ) · out = เราโอนจ่ายร้านค้า (ใช้หาเรทที่เราจ่ายจริง)
@@ -40,13 +48,15 @@ export async function PaymentsPanel({
   payments,
   direction,
   editing,
+  carrier,
 }: {
+  carrier?: boolean; // เงินออกของออเดอร์ฝากส่ง = จ่ายบริษัทขนส่ง
   order: Pick<Order, "id" | "currency" | "orderRate" | "costRate">;
   payments: Payment[];
   direction: PaymentDirection;
   editing: boolean;
 }) {
-  const t = TEXT[direction];
+  const t = carrier && direction === "out" ? CARRIER_TEXT : TEXT[direction];
   const list = payments.filter((p) => p.direction === direction).sort((a, b) => a.paidAt.getTime() - b.paidAt.getTime());
   const cur = order.currency;
   const other = currencies.find((c) => c !== cur)!;

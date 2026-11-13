@@ -6,16 +6,16 @@ import { requireUser } from "@/lib/auth";
 import { summarizeOrder } from "@/lib/orders";
 import { formatThaiDateTime } from "@/lib/datetime";
 import { itemStages, stageLabelsTh, type ItemStage } from "@/lib/stages";
-import { BalanceText, Card, StageBadge, methodLabel } from "@/components/admin/ui";
+import { BalanceText, Card, ShippingOnlyBadge, StageBadge, methodLabel } from "@/components/admin/ui";
 import { customerTotalOf, formatMoney, orderBalance } from "@/lib/money";
 import { SyncJjButton } from "./SyncJjButton";
 import { getSyncStatus } from "@/lib/jjsync";
 
-type Props = { searchParams: Promise<{ q?: string; stage?: string }> };
+type Props = { searchParams: Promise<{ q?: string; stage?: string; type?: string }> };
 
 export default async function OrdersPage({ searchParams }: Props) {
   await requireUser();
-  const { q = "", stage = "" } = await searchParams;
+  const { q = "", stage = "", type = "" } = await searchParams;
   const term = q.trim();
 
   const list = await db.query.orders.findMany({
@@ -38,7 +38,9 @@ export default async function OrdersPage({ searchParams }: Props) {
 
   const rows = list
     .map((o) => ({ order: o, summary: summarizeOrder(o.items) }))
-    .filter((r) => !stage || r.summary.stage === stage);
+    .filter((r) => !stage || r.summary.stage === stage)
+    // ประเภทออเดอร์: purchase = สั่งซื้อสินค้า · shipping = ฝากส่งอย่างเดียว
+    .filter((r) => !type || r.order.shippingOnly === (type === "shipping"));
 
   return (
     <div className="space-y-6">
@@ -64,6 +66,11 @@ export default async function OrdersPage({ searchParams }: Props) {
               <option key={s} value={s}>{stageLabelsTh[s]}</option>
             ))}
           </select>
+          <select name="type" defaultValue={type} className="input w-auto">
+            <option value="">ทุกประเภท</option>
+            <option value="purchase">สั่งซื้อสินค้า</option>
+            <option value="shipping">ฝากส่งอย่างเดียว</option>
+          </select>
           <button className="rounded-lg border border-gray-300 px-4 hover:bg-gray-50">ค้นหา</button>
         </form>
 
@@ -85,6 +92,7 @@ export default async function OrdersPage({ searchParams }: Props) {
                 <tr key={o.id} className="border-t border-gray-100">
                   <td className="py-2 pr-4">
                     <Link href={`/admin/orders/${o.id}`} className="font-semibold text-brand-600 hover:underline">{o.code}</Link>
+                    {o.shippingOnly && <span className="ml-1.5"><ShippingOnlyBadge /></span>}
                     {o.purchaseOrderNo && <span className="block text-xs text-gray-500">คำสั่งซื้อ {o.purchaseOrderNo}</span>}
                     {o.shopName && <span className="block text-xs text-gray-500">ร้าน {o.shopName}</span>}
                   </td>
@@ -108,7 +116,9 @@ export default async function OrdersPage({ searchParams }: Props) {
                     />
                   </td>
                   <td className="py-2 pr-4 whitespace-nowrap">
-                    {o.totalAmount != null ? (
+                    {o.shippingOnly ? (
+                      <span className="text-xs text-gray-500">คิดตามบิลค่าขนส่ง</span>
+                    ) : o.totalAmount != null ? (
                       <>
                         {/* ยอดเต็ม = ค่าสินค้า + ค่าดำเนินการ (ตรงกับรวมเป็นเงินทั้งสิ้นในใบเสนอราคา) */}
                         <span className="block text-xs text-gray-500">เต็ม {formatMoney(customerTotalOf(o), o.currency)}</span>

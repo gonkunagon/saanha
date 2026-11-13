@@ -36,9 +36,24 @@ export function OrderFields({
           legacy={order && !order.customerId ? { name: order.customerName, phone: order.customerPhone } : undefined}
         />
       )}
+      {/* ประเภทออเดอร์: ฝากส่งอย่างเดียว = ซ่อนช่องค่าสินค้า (CSS .goods-only ใน globals.css) */}
+      <fieldset className="sm:col-span-2">
+        <span className="mb-1 block text-sm text-gray-600">ประเภทออเดอร์</span>
+        <div className="flex flex-wrap gap-2">
+          <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm has-checked:border-brand-600 has-checked:bg-brand-50 has-checked:text-brand-700">
+            <input type="radio" name="orderType" value="purchase" defaultChecked={!order?.shippingOnly} className="accent-brand-600" />
+            🛒 สั่งซื้อสินค้า + ขนส่ง
+          </label>
+          <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm has-checked:border-brand-600 has-checked:bg-brand-50 has-checked:text-brand-700">
+            <input type="radio" name="orderType" value="shipping" defaultChecked={order?.shippingOnly} className="accent-brand-600" />
+            📦 ฝากส่งอย่างเดียว (ลูกค้าสั่งของเอง)
+          </label>
+        </div>
+      </fieldset>
       <Field label="เลขคำสั่งซื้อ (เช่น เลขออเดอร์ 1688 / Taobao)">
         <input name="purchaseOrderNo" defaultValue={order?.purchaseOrderNo ?? ""} className="input" autoComplete="off" />
       </Field>
+      <div className="goods-only contents">
       <Field label="Platform / แหล่งที่มาของร้าน (ข้อมูลภายใน ลูกค้าไม่เห็น)">
         <input name="platform" list="platform-options" defaultValue={order?.platform ?? ""} className="input" autoComplete="off" placeholder="เช่น 1688, Taobao, Alibaba" />
         <datalist id="platform-options">
@@ -64,6 +79,7 @@ export function OrderFields({
         paymentsLinked={paymentsLinked}
         orderRate={order ? order.orderRate : todayRate}
       />
+      </div>
       <Field label="วิธีขนส่ง">
         <span className="block w-40">
           <MethodSelect defaultValue={order?.method} />

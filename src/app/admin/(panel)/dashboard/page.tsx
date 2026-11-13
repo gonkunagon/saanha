@@ -35,7 +35,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
   const months = [...new Set([monthKey(new Date()), ...all.map((o) => monthKey(o.createdAt))])].sort().reverse();
   const month = sp.m === "all" ? "all" : sp.m && months.includes(sp.m) ? sp.m : months[0];
-  const list = all.filter((o) => month === "all" || monthKey(o.createdAt) === month);
+  // ออเดอร์ฝากส่งอย่างเดียวไม่มีค่าสินค้า — ไม่นับในกำไรค่าสินค้า (คิดเงินจากบิลค่าขนส่ง)
+  const inMonth = all.filter((o) => month === "all" || monthKey(o.createdAt) === month);
+  const list = inMonth.filter((o) => !o.shippingOnly);
+  const shippingOnlyCount = inMonth.length - list.length;
 
   const rows = list.map((o) => {
     // เรทที่เราจ่าย / เรทคิดลูกค้า: กรอกไว้ในออเดอร์ หรือเรทเฉลี่ยจากรายการจ่ายร้าน / รับเงินลูกค้า
@@ -71,7 +74,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <Stat label="ออเดอร์" value={`${list.length} ออเดอร์`} note={`คิดกำไรได้ ${counted.length} ออเดอร์`} />
+        <Stat label="ออเดอร์" value={`${list.length} ออเดอร์`} note={`คิดกำไรได้ ${counted.length} ออเดอร์${shippingOnlyCount ? ` · ไม่รวมฝากส่ง ${shippingOnlyCount}` : ""}`} />
         <Stat label="ยอดขาย (คิดลูกค้า)" value={baht(sales)} />
         <Stat label="ต้นทุน (จ่ายร้าน)" value={baht(cost)} />
         <Stat label="กำไร" value={baht(profit)} note={margin == null ? undefined : `อัตรากำไร ${margin.toFixed(1)}%`} tone={profit < 0 ? "loss" : "profit"} />

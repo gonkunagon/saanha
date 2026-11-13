@@ -83,3 +83,6 @@ body {
   @page { size: A4; margin: 12mm; }
   body { background: #ffffff !important; }
 }
+
+/* ออเดอร์ "ฝากส่งอย่างเดียว" (เลือก orderType=shipping ในฟอร์ม) — ซ่อนช่องค่าสินค้า / ราคา */
+form:has(input[name="orderType"][value="shipping"]:checked) .goods-only { display: none; }

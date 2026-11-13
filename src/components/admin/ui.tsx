@@ -55,6 +55,11 @@ export function Field({ label, children, className = "" }: { label: string; chil
   );
 }
 
+// ป้ายออเดอร์ฝากส่งอย่างเดียว (ลูกค้าสั่งของเอง)
+export function ShippingOnlyBadge() {
+  return <span className="inline-block rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium whitespace-nowrap text-sky-800">📦 ฝากส่ง</span>;
+}
+
 export const methodLabel = (m: string) => (m === "truck" ? "ทางรถ" : m === "sea" ? "ทางเรือ" : m);
 
 export function MethodSelect({ name = "method", defaultValue }: { name?: string; defaultValue?: string }) {

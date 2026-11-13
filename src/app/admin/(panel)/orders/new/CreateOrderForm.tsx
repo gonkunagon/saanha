@@ -38,8 +38,8 @@ export function CreateOrderForm({ children }: { children: React.ReactNode }) {
               <div className="grid gap-2 sm:grid-cols-[3fr_1fr_1fr_1fr_auto]">
                 <input name="itemDescription" placeholder={`ชื่อสินค้า ${i + 1}`} className="input" required={i === 0} />
                 <input name="itemQuantity" type="number" min={0} placeholder="จำนวน" className="input" />
-                <input name="itemUnitPrice" type="number" step="0.01" min={0} placeholder="ราคาซื้อ/หน่วย" className="input" />
-                <input name="itemSellPrice" type="number" step="0.01" min={0} placeholder="ราคาขาย/หน่วย" className="input" />
+                <input name="itemUnitPrice" type="number" step="0.01" min={0} placeholder="ราคาซื้อ/หน่วย" className="goods-only input" />
+                <input name="itemSellPrice" type="number" step="0.01" min={0} placeholder="ราคาขาย/หน่วย" className="goods-only input" />
                 <button
                   type="button"
                   onClick={() => removeRow(key)}
@@ -66,7 +66,7 @@ export function CreateOrderForm({ children }: { children: React.ReactNode }) {
       {error && <p className="text-sm text-brand-600">{error}</p>}
       <div className="flex flex-wrap items-center gap-3">
         <button disabled={pending} className="btn-primary">{pending ? "กำลังสร้าง..." : "สร้างออเดอร์"}</button>
-        <button name="then" value="quote" disabled={pending} className="btn-secondary">📄 สร้างใบเสนอราคา</button>
+        <button name="then" value="quote" disabled={pending} className="goods-only btn-secondary">📄 สร้างใบเสนอราคา</button>
       </div>
     </form>
   );

@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { containerStageOf, stageOfItem, summarizeOrder, type ItemWithContainer } from "@/lib/orders";
 import { formatThaiDateTime, nowLocalInputValue } from "@/lib/datetime";
 import { itemStageDates, itemStages, optionalStages, stageIndex, stageLabelsTh, type ItemStage } from "@/lib/stages";
-import { Card, Field, StageBadge, methodLabel } from "@/components/admin/ui";
+import { Card, Field, StageBadge, methodLabel, ShippingOnlyBadge } from "@/components/admin/ui";
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { OrderFields } from "../OrderFields";
 import { SavedNotice } from "./SavedNotice";
@@ -272,6 +272,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
     : null;
 
   const summary = summarizeOrder(order.items);
+  const orderContainers = [...new Map(order.items.filter((i) => i.container).map((i) => [i.container!.id, i.container!])).values()];
   const stages = order.items.map(stageOfItem);
   // ค่าเริ่มต้นของแถบอัปเดต = ขั้นถัดไปของรายการที่ช้าที่สุด (ข้ามขั้นที่ไม่บังคับ เช่น อยู่ระหว่างการผลิต)
   let nextStage: ItemStage = itemStages[Math.min(stageIndex(summary.stage) + 1, itemStages.length - 1)];
@@ -283,10 +284,11 @@ export default async function OrderPage({ params, searchParams }: Props) {
       <div className="mt-1 flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-bold">{order.code}</h1>
         <StageBadge stage={summary.stage} />
+        {order.shippingOnly && <ShippingOnlyBadge />}
         <span className="ml-auto flex items-center gap-3">
           {/* ปุ่มบันทึกบนหัว = ส่งฟอร์มแก้ไขออเดอร์ด้านล่าง */}
           {editing && <button form="order-edit-form" className="btn-primary">💾 บันทึก</button>}
-          <Link href={`/admin/quote/${order.id}`} target="_blank" className="btn-secondary">📄 ใบเสนอราคา</Link>
+          {!order.shippingOnly && <Link href={`/admin/quote/${order.id}`} target="_blank" className="btn-secondary">📄 ใบเสนอราคา</Link>}
           <DeleteOrderButton
             orderId={order.id}
             code={order.code}
@@ -418,6 +420,24 @@ export default async function OrderPage({ params, searchParams }: Props) {
               </Info>
             </InfoSection>
 
+            {/* ฝากส่งอย่างเดียว: ไม่มีค่าสินค้า — คิดเงินจากบิลค่าขนส่งของแต่ละตู้ */}
+            {order.shippingOnly ? (
+              <InfoSection title="ค่าใช้จ่าย" tone="money">
+                <Info label="ประเภทออเดอร์" wide>📦 ฝากส่งอย่างเดียว (ลูกค้าสั่งของเอง) — ไม่มีค่าสินค้า คิดเงินเฉพาะค่าขนส่ง</Info>
+                <Info label="บิลค่าขนส่ง" wide>
+                  {orderContainers.length === 0 ? (
+                    <span className="text-gray-400">ยังไม่เข้าตู้ (ออกบิลได้เมื่อจัดเข้าตู้แล้ว)</span>
+                  ) : (
+                    orderContainers.map((c, n) => (
+                      <span key={c.id}>
+                        {n > 0 && " · "}
+                        <Link href={`/admin/shipping/${c.id}/${order.id}`} target="_blank" className="text-brand-700 hover:underline">🧾 ตู้ {c.code}</Link>
+                      </span>
+                    ))
+                  )}
+                </Info>
+              </InfoSection>
+            ) : (<>
             {/* ยอดเงิน 2 ฝั่ง: จ่ายร้านค้า (ต้นทุน) กับ คิดลูกค้า — ราคาและเรทไม่เท่ากัน */}
             <InfoSection title="ยอดที่จ่ายร้านค้า" tone="cost" footer={<PaymentsPanel order={order} payments={order.payments} direction="out" editing={payEditing === "out"} />}>
               <Info label="ค่าสินค้า (จ่ายร้าน)">{order.totalAmount != null && formatMoney(order.totalAmount, order.currency)}</Info>
@@ -461,6 +481,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
                 <BalanceText balance={orderBalance(order, order.payments)} currency={order.currency} />
               </Info>
             </InfoSection>
+            </>)}
 
             <dl className="grid gap-x-6 gap-y-4 px-1 text-sm sm:grid-cols-2 lg:grid-cols-3">
               <Info label="หมายเหตุถึงลูกค้า" wide>{order.note}</Info>
@@ -503,8 +524,12 @@ export default async function OrderPage({ params, searchParams }: Props) {
                   <tr>
                     <th className="px-3 py-2">ชื่อสินค้า</th>
                     <th className="w-24 px-3 py-2 text-right">จำนวน</th>
-                    <th className="w-40 px-3 py-2 text-right">ราคาซื้อ / หน่วย ({currencyLabel[order.currency]})</th>
-                    <th className="w-40 px-3 py-2 text-right">ราคาขาย / หน่วย ({currencyLabel[order.currency]})</th>
+                    {!order.shippingOnly && (
+                      <>
+                        <th className="w-40 px-3 py-2 text-right">ราคาซื้อ / หน่วย ({currencyLabel[order.currency]})</th>
+                        <th className="w-40 px-3 py-2 text-right">ราคาขาย / หน่วย ({currencyLabel[order.currency]})</th>
+                      </>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -530,7 +555,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
                           </details>
                         </td>
                         <td className="px-3 py-3 text-right whitespace-nowrap">{item.quantity ?? "-"}</td>
-                        <ItemPriceCells itemId={item.id} quantity={item.quantity} unitPrice={item.unitPrice} sellPrice={item.sellPrice} />
+                        {!order.shippingOnly && <ItemPriceCells itemId={item.id} quantity={item.quantity} unitPrice={item.unitPrice} sellPrice={item.sellPrice} />}
                       </tr>
                     );
                   })}
@@ -539,8 +564,12 @@ export default async function OrderPage({ params, searchParams }: Props) {
                   <tr>
                     <td className="px-3 py-2">รวมทุกรายการ</td>
                     <td className="px-3 py-2 text-right">{itemTotals.qty.toLocaleString("th-TH")}</td>
-                    <td className="px-3 py-2 text-right">{itemTotals.buy == null ? "-" : formatMoney(itemTotals.buy, order.currency)}</td>
-                    <td className="px-3 py-2 text-right text-brand-700">{itemTotals.sell == null ? "-" : formatMoney(itemTotals.sell, order.currency)}</td>
+                    {!order.shippingOnly && (
+                      <>
+                        <td className="px-3 py-2 text-right">{itemTotals.buy == null ? "-" : formatMoney(itemTotals.buy, order.currency)}</td>
+                        <td className="px-3 py-2 text-right text-brand-700">{itemTotals.sell == null ? "-" : formatMoney(itemTotals.sell, order.currency)}</td>
+                      </>
+                    )}
                   </tr>
                 </tfoot>
               </table>

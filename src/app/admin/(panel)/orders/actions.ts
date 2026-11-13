@@ -114,6 +114,9 @@ async function savePackages(tx: Tx, itemId: number, pkgs: PackageRow[]) {
 // ค่าสินค้าของออเดอร์ตามตารางรายการสินค้า: มีราคาซื้อสักรายการ → ค่าสินค้า (จ่ายร้าน) = Σ จำนวน × ราคาซื้อ
 // มีราคาขายสักรายการ → ค่าสินค้า (คิดลูกค้า) = Σ จำนวน × ราคาขาย · ไม่มีราคาเลย = ไม่แตะ (ใช้ยอดที่กรอกในฟอร์ม)
 async function syncGoodsFromItems(tx: Tx, orderId: number) {
+  // ออเดอร์ฝากส่งอย่างเดียว ไม่มีค่าสินค้า
+  const [o] = await tx.select({ shippingOnly: orders.shippingOnly }).from(orders).where(eq(orders.id, orderId));
+  if (!o || o.shippingOnly) return;
   const items = await tx
     .select({ quantity: orderItems.quantity, unitPrice: orderItems.unitPrice, sellPrice: orderItems.sellPrice })
     .from(orderItems)
@@ -126,7 +129,28 @@ async function syncGoodsFromItems(tx: Tx, orderId: number) {
   await tx.update(orders).set({ totalAmount, customerGoodsAmount }).where(eq(orders.id, orderId));
 }
 
+// ฝากส่งอย่างเดียว (ลูกค้าสั่งของเอง): ล้างช่องค่าสินค้า / เรท / ค่าดำเนินการ — คิดเงินจากบิลค่าขนส่งของตู้
+const noGoods = {
+  totalAmount: null,
+  depositAmount: null,
+  balancePaidAmount: null,
+  handlingFeePct: 0,
+  chinaShippingFee: null,
+  costRate: null,
+  customerGoodsAmount: null,
+  customerChinaShipping: null,
+  orderRate: null,
+  hideShopOnQuote: false,
+};
+
 function orderFields(fd: FormData) {
+  // ฟอร์มที่ไม่มีช่องประเภท (หน้าที่เปิดค้างไว้ก่อนมีช่องนี้) = ไม่แตะค่าเดิม
+  const shippingOnly = fd.has("orderType") ? fd.get("orderType") === "shipping" : undefined;
+  const fields = goodsFields(fd);
+  return { ...fields, ...(shippingOnly ? noGoods : {}), shippingOnly };
+}
+
+function goodsFields(fd: FormData) {
   return {
     purchaseOrderNo: text(fd, "purchaseOrderNo"),
     // ช่องนี้เลิกใช้ในฟอร์มแล้ว (ใช้ Tracking no. จีนของพัสดุแทน) — ไม่ส่งมา = คงค่าเดิม
@@ -178,8 +202,8 @@ export async function createOrder(_prev: string | null, fd: FormData): Promise<s
           description: str(descriptions[i]) ?? "",
           productUrl: url(fd.getAll("itemProductUrl")[i]),
           quantity: toInt(fd.getAll("itemQuantity")[i]),
-          unitPrice: toNum(fd.getAll("itemUnitPrice")[i]),
-          sellPrice: toNum(fd.getAll("itemSellPrice")[i]),
+          unitPrice: fields.shippingOnly ? null : toNum(fd.getAll("itemUnitPrice")[i]),
+          sellPrice: fields.shippingOnly ? null : toNum(fd.getAll("itemSellPrice")[i]),
           ...packageTotals(packages),
         },
         packages,

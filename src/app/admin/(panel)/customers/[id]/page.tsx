@@ -135,27 +135,22 @@ export default async function CustomerPage({
                       </Link>
                     </span>
                   </div>
+                  {/* โชว์รายการแรก ที่เหลือกด "ดูอีก N รายการ" (ไม่ให้หน้ารก) */}
                   <ul className="divide-y divide-gray-50 px-4 text-sm">
-                    {o.items.map((i) => (
-                      <li key={i.id} className="flex flex-wrap items-center gap-x-4 py-2">
-                        <span className="flex-1">
-                          {i.description}
-                          {i.productUrl && (
-                            <a href={i.productUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-xs text-brand-700 hover:underline">🔗 ลิงก์สินค้า</a>
-                          )}
-                        </span>
-                        <span className="w-20 text-right text-gray-600">{i.quantity != null ? `× ${i.quantity}` : "-"}</span>
-                        <span className="w-36 text-right text-gray-600">{i.unitPrice != null ? `@ ${formatMoney(i.unitPrice, o.currency)}` : ""}</span>
-                        {/* สถานะรายการ: ส่งถึงลูกค้าแล้ว = สำเร็จ · ที่เหลือ = อยู่ระหว่างดำเนินการ */}
-                        {i.deliveredAt ? (
-                          <span className="w-40 text-right text-xs font-medium text-emerald-700">✓ สำเร็จ</span>
-                        ) : (
-                          <span className="w-40 text-right text-xs text-amber-700">อยู่ระหว่างดำเนินการ</span>
-                        )}
-                      </li>
-                    ))}
+                    {o.items.slice(0, 1).map((i) => <ItemRow key={i.id} item={i} currency={o.currency} />)}
                     {o.items.length === 0 && <li className="py-2 text-gray-400">ไม่มีรายการสินค้า</li>}
                   </ul>
+                  {o.items.length > 1 && (
+                    <details className="group">
+                      <summary className="cursor-pointer list-none px-4 py-2 text-sm font-medium text-brand-600 select-none hover:underline [&::-webkit-details-marker]:hidden">
+                        <span className="group-open:hidden">+ ดูอีก {o.items.length - 1} รายการ</span>
+                        <span className="hidden group-open:inline">− ซ่อนรายการ</span>
+                      </summary>
+                      <ul className="divide-y divide-gray-50 border-t border-gray-50 px-4 text-sm">
+                        {o.items.slice(1).map((i) => <ItemRow key={i.id} item={i} currency={o.currency} />)}
+                      </ul>
+                    </details>
+                  )}
                 </li>
               ))}
             </ol>
@@ -163,5 +158,27 @@ export default async function CustomerPage({
         )}
       </Card>
     </div>
+  );
+}
+
+// แถวสินค้าในประวัติการสั่งซื้อ
+function ItemRow({ item: i, currency }: { item: { description: string; productUrl: string | null; quantity: number | null; unitPrice: number | null; deliveredAt: Date | null }; currency: CurrencyCode }) {
+  return (
+    <li className="flex flex-wrap items-center gap-x-4 py-2">
+      <span className="flex-1">
+        {i.description}
+        {i.productUrl && (
+          <a href={i.productUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-xs text-brand-700 hover:underline">🔗 ลิงก์สินค้า</a>
+        )}
+      </span>
+      <span className="w-20 text-right text-gray-600">{i.quantity != null ? `× ${i.quantity}` : "-"}</span>
+      <span className="w-36 text-right text-gray-600">{i.unitPrice != null ? `@ ${formatMoney(i.unitPrice, currency)}` : ""}</span>
+      {/* สถานะรายการ: ส่งถึงลูกค้าแล้ว = สำเร็จ · ที่เหลือ = อยู่ระหว่างดำเนินการ */}
+      {i.deliveredAt ? (
+        <span className="w-40 text-right text-xs font-medium text-emerald-700">✓ สำเร็จ</span>
+      ) : (
+        <span className="w-40 text-right text-xs text-amber-700">อยู่ระหว่างดำเนินการ</span>
+      )}
+    </li>
   );
 }

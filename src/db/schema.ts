@@ -80,6 +80,9 @@ export const orders = pgTable("orders", {
   method: text("method", { enum: shippingMethods }).notNull(),
   // ฝากส่งอย่างเดียว: ลูกค้าสั่งของเอง ใช้แค่บริการขนส่ง — ไม่มีค่าสินค้า / เรท / ค่าดำเนินการ (คิดเงินจากบิลค่าขนส่งของตู้)
   shippingOnly: boolean("shipping_only").notNull().default(false),
+  // ค่าขนส่งของออเดอร์ฝากส่ง (บาท): คิดลูกค้า / ต้นทุนที่ร้านจ่าย (ภายใน ลูกค้าไม่เห็น) — ว่าง = คำนวณจากคิว × เรท
+  shippingCharge: doublePrecision("shipping_charge"),
+  shippingCost: doublePrecision("shipping_cost"),
   intlTrackingNo: text("intl_tracking_no"), // Tracking no. ขนส่งจีน → ไทย (ใช้ภายใน ไม่ส่งไปหน้าติดตามพัสดุของลูกค้า)
   purchaseOrderNo: text("purchase_order_no"), // เลขคำสั่งซื้อ เช่น เลขออเดอร์จากร้านค้า 1688 / Taobao หรือเลข PO ของลูกค้า
   shopName: text("shop_name"), // ร้านค้าที่สั่งซื้อ

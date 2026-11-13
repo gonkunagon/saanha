@@ -38,6 +38,8 @@ export type OrderSides = {
   customerGoodsAmount: number | null; // ค่าสินค้าที่คิดลูกค้า (ว่าง = ค่าสินค้า + ค่าดำเนินการ % แบบเดิม)
   customerChinaShipping: number | null; // ค่าขนส่งในจีนที่คิดลูกค้า (ว่าง = เท่าที่จ่ายร้าน)
   handlingFeePct: number;
+  shippingOnly?: boolean; // ฝากส่งอย่างเดียว: ยอดคิดลูกค้า = ค่าขนส่ง (shippingCharge)
+  shippingCharge?: number | null;
 };
 const r2 = (n: number) => Math.round(n * 100) / 100;
 // ยอดที่จ่ายร้านค้า = ค่าสินค้า + ค่าขนส่งในจีน
@@ -52,6 +54,7 @@ export function customerShippingOf(o: OrderSides): number | null {
 }
 // รวมเป็นเงินทั้งสิ้น (ยอดที่คิดลูกค้า) = ค่าสินค้าที่คิดลูกค้า + ค่าขนส่งในจีนที่คิดลูกค้า
 export function customerTotalOf(o: OrderSides): number | null {
+  if (o.shippingOnly) return o.shippingCharge ?? null;
   const goods = customerGoodsOf(o);
   return goods == null ? null : r2(goods + (customerShippingOf(o) ?? 0));
 }

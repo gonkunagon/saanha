@@ -48,9 +48,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
   const rows = list.map((o) => {
     // เรทที่เราจ่าย / เรทคิดลูกค้า: กรอกไว้ในออเดอร์ หรือเรทเฉลี่ยจากรายการจ่ายร้าน / รับเงินลูกค้า
-    const p = orderProfit({ ...o, costRate: o.costRate ?? shopPaidRateOf(o.payments), orderRate: o.orderRate ?? customerPaidRateOf(o.payments) });
+    // ฝากส่งอย่างเดียว: ไม่มีกำไรค่าสินค้า (ยอดของออเดอร์คือค่าขนส่ง นับในช่องค่าขนส่ง)
+    const p0 = orderProfit({ ...o, costRate: o.costRate ?? shopPaidRateOf(o.payments), orderRate: o.orderRate ?? customerPaidRateOf(o.payments) });
     const balance = orderBalance(o, o.payments);
-    const ship = orderShippingOf(o.items, o.shippingRate);
+    const p = o.shippingOnly ? { sell: null, cost: null, sellThb: null, costThb: null, profit: null, missing: null } : p0;
+    const ship = orderShippingOf(o.items, o.shippingRate, o);
     return { o, ...p, ship, balance, balanceThb: balance != null && balance > 0 ? toThb(balance, o.orderRate ?? customerPaidRateOf(o.payments), o.currency) : null };
   });
   const counted = rows.filter((r) => r.profit != null);

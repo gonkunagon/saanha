@@ -141,13 +141,21 @@ const noGoods = {
   customerChinaShipping: null,
   orderRate: null,
   hideShopOnQuote: false,
+  currency: "THB" as const, // ค่าขนส่งเป็นบาท
 };
 
 function orderFields(fd: FormData) {
   // ฟอร์มที่ไม่มีช่องประเภท (หน้าที่เปิดค้างไว้ก่อนมีช่องนี้) = ไม่แตะค่าเดิม
   const shippingOnly = fd.has("orderType") ? fd.get("orderType") === "shipping" : undefined;
   const fields = goodsFields(fd);
-  return { ...fields, ...(shippingOnly ? noGoods : {}), shippingOnly };
+  // ค่าขนส่ง (บาท) มีเฉพาะออเดอร์ฝากส่ง
+  const shipping =
+    shippingOnly === undefined
+      ? {}
+      : shippingOnly
+        ? { shippingCharge: toNum(fd.get("shippingCharge")), shippingCost: toNum(fd.get("shippingCost")) }
+        : { shippingCharge: null, shippingCost: null };
+  return { ...fields, ...(shippingOnly ? noGoods : {}), ...shipping, shippingOnly };
 }
 
 function goodsFields(fd: FormData) {

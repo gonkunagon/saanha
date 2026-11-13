@@ -116,9 +116,9 @@ export default async function OrdersPage({ searchParams }: Props) {
                     />
                   </td>
                   <td className="py-2 pr-4 whitespace-nowrap">
-                    {o.shippingOnly ? (
+                    {o.shippingOnly && o.shippingCharge == null ? (
                       <span className="text-xs text-gray-500">คิดตามบิลค่าขนส่ง</span>
-                    ) : o.totalAmount != null ? (
+                    ) : o.totalAmount != null || o.shippingOnly ? (
                       <>
                         {/* ยอดเต็ม = ค่าสินค้า + ค่าดำเนินการ (ตรงกับรวมเป็นเงินทั้งสิ้นในใบเสนอราคา) */}
                         <span className="block text-xs text-gray-500">เต็ม {formatMoney(customerTotalOf(o), o.currency)}</span>

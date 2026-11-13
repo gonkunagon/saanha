@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { and, eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import signature from "@/assets/signature.png";
 import { db } from "@/db";
 import { containers, orderItems, orders } from "@/db/schema";
@@ -52,7 +52,12 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
   const kg = total((i) => i.weightKg, 2);
   const cbm = total((i) => i.cbm, 4);
   const rate = shippingRateOf(order.shippingRate);
-  const cost = shippingCostOf(items, order.shippingRate);
+  // ออเดอร์ฝากส่งที่กรอกค่าขนส่งเอง (และของทั้งออเดอร์อยู่ตู้นี้ตู้เดียว) = ใช้ยอดที่กรอก
+  const allHere =
+    order.shippingOnly &&
+    order.shippingCharge != null &&
+    !(await db.query.orderItems.findFirst({ where: and(eq(orderItems.orderId, order.id), ne(orderItems.containerId, container.id)) }));
+  const cost = allHere ? order.shippingCharge! : shippingCostOf(items, order.shippingRate);
 
   const meta = [
     ["อ้างอิงออเดอร์ / Ref.", order.code],
@@ -159,7 +164,7 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
               </div>
               <div className="flex justify-between border-t border-gray-100 px-4 py-2 text-[12px] text-gray-600">
                 <dt>เรทค่าขนส่ง</dt>
-                <dd>{num(rate)} บาท / คิว</dd>
+                <dd>{allHere ? "เหมาจ่าย" : `${num(rate)} บาท / คิว`}</dd>
               </div>
               <div className="flex items-center justify-between border-t-2 border-brand-600 px-4 py-3.5 text-brand-700">
                 <dt className="font-semibold">ค่าขนส่งทั้งสิ้น</dt>

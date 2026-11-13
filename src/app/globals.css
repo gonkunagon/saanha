@@ -86,3 +86,4 @@ body {
 
 /* ออเดอร์ "ฝากส่งอย่างเดียว" (เลือก orderType=shipping ในฟอร์ม) — ซ่อนช่องค่าสินค้า / ราคา */
 form:has(input[name="orderType"][value="shipping"]:checked) .goods-only { display: none; }
+form:not(:has(input[name="orderType"][value="shipping"]:checked)) .shipping-only { display: none; }

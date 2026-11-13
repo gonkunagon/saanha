@@ -18,6 +18,7 @@ import { PaymentsPanel } from "./PaymentsCard";
 import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
 import { BalanceText } from "@/components/admin/ui";
 import { balanceOf, currencyLabel, customerGoodsOf, customerShippingOf, customerTotalOf, formatMoney, orderBalance, paidOf, customerPaidRateOf, shopPaidOf, shopPaidRateOf, supplierTotalOf, type CurrencyCode } from "@/lib/money";
+import { orderShippingOf } from "@/lib/shipping";
 import { StageUpdateForm, type ContainerOption } from "./StageUpdateForm";
 import { PackageFields } from "@/components/admin/PackageFields";
 import { deleteItemImage, uploadItemImages } from "../image-actions";
@@ -272,6 +273,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
     : null;
 
   const summary = summarizeOrder(order.items);
+  const ship = orderShippingOf(order.items, order.shippingRate, order); // ค่าขนส่งของออเดอร์ฝากส่ง
   const orderContainers = [...new Map(order.items.filter((i) => i.container).map((i) => [i.container!.id, i.container!])).values()];
   const stages = order.items.map(stageOfItem);
   // ค่าเริ่มต้นของแถบอัปเดต = ขั้นถัดไปของรายการที่ช้าที่สุด (ข้ามขั้นที่ไม่บังคับ เช่น อยู่ระหว่างการผลิต)
@@ -422,8 +424,22 @@ export default async function OrderPage({ params, searchParams }: Props) {
 
             {/* ฝากส่งอย่างเดียว: ไม่มีค่าสินค้า — คิดเงินจากบิลค่าขนส่งของแต่ละตู้ */}
             {order.shippingOnly ? (
-              <InfoSection title="ค่าใช้จ่าย" tone="money">
-                <Info label="ประเภทออเดอร์" wide>📦 ฝากส่งอย่างเดียว (ลูกค้าสั่งของเอง) — ไม่มีค่าสินค้า คิดเงินเฉพาะค่าขนส่ง</Info>
+              <InfoSection title="ค่าขนส่ง (ฝากส่งอย่างเดียว)" tone="money" footer={<PaymentsPanel order={order} payments={order.payments} direction="in" editing={payEditing === "in"} />}>
+                <Info label="ค่าขนส่งที่คิดลูกค้า">
+                  {ship.sell != null && <b>{formatMoney(ship.sell, "THB")}</b>}
+                  {order.shippingCharge == null && ship.sell != null && <span className="ml-1 text-xs text-gray-500">(คิว × เรท บาท/คิว)</span>}
+                </Info>
+                <Info label="ต้นทุนค่าขนส่งของร้าน (ลูกค้าไม่เห็น)">
+                  {ship.cost != null && formatMoney(ship.cost, "THB")}
+                  {order.shippingCost == null && ship.cost != null && <span className="ml-1 text-xs text-gray-500">(คิว × ต้นทุน/คิว ของตู้)</span>}
+                </Info>
+                <Info label="กำไรค่าขนส่ง">
+                  {ship.profit != null && <b className={ship.profit < 0 ? "text-brand-700" : "text-emerald-700"}>{formatMoney(ship.profit, "THB")}</b>}
+                </Info>
+                <Info label="ชำระแล้ว">{paidOf(order, order.payments) != null && formatMoney(paidOf(order, order.payments), "THB")}</Info>
+                <Info label="ยอดค้างชำระ">
+                  {order.shippingCharge != null ? <BalanceText balance={orderBalance(order, order.payments)} currency="THB" /> : <span className="text-xs text-gray-500">ใส่ค่าขนส่งที่คิดลูกค้าในหน้าแก้ไข</span>}
+                </Info>
                 <Info label="บิลค่าขนส่ง" wide>
                   {orderContainers.length === 0 ? (
                     <span className="text-gray-400">ยังไม่เข้าตู้ (ออกบิลได้เมื่อจัดเข้าตู้แล้ว)</span>

@@ -64,6 +64,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const shipSales = shipCounted.reduce((s, r) => s + r.ship.sell!, 0);
   const shipCost = shipCounted.reduce((s, r) => s + r.ship.cost!, 0);
   const shipProfit = shipSales - shipCost;
+  // ยอดค่าขนส่งที่คิดลูกค้าทั้งหมด (รวมออเดอร์ที่ตู้ยังไม่ใส่ต้นทุน)
+  const shipSalesAll = rows.reduce((s, r) => s + (r.ship.sell ?? 0), 0);
   const shipMissing = rows.filter((r) => r.ship.sell != null && r.ship.cost == null).length;
   const totalProfit = profit + shipProfit;
   const incomplete = rows.filter((r) => r.profit == null && (r.sell != null || r.cost != null));
@@ -102,14 +104,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
       {/* ค่าขนส่งจีน → ไทย (เฉพาะรายการที่เข้าตู้แล้ว) */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="ค่าขนส่ง (คิดลูกค้า)" value={baht(shipSales)} note={`${shipCounted.length} ออเดอร์`} />
+        <Stat label="ค่าขนส่ง (คิดลูกค้า)" value={baht(shipSalesAll)} note={`${rows.filter((r) => r.ship.sell != null).length} ออเดอร์ที่เข้าตู้แล้ว`} />
         <Stat
           label="ต้นทุนค่าขนส่ง"
           value={baht(shipCost)}
           note={shipMissing ? `อีก ${shipMissing} ออเดอร์ ตู้ยังไม่ใส่ต้นทุน/คิว (ไม่นับ)` : undefined}
           tone={shipMissing ? "warn" : undefined}
         />
-        <Stat label="กำไรค่าขนส่ง" value={baht(shipProfit)} note={shipSales > 0 ? `อัตรากำไร ${((shipProfit / shipSales) * 100).toFixed(1)}%` : undefined} tone={shipProfit < 0 ? "loss" : "profit"} />
+        <Stat label="กำไรค่าขนส่ง" value={baht(shipProfit)} note={shipCounted.length === 0 ? "ใส่ต้นทุน/คิว ที่หน้าตู้ก่อน" : shipSales > 0 ? `อัตรากำไร ${((shipProfit / shipSales) * 100).toFixed(1)}%` : undefined} tone={shipProfit < 0 ? "loss" : "profit"} />
         <Stat label="กำไรรวม (สินค้า + ขนส่ง)" value={baht(totalProfit)} tone={totalProfit < 0 ? "loss" : "profit"} />
       </div>
 

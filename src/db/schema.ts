@@ -44,6 +44,8 @@ export const containers = pgTable("containers", {
   provider: text("provider"),
   externalId: text("external_id"),
   note: text("note"),
+  // ต้นทุนค่าขนส่งที่เราจ่ายบริษัทขนส่ง (บาท / คิว) — ว่าง = ยังไม่รู้ต้นทุน (Dashboard ยังคิดกำไรค่าขนส่งไม่ได้)
+  costPerCbm: doublePrecision("cost_per_cbm"),
   loadedAt: timestamp("loaded_at"), // ปิดตู้ / โหลดสินค้าที่จีน
   departedAt: timestamp("departed_at"), // ออกจากจีน
   customsAt: timestamp("customs_at"), // ถึงด่าน / ตรวจปล่อยศุลกากร

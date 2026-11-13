@@ -15,6 +15,11 @@ const method = (fd: FormData): ShippingMethod => {
   return (shippingMethods as readonly string[]).includes(m) ? (m as ShippingMethod) : "truck";
 };
 
+const costPerCbm = (fd: FormData) => {
+  const v = parseFloat(String(fd.get("costPerCbm") ?? ""));
+  return Number.isFinite(v) && v >= 0 ? v : null;
+};
+
 // ตู้เปลี่ยน = ออเดอร์ทุกใบในตู้เปลี่ยนตาม จึงรีเฟรชทั้งหลังบ้าน
 const refresh = () => revalidatePath("/admin", "layout");
 
@@ -38,7 +43,7 @@ export async function updateContainer(fd: FormData) {
   if (!code) return;
   await db
     .update(containers)
-    .set({ code, method: method(fd), provider: text(fd, "provider"), note: text(fd, "note") })
+    .set({ code, method: method(fd), provider: text(fd, "provider"), note: text(fd, "note"), costPerCbm: costPerCbm(fd) })
     .where(eq(containers.id, id));
   refresh();
 }

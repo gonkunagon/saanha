@@ -48,6 +48,9 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
     const own = items.filter((i) => i.orderId === order.id).map((i) => ({ ...i, container }));
     return { order, items: own, summary: summarizeOrder(own) };
   });
+  // ค่าขนส่งทั้งตู้ (คิดลูกค้า / ต้นทุน)
+  const shipSell = sum(inside.map((r) => shippingOf(r.items, r.order.shippingRate)));
+  const shipCost = sum(items.map((i) => i.cbm)) * (container.costPerCbm ?? 0);
 
   // ออเดอร์ที่ยังมีรายการไม่อยู่ตู้ไหนและยังไม่ส่งถึงลูกค้า → เลือกเพิ่มเข้าตู้นี้ได้
   const candidates = (
@@ -174,6 +177,9 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
             <Field label="บริษัทขนส่ง">
               <input name="provider" defaultValue={container.provider ?? ""} className="input" />
             </Field>
+            <Field label="ต้นทุนค่าขนส่ง (บาท / คิว · ที่เราจ่าย)">
+              <input name="costPerCbm" type="number" step="0.01" min={0} defaultValue={container.costPerCbm ?? ""} placeholder="เช่น 4500" className="input" />
+            </Field>
             <Field label="หมายเหตุภายใน" className="sm:col-span-2">
               <textarea name="note" rows={2} defaultValue={container.note ?? ""} className="input" />
             </Field>
@@ -186,6 +192,14 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
             <div><dt className="text-gray-500">น้ำหนักรวม (กก.)</dt><dd className="font-semibold">{sum(items.map((i) => i.weightKg)).toFixed(2)}</dd></div>
             <div><dt className="text-gray-500">ปริมาตรรวม (คิว)</dt><dd className="font-semibold">{sum(items.map((i) => i.cbm)).toFixed(3)}</dd></div>
           </dl>
+          {/* ค่าขนส่งทั้งตู้: คิดลูกค้า (เรทของแต่ละออเดอร์) − ต้นทุน (ต้นทุน/คิว ของตู้) */}
+          {container.costPerCbm != null && (
+            <dl className="mt-3 grid grid-cols-3 gap-3 border-t border-gray-100 pt-4 text-sm">
+              <div><dt className="text-gray-500">ค่าขนส่ง (คิดลูกค้า)</dt><dd className="font-semibold">{baht(shipSell)}</dd></div>
+              <div><dt className="text-gray-500">ต้นทุนค่าขนส่ง</dt><dd className="font-semibold">{baht(shipCost)}</dd></div>
+              <div><dt className="text-gray-500">กำไรค่าขนส่ง</dt><dd className={`font-semibold ${shipSell - shipCost < 0 ? "text-brand-700" : "text-emerald-700"}`}>{baht(shipSell - shipCost)}</dd></div>
+            </dl>
+          )}
         </Card>
       </div>
 

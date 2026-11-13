@@ -1,0 +1,1 @@
+ALTER TABLE "containers" ADD COLUMN "cost_per_cbm" double precision;

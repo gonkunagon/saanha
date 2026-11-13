@@ -23,7 +23,9 @@ import {
 } from "../actions";
 
 const sum = (values: (number | null)[]) => values.reduce<number>((a, v) => a + (v ?? 0), 0);
-const shippingOf = shippingCostOf;
+// ค่าขนส่งของออเดอร์ในตู้: ออเดอร์ฝากส่ง = ยอดที่กรอกเองในหน้าออเดอร์ (ไม่ใช้เรท/คิว · ยังไม่กรอก = 0)
+const shippingOf = (items: { cbm: number | null }[], order: { shippingRate: number | null; shippingOnly: boolean; shippingCharge: number | null }) =>
+  order.shippingOnly ? (order.shippingCharge ?? 0) : shippingCostOf(items, order.shippingRate);
 const baht = (n: number) => n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 // สถานะที่อัปเดตจากหน้าตู้ได้: ขั้นของตู้ 4 ขั้น + ส่งต่อให้ลูกค้า (ใส่ให้ทุกรายการในตู้)
@@ -49,7 +51,7 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
     return { order, items: own, summary: summarizeOrder(own) };
   });
   // ค่าขนส่งทั้งตู้ (คิดลูกค้า / ต้นทุน)
-  const shipSell = sum(inside.map((r) => shippingOf(r.items, r.order.shippingRate)));
+  const shipSell = sum(inside.map((r) => shippingOf(r.items, r.order)));
   const shipCost = sum(items.map((i) => i.cbm)) * (container.costPerCbm ?? 0);
 
   // ออเดอร์ที่ยังมีรายการไม่อยู่ตู้ไหนและยังไม่ส่งถึงลูกค้า → เลือกเพิ่มเข้าตู้นี้ได้
@@ -238,9 +240,15 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
                   <td className="py-2 pr-4">{sum(own.map((i) => i.cbm)) || "-"}</td>
                   <td className="py-2 pr-4"><StageBadge stage={summary.stage} /></td>
                   <td className="py-2 pr-4">
-                    <ShippingRateForm orderId={order.id} rate={order.shippingRate} defaultRate={DEFAULT_SHIPPING_RATE_PER_CBM} />
+                    {order.shippingOnly ? (
+                      <Link href={`/admin/orders/${order.id}?edit=1`} className="text-xs text-gray-500 hover:text-brand-600 hover:underline">
+                        ราคาเหมา (ใส่ในหน้าออเดอร์)
+                      </Link>
+                    ) : (
+                      <ShippingRateForm orderId={order.id} rate={order.shippingRate} defaultRate={DEFAULT_SHIPPING_RATE_PER_CBM} />
+                    )}
                   </td>
-                  <td className="py-2 pr-4 text-right font-medium whitespace-nowrap">{baht(shippingOf(own, order.shippingRate))}</td>
+                  <td className="py-2 pr-4 text-right font-medium whitespace-nowrap">{order.shippingOnly && order.shippingCharge == null ? <span className="text-xs font-normal text-amber-700">ยังไม่ใส่ราคา</span> : baht(shippingOf(own, order))}</td>
                   <td className="py-1 pr-4 text-center">
                     {/* ใบสรุปค่าขนส่ง A4 ของออเดอร์นี้ในตู้นี้ (ส่ง / พิมพ์ให้ลูกค้า) */}
                     <Link
@@ -284,7 +292,7 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
                   <td className="py-2 pr-4">{Math.round(sum(inside.flatMap((r) => r.items.map((i) => i.cbm))) * 10000) / 10000 || "-"}</td>
                   <td className="py-2 pr-4" colSpan={2} />
                   <td className="py-2 pr-4 text-right whitespace-nowrap text-brand-700">
-                    {baht(sum(inside.map((r) => shippingOf(r.items, r.order.shippingRate))))}
+                    {baht(sum(inside.map((r) => shippingOf(r.items, r.order))))}
                   </td>
                   <td colSpan={2} />
                 </tr>

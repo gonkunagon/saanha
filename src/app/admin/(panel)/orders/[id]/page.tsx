@@ -424,36 +424,23 @@ export default async function OrderPage({ params, searchParams }: Props) {
             </InfoSection>
 
             {/* ฝากส่งอย่างเดียว: ไม่มีค่าสินค้า — คิดเงินจากบิลค่าขนส่งของแต่ละตู้ */}
-            {order.shippingOnly ? (
-              <InfoSection
-                title="ค่าขนส่ง (ฝากส่งอย่างเดียว)"
-                tone="money"
-                footer={
-                  <>
-                    <PaymentsPanel order={order} payments={order.payments} direction="in" editing={payEditing === "in"} />
-                    {/* เงินออก (จ่ายบริษัทขนส่ง) พื้นสีเขียว เหมือนกล่องยอดที่จ่ายร้านค้า */}
-                    <div className="-mx-4 mt-4 -mb-4 rounded-b-lg border-t border-emerald-300 bg-emerald-50 px-4 pb-4 [&>div]:mt-0 [&>div]:border-t-0">
-                      <PaymentsPanel order={order} payments={order.payments} direction="out" editing={payEditing === "out"} carrier />
-                    </div>
-                  </>
-                }
-              >
-                <Info label="ค่าขนส่งที่คิดลูกค้า">
-                  {ship.sell != null && <b>{formatMoney(ship.sell, "THB")}</b>}
-                </Info>
-                <Info label="ต้นทุนค่าขนส่งของร้าน (ลูกค้าไม่เห็น)">
-                  {ship.cost != null && formatMoney(ship.cost, "THB")}
-                </Info>
-                <Info label="กำไรค่าขนส่ง">
-                  {ship.profit != null && <b className={ship.profit < 0 ? "text-brand-700" : "text-emerald-700"}>{formatMoney(ship.profit, "THB")}</b>}
-                </Info>
-                <Info label="ชำระแล้ว">{paidOf(order, order.payments) != null && formatMoney(paidOf(order, order.payments), "THB")}</Info>
-                <Info label="ยอดค้างชำระ (ลูกค้า)">
-                  {order.shippingCharge != null ? <BalanceText balance={orderBalance(order, order.payments)} currency="THB" /> : <span className="text-xs text-gray-500">ใส่ค่าขนส่งที่คิดลูกค้าในหน้าแก้ไข</span>}
-                </Info>
+            {order.shippingOnly ? (<>
+              {/* แยก 2 กล่องเหมือนออเดอร์สั่งซื้อ: จ่ายบริษัทขนส่ง (ต้นทุน · เขียว) กับ คิดลูกค้า (เหลือง) */}
+              <InfoSection title="ยอดที่จ่ายบริษัทขนส่ง (ลูกค้าไม่เห็น)" tone="cost" footer={<PaymentsPanel order={order} payments={order.payments} direction="out" editing={payEditing === "out"} carrier />}>
+                <Info label="ต้นทุนค่าขนส่งของร้าน">{ship.cost != null && <b>{formatMoney(ship.cost, "THB")}</b>}</Info>
                 <Info label="จ่ายบริษัทขนส่งแล้ว">{shopPaid != null && formatMoney(shopPaid, "THB")}</Info>
                 <Info label="ค้างจ่ายบริษัทขนส่ง">
                   {order.shippingCost != null && <BalanceText balance={balanceOf(order.shippingCost, shopPaid ?? 0)} currency="THB" />}
+                </Info>
+              </InfoSection>
+              <InfoSection title="ค่าขนส่งที่คิดลูกค้า (ฝากส่งอย่างเดียว)" tone="money" footer={<PaymentsPanel order={order} payments={order.payments} direction="in" editing={payEditing === "in"} />}>
+                <Info label="ค่าขนส่งที่คิดลูกค้า">{ship.sell != null && <b>{formatMoney(ship.sell, "THB")}</b>}</Info>
+                <Info label="ชำระแล้ว">{paidOf(order, order.payments) != null && formatMoney(paidOf(order, order.payments), "THB")}</Info>
+                <Info label="ยอดค้างชำระ">
+                  {order.shippingCharge != null ? <BalanceText balance={orderBalance(order, order.payments)} currency="THB" /> : <span className="text-xs text-gray-500">ใส่ค่าขนส่งที่คิดลูกค้าในหน้าแก้ไข</span>}
+                </Info>
+                <Info label="กำไรค่าขนส่ง">
+                  {ship.profit != null && <b className={ship.profit < 0 ? "text-brand-700" : "text-emerald-700"}>{formatMoney(ship.profit, "THB")}</b>}
                 </Info>
                 <Info label="บิลค่าขนส่ง" wide>
                   {orderContainers.length === 0 ? (
@@ -468,7 +455,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
                   )}
                 </Info>
               </InfoSection>
-            ) : (<>
+            </>) : (<>
             {/* ยอดเงิน 2 ฝั่ง: จ่ายร้านค้า (ต้นทุน) กับ คิดลูกค้า — ราคาและเรทไม่เท่ากัน */}
             <InfoSection title="ยอดที่จ่ายร้านค้า" tone="cost" footer={<PaymentsPanel order={order} payments={order.payments} direction="out" editing={payEditing === "out"} />}>
               <Info label="ค่าสินค้า (จ่ายร้าน)">{order.totalAmount != null && formatMoney(order.totalAmount, order.currency)}</Info>

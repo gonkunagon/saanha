@@ -88,10 +88,10 @@ export function OrderFields({
       {/* ค่าขนส่งของออเดอร์ฝากส่ง (แสดงเฉพาะเมื่อเลือกฝากส่งอย่างเดียว — CSS .shipping-only) */}
       <div className="shipping-only contents">
         <Field label="ค่าขนส่งที่คิดลูกค้า (บาท)">
-          <input name="shippingCharge" type="number" step="0.01" min={0} defaultValue={order?.shippingCharge ?? ""} placeholder="เว้นว่าง = คิว × เรท บาท/คิว" className="input" />
+          <input name="shippingCharge" type="number" step="0.01" min={0} defaultValue={order?.shippingCharge ?? ""} className="input" />
         </Field>
         <Field label="ต้นทุนค่าขนส่งของร้าน (บาท · ลูกค้าไม่เห็น)">
-          <input name="shippingCost" type="number" step="0.01" min={0} defaultValue={order?.shippingCost ?? ""} placeholder="เว้นว่าง = คิว × ต้นทุน/คิว ของตู้" className="input" />
+          <input name="shippingCost" type="number" step="0.01" min={0} defaultValue={order?.shippingCost ?? ""} className="input" />
         </Field>
       </div>
       <Field label="บริษัทขนส่งที่รับงานต่อ">

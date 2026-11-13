@@ -427,11 +427,9 @@ export default async function OrderPage({ params, searchParams }: Props) {
               <InfoSection title="ค่าขนส่ง (ฝากส่งอย่างเดียว)" tone="money" footer={<PaymentsPanel order={order} payments={order.payments} direction="in" editing={payEditing === "in"} />}>
                 <Info label="ค่าขนส่งที่คิดลูกค้า">
                   {ship.sell != null && <b>{formatMoney(ship.sell, "THB")}</b>}
-                  {order.shippingCharge == null && ship.sell != null && <span className="ml-1 text-xs text-gray-500">(คิว × เรท บาท/คิว)</span>}
                 </Info>
                 <Info label="ต้นทุนค่าขนส่งของร้าน (ลูกค้าไม่เห็น)">
                   {ship.cost != null && formatMoney(ship.cost, "THB")}
-                  {order.shippingCost == null && ship.cost != null && <span className="ml-1 text-xs text-gray-500">(คิว × ต้นทุน/คิว ของตู้)</span>}
                 </Info>
                 <Info label="กำไรค่าขนส่ง">
                   {ship.profit != null && <b className={ship.profit < 0 ? "text-brand-700" : "text-emerald-700"}>{formatMoney(ship.profit, "THB")}</b>}

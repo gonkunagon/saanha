@@ -5,12 +5,16 @@ export const shippingRateOf = (rate: number | null) => rate ?? DEFAULT_SHIPPING_
 // ค่าขนส่งของออเดอร์ (2 ฝั่ง) จากรายการที่อยู่ในตู้แล้ว — ยังไม่มีรายการเข้าตู้ = null
 // ขาย = คิว × เรทของออเดอร์ · ทุน = คิว × ต้นทุน/คิว ของตู้ (ตู้ไหนยังไม่ใส่ต้นทุน = ทุน null)
 type ShipItem = { cbm: number | null; container: { costPerCbm: number | null } | null };
-// ออเดอร์ฝากส่งที่กรอกค่าขนส่ง / ต้นทุนเอง (บาท) ใช้ยอดที่กรอกแทน
+// ออเดอร์ฝากส่ง: ใช้ค่าขนส่ง / ต้นทุน (บาท) ที่กรอกเองเท่านั้น ไม่คำนวณจากคิว
 export function orderShippingOf(
   items: ShipItem[],
   rate: number | null,
   manual?: { shippingCharge: number | null; shippingCost: number | null; shippingOnly: boolean },
 ) {
+  if (manual?.shippingOnly) {
+    const { shippingCharge: sell, shippingCost: cost } = manual;
+    return { sell, cost, profit: sell != null && cost != null ? Math.round((sell - cost) * 100) / 100 : null };
+  }
   const inBox = items.filter((i) => i.container);
   const charge = manual?.shippingOnly ? manual.shippingCharge : null;
   const manualCost = manual?.shippingOnly ? manual.shippingCost : null;

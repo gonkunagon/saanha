@@ -3,7 +3,7 @@ import { desc } from "drizzle-orm";
 import { db } from "@/db";
 import { containers } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
-import { containerStageOf } from "@/lib/orders";
+import { containerDisplayStage } from "@/lib/orders";
 import { formatThaiDateTime } from "@/lib/datetime";
 import { Card, StageBadge, methodLabel } from "@/components/admin/ui";
 import { CreateContainerButton } from "./CreateContainerForm";
@@ -12,7 +12,7 @@ export default async function ContainersPage() {
   await requireUser();
   const list = await db.query.containers.findMany({
     orderBy: desc(containers.createdAt),
-    with: { items: { columns: { orderId: true, boxes: true } } },
+    with: { items: { columns: { orderId: true, boxes: true, outForDeliveryAt: true, deliveredAt: true } } },
   });
 
   return (
@@ -36,7 +36,7 @@ export default async function ContainersPage() {
             </thead>
             <tbody>
               {list.map((c) => {
-                const stage = containerStageOf(c);
+                const stage = containerDisplayStage(c, c.items);
                 return (
                   <tr key={c.id} className="border-t border-gray-100">
                     <td className="py-2 pr-4">

@@ -4,7 +4,7 @@ import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { containers, orders } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
-import { containerStageOf, summarizeOrder } from "@/lib/orders";
+import { containerDeliveryOf, containerDisplayStage, summarizeOrder } from "@/lib/orders";
 import { formatThaiDateTime, nowLocalInputValue } from "@/lib/datetime";
 import { containerStageFields, containerStages, stageLabelsTh, type ItemStage } from "@/lib/stages";
 import { Card, Field, MethodSelect, StageBadge, methodLabel } from "@/components/admin/ui";
@@ -38,8 +38,10 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
   });
   if (!container) notFound();
 
-  const stage = containerStageOf(container);
   const items = container.items;
+  // ขั้นของตู้ + กำลังจัดส่ง / จัดส่งสำเร็จ (เมื่อทุกรายการในตู้ไปถึงแล้ว)
+  const stage = containerDisplayStage(container, items);
+  const delivery = containerDeliveryOf(items);
 
   // ออเดอร์ในตู้ (1 ออเดอร์อาจมีหลายรายการในตู้นี้)
   const inside = [...new Map(items.map((i) => [i.orderId, i.order])).values()].map((order) => {
@@ -117,8 +119,10 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
           </form>
 
           <ol className="mt-5 space-y-3">
-            {containerStages.map((s) => {
-              const at = container[containerStageFields[s]];
+            {statusOptions.map((s) => {
+              const isDelivery = s === "out_for_delivery" || s === "delivered";
+              const d = isDelivery ? delivery[s] : null;
+              const at = d ? d.at : container[containerStageFields[s as keyof typeof containerStageFields]];
               return (
                 <li key={s} className="flex items-center gap-3">
                   <span
@@ -131,8 +135,11 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
                   <div className="flex-1">
                     <p className={`text-sm font-medium ${at ? "" : "text-gray-400"}`}>{stageLabelsTh[s]}</p>
                     {at && <p className="text-xs text-gray-500">{formatThaiDateTime(at)}</p>}
+                    {/* ส่งลูกค้าไปบางรายการ */}
+                    {d && !at && d.done > 0 && <p className="text-xs text-amber-700">บางรายการ ({d.done}/{d.total})</p>}
                   </div>
-                  {at && (
+                  {/* ขั้นส่งต่อลูกค้าล้างทีละออเดอร์ในหน้าออเดอร์ */}
+                  {at && !isDelivery && (
                     <form action={setContainerStage}>
                       <input type="hidden" name="id" value={container.id} />
                       <input type="hidden" name="stage" value={s} />

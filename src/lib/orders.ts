@@ -33,6 +33,23 @@ export function containerStageOf(c: Container): ContainerStage | null {
   return stage;
 }
 
+// ขั้นส่งต่อลูกค้าของตู้ (เก็บที่รายการสินค้า): วันที่ = รายการสุดท้ายที่ได้ขั้นนั้น เมื่อทุกรายการในตู้ได้แล้ว · done = จำนวนรายการที่ได้แล้ว
+type DeliveryDates = { outForDeliveryAt: Date | null; deliveredAt: Date | null };
+export function containerDeliveryOf(items: DeliveryDates[]) {
+  const of = (pick: (i: DeliveryDates) => Date | null) => {
+    const dates = items.map(pick).filter((d): d is Date => d != null);
+    const at = items.length > 0 && dates.length === items.length ? new Date(Math.max(...dates.map((d) => d.getTime()))) : null;
+    return { at, done: dates.length, total: items.length };
+  };
+  return { out_for_delivery: of((i) => i.outForDeliveryAt ?? i.deliveredAt), delivered: of((i) => i.deliveredAt) };
+}
+
+// สถานะที่แสดงของตู้ = ขั้นของตู้ หรือขั้นส่งต่อลูกค้า เมื่อทุกรายการในตู้ไปถึงแล้ว
+export function containerDisplayStage(c: Container, items: DeliveryDates[]): ItemStage | null {
+  const d = containerDeliveryOf(items);
+  return d.delivered.at ? "delivered" : d.out_for_delivery.at ? "out_for_delivery" : containerStageOf(c);
+}
+
 // เลขออเดอร์อัตโนมัติ เช่น SH2611-0001 (ปี-เดือน ตามเวลาไทย + ลำดับในเดือน)
 // q = transaction ที่กำลังทำอยู่ (ถ้ามี) — ห้ามใช้ db ตรงๆ ใน transaction เพราะบน Vercel มีการเชื่อมต่อเดียว จะค้างรอกันเอง
 export async function nextOrderCode(q: Pick<typeof db, "select"> = db) {

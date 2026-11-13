@@ -11,7 +11,7 @@ import { getQuoteRate } from "@/lib/settings";
 import { requireUser } from "@/lib/auth";
 import { parseLocalDateTime } from "@/lib/datetime";
 import { joinTracking } from "@/lib/tracking";
-import { nextOrderCode, stageOfItem } from "@/lib/orders";
+import { nextOrderCode, orderCodePrefix, stageOfItem } from "@/lib/orders";
 import { calcCbm } from "@/lib/cbm";
 import { containerStageFields, itemStages, optionalStages, stageIndex, type ContainerStage, type ItemStage } from "@/lib/stages";
 
@@ -218,7 +218,7 @@ export async function createOrder(_prev: string | null, fd: FormData): Promise<s
       newId = await db.transaction(async (tx) => {
         const [row] = await tx
           .insert(orders)
-          .values({ ...fields, code: await nextOrderCode(tx) })
+          .values({ ...fields, code: await nextOrderCode(tx, orderCodePrefix(fields.shippingOnly)) })
           .returning({ id: orders.id });
         for (const { item, packages } of items) {
           const [created] = await tx.insert(orderItems).values({ ...item, orderId: row.id }).returning({ id: orderItems.id });
@@ -244,9 +244,13 @@ export async function updateOrder(fd: FormData) {
   const id = Number(fd.get("id"));
   const fields = orderFields(fd);
   await db.transaction(async (tx) => {
+    // เปลี่ยนประเภทออเดอร์ = เปลี่ยนรหัสขึ้นต้น SH ⇄ FS (ได้เลขลำดับใหม่ของเดือนนี้)
+    const [cur] = await tx.select({ code: orders.code, shippingOnly: orders.shippingOnly }).from(orders).where(eq(orders.id, id));
+    const kind = orderCodePrefix(fields.shippingOnly ?? cur?.shippingOnly);
+    const code = cur && !cur.code.startsWith(kind) ? await nextOrderCode(tx, kind) : undefined;
     await tx
       .update(orders)
-      .set({ ...fields, ...customer })
+      .set({ ...fields, ...customer, code })
       .where(eq(orders.id, id));
     // พัสดุ + ตู้ ของแต่ละรายการ (ส่งมาพร้อมฟอร์มแก้ไขออเดอร์)
     for (const itemId of fd.getAll("shipItemId").map(Number).filter(Boolean)) {

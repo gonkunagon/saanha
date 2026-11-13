@@ -51,10 +51,12 @@ export function containerDisplayStage(c: Container, items: DeliveryDates[]): Ite
 }
 
 // เลขออเดอร์อัตโนมัติ เช่น SH2611-0001 (ปี-เดือน ตามเวลาไทย + ลำดับในเดือน)
+// ออเดอร์ฝากส่งอย่างเดียวใช้ FS (นับลำดับแยกจาก SH)
 // q = transaction ที่กำลังทำอยู่ (ถ้ามี) — ห้ามใช้ db ตรงๆ ใน transaction เพราะบน Vercel มีการเชื่อมต่อเดียว จะค้างรอกันเอง
-export async function nextOrderCode(q: Pick<typeof db, "select"> = db) {
+export const orderCodePrefix = (shippingOnly: boolean | null | undefined) => (shippingOnly ? "FS" : "SH");
+export async function nextOrderCode(q: Pick<typeof db, "select"> = db, kind: "SH" | "FS" = "SH") {
   const bkk = new Date(Date.now() + 7 * 3600_000);
-  const prefix = `SH${String(bkk.getUTCFullYear()).slice(2)}${String(bkk.getUTCMonth() + 1).padStart(2, "0")}-`;
+  const prefix = `${kind}${String(bkk.getUTCFullYear()).slice(2)}${String(bkk.getUTCMonth() + 1).padStart(2, "0")}-`;
   const [last] = await q
     .select({ code: orders.code })
     .from(orders)

@@ -212,6 +212,7 @@ export async function createOrder(_prev: string | null, fd: FormData): Promise<s
           quantity: toInt(fd.getAll("itemQuantity")[i]),
           unitPrice: fields.shippingOnly ? null : toNum(fd.getAll("itemUnitPrice")[i]),
           sellPrice: fields.shippingOnly ? null : toNum(fd.getAll("itemSellPrice")[i]),
+          domesticTracking: text(fd, "domesticTracking"),
           ...packageTotals(packages),
         },
         packages,
@@ -272,6 +273,10 @@ export async function updateOrder(fd: FormData) {
         .update(orderItems)
         .set({ ...packageTotals(packages), containerId: container?.id ?? null })
         .where(eq(orderItems.id, itemId));
+    }
+    // เลขพัสดุภายในประเทศ: แก้ในฟอร์มออเดอร์ = ใส่ให้ทุกรายการในออเดอร์
+    if (fd.has("domesticTracking") && text(fd, "domesticTracking") !== text(fd, "domesticTrackingOrig")) {
+      await tx.update(orderItems).set({ domesticTracking: text(fd, "domesticTracking") }).where(eq(orderItems.orderId, id));
     }
     // รายการสินค้ามีราคาแล้ว = ค่าสินค้าตามตาราง (ช่องในฟอร์มเป็นแบบอ่านอย่างเดียว)
     await syncGoodsFromItems(tx, id);

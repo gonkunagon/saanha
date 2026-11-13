@@ -415,6 +415,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
                 {order.items.length > 0 && order.items.every((i) => !i.container) && <span className="text-gray-400">ยังไม่เข้าตู้</span>}
               </Info>
               <Info label="บริษัทขนส่งที่รับงานต่อ">{order.provider}</Info>
+              <Info label="เลขพัสดุภายในประเทศ">{[...new Set(order.items.map((i) => i.domesticTracking).filter(Boolean))].join(", ")}</Info>
               {/* ที่อยู่ของออเดอร์นี้ ไม่ได้กรอก = ที่อยู่ในข้อมูลลูกค้า */}
               <Info label="ที่อยู่จัดส่งสินค้า" wide>
                 {order.deliveryAddress || order.customer?.address}
@@ -601,6 +602,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
             order={{ ...order, totalAmount: itemTotals.buy ?? order.totalAmount, customerGoodsAmount: itemTotals.sell ?? order.customerGoodsAmount }}
             customers={customers}
             paymentsLinked={order.payments.some((p) => p.direction !== "out")}
+            domesticTracking={order.items.find((i) => i.domesticTracking)?.domesticTracking}
             goodsFromItems={{ buy: order.items.some((i) => i.unitPrice != null), sell: order.items.some((i) => i.sellPrice != null) }}
             shipping={
               order.items.length > 0 && (

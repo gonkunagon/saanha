@@ -14,7 +14,9 @@ export function OrderFields({
   todayRate,
   shipping,
   goodsFromItems,
+  domesticTracking,
 }: {
+  domesticTracking?: string | null; // เลขพัสดุในไทยของรายการในออเดอร์ (ค่าที่มีอยู่)
   order?: Order;
   customers: PickerCustomer[];
   preselectId?: number;
@@ -96,6 +98,11 @@ export function OrderFields({
       </div>
       <Field label="บริษัทขนส่งที่รับงานต่อ">
         <input name="provider" defaultValue={order?.provider ?? ""} className="input" />
+      </Field>
+      {/* ใส่ให้ทุกรายการในออเดอร์ (แก้แล้วจึงบันทึกทับ — ค่าเดิมอยู่ใน domesticTrackingOrig) */}
+      <Field label="เลขพัสดุภายในประเทศ">
+        <input name="domesticTracking" defaultValue={domesticTracking ?? ""} className="input" autoComplete="off" />
+        <input type="hidden" name="domesticTrackingOrig" value={domesticTracking ?? ""} />
       </Field>
       <Field label="ที่อยู่จัดส่งสินค้า" className="sm:col-span-2">
         <textarea name="deliveryAddress" rows={2} defaultValue={order?.deliveryAddress ?? ""} placeholder="เว้นว่าง = ใช้ที่อยู่ในข้อมูลลูกค้า" className="input" />

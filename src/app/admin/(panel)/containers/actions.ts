@@ -76,7 +76,8 @@ export async function setContainerStatus(fd: FormData) {
   });
 
   await db.transaction(async (tx) => {
-    await tx.update(containers).set(fill).where(eq(containers.id, id));
+    // ขั้นของตู้ครบทุกวันแล้ว (เช่น อัปเดตเป็นกำลังจัดส่ง) = ไม่มีอะไรต้องแก้ที่ตู้ — update ว่าง drizzle จะ error
+    if (Object.keys(fill).length) await tx.update(containers).set(fill).where(eq(containers.id, id));
     if (stage in deliveryFields) {
       for (const field of deliveryFields[stage as keyof typeof deliveryFields]) {
         await tx

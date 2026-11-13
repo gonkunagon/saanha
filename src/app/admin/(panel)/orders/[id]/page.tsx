@@ -431,7 +431,10 @@ export default async function OrderPage({ params, searchParams }: Props) {
                 footer={
                   <>
                     <PaymentsPanel order={order} payments={order.payments} direction="in" editing={payEditing === "in"} />
-                    <PaymentsPanel order={order} payments={order.payments} direction="out" editing={payEditing === "out"} carrier />
+                    {/* เงินออก (จ่ายบริษัทขนส่ง) พื้นสีเขียว เหมือนกล่องยอดที่จ่ายร้านค้า */}
+                    <div className="-mx-4 mt-4 -mb-4 rounded-b-lg border-t border-emerald-300 bg-emerald-50 px-4 pb-4 [&>div]:mt-0 [&>div]:border-t-0">
+                      <PaymentsPanel order={order} payments={order.payments} direction="out" editing={payEditing === "out"} carrier />
+                    </div>
                   </>
                 }
               >

@@ -52,7 +52,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   const receivedThb = received.reduce((s, p) => s + (p.currency === "THB" ? p.amount : 0), 0);
 
   // รายการในใบเสร็จ: สินค้าแต่ละรายการ (มีราคาขายครบ = แยกยอดทีละรายการ · ไม่ครบ = รวมเป็นบรรทัดค่าสินค้า มีชื่อสินค้าใต้บรรทัด)
-  type Line = { label: string; sub?: string[]; qty?: number | null; unit?: number | null; amount: number };
+  type Line = { label: string; sub?: string[]; qty?: number | null; unit?: number | null; amount: number | null };
   const r2 = (n: number) => Math.round(n * 100) / 100;
   const itemName = (i: (typeof order.items)[number]) => `${i.description}${i.quantity ? ` × ${num(i.quantity)}` : ""}`;
   const lines: Line[] = [];
@@ -63,10 +63,16 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
     const priced = order.items.length > 0 && order.items.every((i) => i.sellPrice != null);
     if (priced) {
       for (const i of order.items) lines.push({ label: i.description, qty: i.quantity, unit: i.sellPrice, amount: r2(i.sellPrice! * (i.quantity ?? 1)) });
-      const diff = r2(goods - lines.reduce((s, l) => s + l.amount, 0));
+      const diff = r2(goods - lines.reduce((s, l) => s + (l.amount ?? 0), 0));
       if (Math.abs(diff) >= 0.01) lines.push({ label: "ค่าดำเนินการ", amount: diff });
+    } else if (order.items.length === 1) {
+      // สินค้ารายการเดียว ไม่มีราคาขาย = ยอดค่าสินค้าทั้งหมดอยู่ที่รายการนี้
+      const i = order.items[0];
+      lines.push({ label: i.description, qty: i.quantity, amount: goods });
     } else {
-      lines.push({ label: "ค่าสินค้า", sub: order.items.map(itemName), amount: goods });
+      // หลายรายการ ไม่มีราคาขาย = แสดงทุกรายการ (จำนวน) แล้วรวมยอดค่าสินค้าในบรรทัดเดียว
+      for (const i of order.items) lines.push({ label: i.description, qty: i.quantity, amount: null });
+      lines.push({ label: "ค่าสินค้ารวม", amount: goods });
     }
     const chinaShip = customerShippingOf(order) ?? 0;
     if (chinaShip > 0) lines.push({ label: "ค่าขนส่งภายในจีน", amount: chinaShip });
@@ -144,7 +150,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
                   </td>
                   <td className="px-3 py-2.5 text-right">{l.qty != null ? num(l.qty) : ""}</td>
                   <td className="px-3 py-2.5 text-right">{l.unit != null ? money(l.unit) : ""}</td>
-                  <td className="px-3 py-2.5 text-right">{money(l.amount)}</td>
+                  <td className="px-3 py-2.5 text-right">{l.amount != null ? money(l.amount) : ""}</td>
                 </tr>
               ))}
             </tbody>

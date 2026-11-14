@@ -12,7 +12,7 @@ import { amountInThaiWords } from "@/lib/thaiText";
 import { LogoMark } from "@/components/Logo";
 import { PrintButton } from "../../quote/[id]/PrintButton";
 
-// ใบเสร็จรับเงิน (หน้าพิมพ์ A4 แบบเดียวกับใบสรุปค่าขนส่ง) — ออกได้เมื่อลูกค้าชำระครบแล้ว
+// ใบยืนยันการชำระเงิน (หน้าพิมพ์ A4 · ไม่ใช่เอกสารทางภาษี: ไม่แสดงที่อยู่ / เลขผู้เสียภาษีของลูกค้า) แบบเดียวกับใบสรุปค่าขนส่ง) — ออกได้เมื่อลูกค้าชำระครบแล้ว
 // ออเดอร์สั่งซื้อ: ค่าสินค้า + ค่าขนส่งในจีน · ออเดอร์ฝากส่ง: ค่าขนส่งที่กรอกในหน้าออเดอร์
 
 const thaiDate = (d: Date) => d.toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", dateStyle: "long" });
@@ -91,7 +91,6 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
     ["โอนผ่านบัญชี / พร้อมเพย์", used.some((m) => m.includes("โอน") || m.includes("พร้อมเพย์"))],
     ["อื่นๆ (Alipay / WeChat Pay)", used.some((m) => /Alipay|WeChat|อื่น/.test(m))],
   ];
-  const address = order.deliveryAddress || c?.address;
   const blankRows = Math.max(0, 8 - lines.length); // ให้ตารางสูงเท่ากันทุกใบ
 
   const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
@@ -117,8 +116,8 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
         {/* หัวใบ */}
         <header className="flex items-start justify-between">
           <div>
-            <h1 className="text-[34px] leading-[1.25] font-bold text-gray-900">ใบเสร็จรับเงิน</h1>
-            <p className="text-[20px] leading-tight font-semibold text-gray-700">Receipt</p>
+            <h1 className="text-[30px] leading-[1.25] font-bold text-gray-900">ใบยืนยันการชำระเงิน</h1>
+            <p className="text-[20px] leading-tight font-semibold text-gray-700">Payment Confirmation</p>
           </div>
           <div className="flex items-center gap-2">
             <LogoMark className="h-11 w-11 text-navy-700" />
@@ -130,13 +129,12 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
         <section className="mt-6 grid grid-cols-[1fr_17rem] gap-6 border-y border-gray-800 py-4">
           <dl className="space-y-1">
             <Row label="ชื่อลูกค้า">{order.customerName}</Row>
-            <Row label="ที่อยู่"><span className="whitespace-pre-line">{address}</span></Row>
             <Row label="เบอร์โทรศัพท์">{order.customerPhone}</Row>
             {/* ผู้ติดต่อ = ชื่อจริง นามสกุล ในข้อมูลลูกค้า (ไม่มี = ชื่อที่ใช้เรียก) */}
             <Row label="ผู้ติดต่อ">{fullName || order.customerName}</Row>
           </dl>
           <dl className="space-y-1">
-            <Row label="เลขที่">{`RE-${order.code}`}</Row>
+            <Row label="เลขที่">{`PC-${order.code}`}</Row>
             <Row label="วันที่">{thaiDate(issued)}</Row>
             <Row label="อ้างอิง">{order.code}</Row>
             {order.purchaseOrderNo && <Row label="เลขคำสั่งซื้อ"><span className="break-all">{order.purchaseOrderNo}</span></Row>}

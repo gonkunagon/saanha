@@ -8,7 +8,8 @@ export function A4Fit() {
   useEffect(() => {
     const A4_PX = 794; // 210mm ที่ 96dpi
     const fit = () => {
-      const zoom = Math.min(1, (window.innerWidth - 32) / A4_PX);
+      // clientWidth = ความกว้างจอจริง (innerWidth บนมือถือขยายตามเนื้อหาที่ล้นจอ)
+      const zoom = Math.min(1, (document.documentElement.clientWidth - 32) / A4_PX);
       document.documentElement.style.setProperty("--a4-zoom", String(zoom));
     };
     fit();

@@ -232,24 +232,6 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
               ))}
             </ul>
           </div>
-          <div>
-            <p className="mb-2 text-[13px] font-semibold">รายละเอียดการชำระ</p>
-            {received.length === 0 ? (
-              <p className="text-gray-500">-</p>
-            ) : (
-              <ul className="space-y-1 text-[12px]">
-                {received.map((p) => (
-                  <li key={p.id} className="flex justify-between gap-3">
-                    <span>{thaiDate(p.paidAt)} · {[p.method, p.bank].filter(Boolean).join(" · ")}</span>
-                    <span className="whitespace-nowrap">{formatMoney(p.amount, p.currency)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <p className={`mt-2 text-[12px] font-semibold ${fullyPaid ? "text-emerald-700" : "text-brand-700"}`}>
-              {fullyPaid ? "✓ ชำระครบแล้ว" : `ยังค้างชำระ ${formatMoney(balance, cur)}`}
-            </p>
-          </div>
         </section>
 
         {/* ลายเซ็น */}

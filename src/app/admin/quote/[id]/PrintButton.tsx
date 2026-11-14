@@ -12,12 +12,13 @@ export function PrintButton({ fileName = "document" }: { fileName?: string }) {
     const root = document.documentElement;
     const zoom = root.style.getPropertyValue("--a4-zoom");
     try {
-      const [{ toPng }, { jsPDF }] = await Promise.all([import("html-to-image"), import("jspdf")]);
+      const [{ toJpeg }, { jsPDF }] = await Promise.all([import("html-to-image"), import("jspdf")]);
       root.style.setProperty("--a4-zoom", "1"); // ถ่ายภาพขนาดจริง (บนมือถือแผ่นถูกย่ออยู่)
       const pages = [...document.querySelectorAll<HTMLElement>("article.a4")];
-      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
       for (const [n, page] of pages.entries()) {
-        const png = await toPng(page, { pixelRatio: 2, backgroundColor: "#ffffff", style: { boxShadow: "none", margin: "0" } });
+        // JPEG คมพอพิมพ์ ไฟล์เล็ก (PNG ได้ไฟล์ ~14MB)
+        const img = await toJpeg(page, { pixelRatio: 2, quality: 0.9, backgroundColor: "#ffffff", style: { boxShadow: "none", margin: "0" } });
         const { width, height } = page.getBoundingClientRect();
         // กว้างเต็ม 210 มม. · สูงเกิน 297 มม. = ย่อทั้งภาพให้พอดีหน้า (จัดกึ่งกลาง)
         let w = 210;
@@ -27,7 +28,7 @@ export function PrintButton({ fileName = "document" }: { fileName?: string }) {
           h = 297;
         }
         if (n > 0) pdf.addPage();
-        pdf.addImage(png, "PNG", (210 - w) / 2, 0, w, h);
+        pdf.addImage(img, "JPEG", (210 - w) / 2, 0, w, h);
       }
       pdf.save(`${fileName}.pdf`);
     } catch (err) {

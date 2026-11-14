@@ -9,6 +9,7 @@ import { requireUser } from "@/lib/auth";
 import { site } from "@/config/site";
 import { currencyLabel, customerGoodsOf, customerPaidRateOf, customerShippingOf, customerTotalOf, formatMoney, orderBalance, paidOf, toThb } from "@/lib/money";
 import { amountInThaiWords } from "@/lib/thaiText";
+import { LogoMark } from "@/components/Logo";
 import { PrintButton } from "../../quote/[id]/PrintButton";
 
 // ใบเสร็จรับเงิน (หน้าพิมพ์ A4 แบบเดียวกับใบสรุปค่าขนส่ง) — ออกได้เมื่อลูกค้าชำระครบแล้ว
@@ -16,15 +17,6 @@ import { PrintButton } from "../../quote/[id]/PrintButton";
 
 const thaiDate = (d: Date) => d.toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", dateStyle: "long" });
 const num = (n: number | null) => (n == null ? "-" : n.toLocaleString("th-TH"));
-
-function InfoBox({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="overflow-hidden rounded-lg border border-gray-200">
-      <p className="bg-gray-50 px-4 py-1.5 text-[11px] font-semibold tracking-wide text-brand-700 uppercase">{title}</p>
-      <div className="space-y-0.5 px-4 py-3 leading-6">{children}</div>
-    </div>
-  );
-}
 
 export default async function ReceiptPage({ params }: { params: Promise<{ id: string }> }) {
   await requireUser();
@@ -79,12 +71,26 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   }
   const money = (n: number) => n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  const meta = [
-    ["เลขที่ใบเสร็จ / No.", `RE-${order.code}`],
-    ["วันที่ / Date", thaiDate(issued)],
-    ["อ้างอิงออเดอร์ / Ref.", order.code],
-    ["สถานะ / Status", fullyPaid ? "ชำระครบแล้ว" : "ยังชำระไม่ครบ"],
+  // ยอดสุทธิในใบเสร็จ: ออเดอร์หยวน = เงินบาทที่รับจริง · ออเดอร์บาท = รวมเป็นเงิน
+  const grand = cur === "CNY" ? receivedThb || totalThb || 0 : (total ?? 0);
+  const grandCur = cur === "CNY" ? "THB" : cur;
+  // ช่องทางชำระที่ใช้จริง → ติ๊กในช่องการชำระเงิน
+  const used = received.map((p) => p.method);
+  const payBoxes: [string, boolean][] = [
+    ["เงินสด", used.some((m) => m.includes("เงินสด"))],
+    ["บัตรเดบิต / บัตรเครดิต", used.some((m) => m.includes("บัตร"))],
+    ["โอนผ่านบัญชี / พร้อมเพย์", used.some((m) => m.includes("โอน") || m.includes("พร้อมเพย์"))],
+    ["อื่นๆ (Alipay / WeChat Pay)", used.some((m) => /Alipay|WeChat|อื่น/.test(m))],
   ];
+  const address = order.deliveryAddress || c?.address;
+  const blankRows = Math.max(0, 8 - lines.length); // ให้ตารางสูงเท่ากันทุกใบ
+
+  const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
+    <div className="flex gap-3">
+      <dt className="w-24 shrink-0 text-gray-500">{label}</dt>
+      <dd className="min-w-0 flex-1 font-medium text-gray-900">{children || "-"}</dd>
+    </div>
+  );
 
   return (
     <div className="mx-auto max-w-[210mm] px-4 py-6 print:p-0">
@@ -98,138 +104,154 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
         </p>
       )}
 
-      <article className="flex min-h-[297mm] flex-col bg-white text-[13px] text-gray-800 shadow-lg ring-1 ring-gray-200 [print-color-adjust:exact] print:min-h-0 print:shadow-none print:ring-0">
-        <header className="border-b-4 border-accent-400 bg-white px-10 pt-9 pb-6">
-          <p className="text-[11px] font-semibold tracking-[0.3em] text-brand-600">RECEIPT</p>
-          <h1 className="mt-1 text-[34px] leading-[1.5] font-bold text-brand-700">ใบเสร็จรับเงิน</h1>
+      <article className="flex min-h-[297mm] flex-col bg-white px-10 pt-10 pb-8 text-[13px] text-gray-800 shadow-lg ring-1 ring-gray-200 [print-color-adjust:exact] print:min-h-0 print:shadow-none print:ring-0">
+        {/* หัวใบ */}
+        <header className="flex items-start justify-between">
+          <div>
+            <h1 className="text-[44px] leading-[1.2] font-bold text-gray-900">ใบเสร็จรับเงิน</h1>
+            <p className="text-[28px] leading-tight font-semibold text-gray-700">Receipt</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <LogoMark className="h-14 w-14 text-navy-700" />
+            <span className="font-logo text-2xl font-extrabold tracking-tight text-gray-900">{site.name}</span>
+          </div>
         </header>
 
-        <div className="flex flex-1 flex-col px-10 pt-7 pb-8">
-          <dl className="grid grid-cols-4 divide-x divide-gray-200 rounded-lg border border-gray-200">
-            {meta.map(([label, value]) => (
-              <div key={label} className="px-4 py-2.5">
-                <dt className="text-[10px] text-gray-500">{label}</dt>
-                <dd className={`mt-0.5 font-semibold ${value === "ชำระครบแล้ว" ? "text-emerald-700" : "text-gray-900"}`}>{value}</dd>
-              </div>
-            ))}
+        {/* ลูกค้า + เลขที่ / วันที่ */}
+        <section className="mt-6 grid grid-cols-[1fr_15rem] gap-6 border-y border-gray-800 py-4">
+          <dl className="space-y-1">
+            <Row label="ชื่อลูกค้า">{fullName ? `${order.customerName} (${fullName})` : order.customerName}</Row>
+            <Row label="ที่อยู่"><span className="whitespace-pre-line">{address}</span></Row>
+            <Row label="เบอร์โทรศัพท์">{order.customerPhone}</Row>
+            <Row label="LINE">{order.customerLineId}</Row>
           </dl>
+          <dl className="space-y-1">
+            <Row label="เลขที่">{`RE-${order.code}`}</Row>
+            <Row label="วันที่">{thaiDate(issued)}</Row>
+            <Row label="อ้างอิง">{order.code}</Row>
+            {order.purchaseOrderNo && <Row label="เลขคำสั่งซื้อ"><span className="break-all">{order.purchaseOrderNo}</span></Row>}
+          </dl>
+        </section>
 
-          <div className="mt-5 grid grid-cols-2 gap-5">
-            <InfoBox title="ได้รับเงินจาก / Received from">
-              <p className="text-[15px] font-semibold text-gray-900">{order.customerName}</p>
-              {fullName && <p>{fullName}</p>}
-              <p className="text-gray-600">เบอร์โทร: {order.customerPhone || "-"}</p>
-              {order.customerLineId && <p className="text-gray-600">Line: {order.customerLineId}</p>}
-            </InfoBox>
-            <InfoBox title="รายละเอียด / Details">
-              {order.purchaseOrderNo && (
-                <p><span className="inline-block w-28 text-gray-500">เลขคำสั่งซื้อ</span>{order.purchaseOrderNo}</p>
-              )}
-              <p><span className="inline-block w-28 text-gray-500">จำนวนรายการ</span>{order.items.length} รายการ</p>
-            </InfoBox>
-          </div>
+        {/* ผู้ออก */}
+        <section className="grid grid-cols-[1fr_15rem] gap-6 border-b border-gray-800 py-4">
+          <dl className="space-y-1">
+            <Row label="ผู้ออก">{site.name}</Row>
+            {site.showAddress && <Row label="ที่อยู่">{site.address.th}</Row>}
+          </dl>
+          <dl className="space-y-1">
+            <Row label="เบอร์โทร">{site.phone}</Row>
+            <Row label="LINE">{site.lineId}</Row>
+            {site.showEmail && <Row label="อีเมล">{site.email}</Row>}
+          </dl>
+        </section>
 
-          {/* รายการที่รับชำระ */}
-          <table className="mt-6 w-full border-separate border-spacing-0 text-[13px]">
+        {/* ตารางรายการ + ยอดรวม */}
+        <section className="mt-6 overflow-hidden rounded-xl border-2 border-gray-800">
+          <table className="w-full text-[13px]">
             <thead>
-              <tr className="text-brand-700 [&>th]:border-y-2 [&>th]:border-brand-600">
-                <th className="w-12 rounded-l-lg border-l-2 px-3 py-2.5 text-center font-semibold">#</th>
-                <th className="px-3 py-2.5 text-left font-semibold">รายการ / Description</th>
-                <th className="w-20 px-3 py-2.5 text-right font-semibold">จำนวน</th>
-                <th className="w-32 px-3 py-2.5 text-right font-semibold whitespace-nowrap">ราคา / หน่วย</th>
-                <th className="w-40 rounded-r-lg border-r-2 px-3 py-2.5 text-right font-semibold">จำนวนเงิน ({currencyLabel[cur]})</th>
+              <tr className="border-b border-gray-800 text-[12px] [&>th]:px-4 [&>th]:py-2 [&>th]:font-semibold">
+                <th className="w-16 text-left">ลำดับ</th>
+                <th className="text-center">รายการสินค้า</th>
+                <th className="w-20 text-right">จำนวน</th>
+                <th className="w-28 text-right">ราคา/หน่วย</th>
+                <th className="w-32 text-right">ราคารวม</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="[&>tr>td]:px-4 [&>tr>td]:py-1.5 [&>tr>td]:align-top">
+              <tr><td colSpan={5} className="!py-1" /></tr>
               {lines.map((l, n) => (
-                <tr key={n} className="align-top [&>td]:border-b [&>td]:border-gray-100">
-                  <td className="px-3 py-2.5 text-center text-gray-500">{n + 1}</td>
-                  <td className="px-3 py-2.5">
+                <tr key={n}>
+                  <td>{n + 1}</td>
+                  <td>
                     <p className="font-medium text-gray-900">{l.label}</p>
                     {l.sub?.map((s, k) => <p key={k} className="text-[12px] text-gray-500">• {s}</p>)}
                   </td>
-                  <td className="px-3 py-2.5 text-right">{l.qty != null ? num(l.qty) : ""}</td>
-                  <td className="px-3 py-2.5 text-right">{l.unit != null ? money(l.unit) : ""}</td>
-                  <td className="px-3 py-2.5 text-right">{l.amount != null ? money(l.amount) : ""}</td>
+                  <td className="text-right">{l.qty != null ? num(l.qty) : ""}</td>
+                  <td className="text-right">{l.unit != null ? money(l.unit) : ""}</td>
+                  <td className="text-right">{l.amount != null ? money(l.amount) : ""}</td>
                 </tr>
+              ))}
+              {Array.from({ length: blankRows }, (_, k) => (
+                <tr key={`b${k}`}><td colSpan={5}>&nbsp;</td></tr>
               ))}
             </tbody>
           </table>
 
-          {/* ประวัติการรับเงิน */}
-          {received.length > 0 && (
-            <div className="mt-6">
-              <p className="mb-1 text-[11px] font-semibold tracking-wide text-brand-700 uppercase">การชำระเงิน / Payments</p>
-              <table className="w-full text-[12px]">
-                <thead className="text-left text-gray-500">
-                  <tr className="[&>th]:border-b [&>th]:border-gray-200 [&>th]:py-1.5 [&>th]:pr-3">
-                    <th>วันที่ชำระ</th>
-                    <th>ช่องทาง</th>
-                    <th className="text-right">จำนวนเงิน</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {received.map((p) => (
-                    <tr key={p.id} className="[&>td]:border-b [&>td]:border-gray-100 [&>td]:py-1.5 [&>td]:pr-3">
-                      <td>{thaiDate(p.paidAt)}</td>
-                      <td>{[p.method, p.bank].filter(Boolean).join(" · ")}</td>
-                      <td className="text-right">{formatMoney(p.amount, p.currency)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div className="grid grid-cols-[1fr_17rem] border-t-2 border-gray-800 px-4 py-3">
+            <div>
+              <p className="font-semibold">หมายเหตุ</p>
+              {cur === "CNY" && <p className="mt-1 text-[12px] text-gray-500">ราคาสินค้าเป็นเงินหยวน ชำระเป็นเงินบาทตามเรทที่ระบุ</p>}
             </div>
-          )}
-
-          <div className="mt-6 grid grid-cols-[1fr_18rem] gap-6">
-            <div className="rounded-lg border border-accent-400 bg-accent-300/15 px-4 py-3 self-start">
-              <p className="text-[10px] text-gray-500">จำนวนเงิน (ตัวอักษร)</p>
-              <p className="font-semibold text-gray-900">
-                ({amountInThaiWords(cur === "CNY" && totalThb != null ? totalThb : (total ?? 0), cur === "CNY" && totalThb != null ? "THB" : cur)})
-              </p>
-            </div>
-            <dl className="self-start overflow-hidden rounded-lg border-2 border-brand-600">
-              <div className="flex justify-between px-4 py-2 text-[12px] text-gray-600">
-                <dt>รวมเป็นเงิน</dt>
-                <dd>{formatMoney(total, cur)}</dd>
-              </div>
+            <dl className="space-y-1 text-[13px]">
+              <div className="flex justify-between"><dt>ราคารวม</dt><dd>{formatMoney(total, cur)}</dd></div>
               {cur === "CNY" && rate != null && (
-                <div className="flex justify-between border-t border-gray-100 px-4 py-2 text-[12px] text-gray-600">
-                  <dt>เรท</dt>
-                  <dd>{rate} บาท / หยวน</dd>
-                </div>
+                <div className="flex justify-between"><dt>เรท</dt><dd>{rate} บาท / หยวน</dd></div>
               )}
-              <div className="flex items-center justify-between border-t-2 border-brand-600 px-4 py-3.5 text-brand-700">
-                <dt className="font-semibold">รับชำระแล้ว</dt>
-                <dd className="text-lg font-bold">
-                  {cur === "CNY" ? formatMoney(receivedThb || totalThb, "THB") : formatMoney(paid, cur)}
-                </dd>
-              </div>
+              <div className="flex justify-between"><dt>ส่วนลด</dt><dd>0.00</dd></div>
             </dl>
           </div>
 
-          <div className="mt-auto grid grid-cols-2 gap-10 pt-14 text-center text-[12px] text-gray-600">
-            {[
-              ["ผู้รับเงิน", site.name, thaiDate(issued)],
-              ["ผู้ชำระเงิน", order.customerName, ""],
-            ].map(([role, org, date]) => (
-              <div key={role}>
-                <div className="relative mx-auto h-12 w-56 border-b border-gray-400">
-                  {role === "ผู้รับเงิน" && (
-                    <Image src={signature} alt="ลายเซ็นผู้รับเงิน" className="absolute bottom-[-3px] left-1/2 h-[68px] w-auto -translate-x-1/2" />
-                  )}
-                </div>
-                <p className="mt-2 font-semibold text-gray-800">{role}</p>
-                <p className="text-gray-400">{org}</p>
-                <p className="mt-2">วันที่ {date || "......../......../........"}</p>
-              </div>
-            ))}
+          <div className="flex items-center justify-between border-t-2 border-gray-800 px-4 py-4">
+            <p className="text-[15px] font-semibold">จำนวนเงินรวมทั้งสิ้น</p>
+            <div className="text-right">
+              <p className="text-[20px] font-bold text-gray-900">{formatMoney(grand, grandCur)}</p>
+              <p className="text-[13px] text-gray-700">({amountInThaiWords(grand, grandCur)})</p>
+            </div>
           </div>
-        </div>
+        </section>
 
-        <footer className="border-t-4 border-accent-400 bg-gray-50 px-10 py-3 text-center text-[11px] text-gray-500">
-          ขอบคุณที่ไว้วางใจ {site.name} — นำเข้าสินค้าจากจีน ครบจบในที่เดียว · LINE {site.lineId} · {site.url.replace("https://", "")}
-        </footer>
+        {/* การชำระเงิน + หมายเหตุ */}
+        <section className="mt-6 grid grid-cols-2 gap-8 border-b border-gray-800 pb-5">
+          <div>
+            <p className="mb-2 text-[15px] font-semibold">การชำระเงิน</p>
+            <ul className="space-y-1">
+              {payBoxes.map(([label, on]) => (
+                <li key={label} className="flex items-center gap-2">
+                  <span className={`flex h-4 w-4 items-center justify-center rounded-full border-2 border-gray-800 text-[10px] leading-none ${on ? "bg-gray-800 text-white" : ""}`}>
+                    {on ? "✓" : ""}
+                  </span>
+                  {label}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p className="mb-2 text-[15px] font-semibold">รายละเอียดการชำระ</p>
+            {received.length === 0 ? (
+              <p className="text-gray-500">-</p>
+            ) : (
+              <ul className="space-y-1 text-[12px]">
+                {received.map((p) => (
+                  <li key={p.id} className="flex justify-between gap-3">
+                    <span>{thaiDate(p.paidAt)} · {[p.method, p.bank].filter(Boolean).join(" · ")}</span>
+                    <span className="whitespace-nowrap">{formatMoney(p.amount, p.currency)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className={`mt-2 text-[12px] font-semibold ${fullyPaid ? "text-emerald-700" : "text-brand-700"}`}>
+              {fullyPaid ? "✓ ชำระครบแล้ว" : `ยังค้างชำระ ${formatMoney(balance, cur)}`}
+            </p>
+          </div>
+        </section>
+
+        {/* ลายเซ็น */}
+        <div className="mt-auto grid grid-cols-2 gap-10 pt-14 text-center text-[12px] text-gray-600">
+          {[
+            ["อนุมัติโดย", site.name, thaiDate(issued), true],
+            ["รับชำระ", site.name, thaiDate(issued), false],
+          ].map(([role, org, date, sign]) => (
+            <div key={String(role)}>
+              <div className="relative mx-auto flex h-12 w-64 items-end justify-center border-b border-dotted border-gray-500">
+                {sign && <Image src={signature} alt="ลายเซ็น" className="absolute bottom-[-3px] left-1/2 h-[68px] w-auto -translate-x-1/2" />}
+              </div>
+              <p className="mt-1 font-semibold text-gray-800">{role}</p>
+              <p className="text-gray-400">({org})</p>
+              <p className="mt-2">วันที่ {date}</p>
+            </div>
+          ))}
+        </div>
       </article>
     </div>
   );

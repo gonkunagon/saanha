@@ -6,6 +6,20 @@ import { useState } from "react";
 // แต่ละแผ่น = 1 หน้า A4 (ยาวเกินหน้าก็ย่อให้พอดี 1 หน้า)
 export function PrintButton({ fileName = "document" }: { fileName?: string }) {
   const [busy, setBusy] = useState(false);
+  // iPhone: ไฟล์ที่สร้างแล้ว แต่เปิดหน้าแชร์ไม่ได้ (ต้องแตะอีกครั้ง) — แสดงปุ่ม "แชร์ / บันทึกไฟล์"
+  const [ready, setReady] = useState<File | null>(null);
+
+  // มือถือที่แชร์ไฟล์ได้ (iPhone / Android) = เปิดหน้าแชร์ (มี "บันทึกไปยังไฟล์") · คอม = ดาวน์โหลดตรง
+  const canShareFile = (file: File) => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && !!navigator.canShare?.({ files: [file] });
+  async function share(file: File) {
+    try {
+      await navigator.share({ files: [file], title: file.name });
+      setReady(null);
+    } catch (err) {
+      if ((err as Error).name === "AbortError") setReady(null); // ผู้ใช้ปิดหน้าแชร์เอง
+      else setReady(file); // หมดสิทธิ์ user gesture (สร้างไฟล์นานเกิน) — ให้แตะปุ่มอีกครั้ง
+    }
+  }
 
   async function savePdf() {
     setBusy(true);
@@ -30,7 +44,9 @@ export function PrintButton({ fileName = "document" }: { fileName?: string }) {
         if (n > 0) pdf.addPage();
         pdf.addImage(img, "JPEG", (210 - w) / 2, 0, w, h);
       }
-      pdf.save(`${fileName}.pdf`);
+      const file = new File([pdf.output("blob")], `${fileName}.pdf`, { type: "application/pdf" });
+      if (canShareFile(file)) await share(file);
+      else pdf.save(`${fileName}.pdf`);
     } catch (err) {
       console.error(err);
       alert("สร้างไฟล์ PDF ไม่สำเร็จ — ลองใหม่อีกครั้ง หรือใช้เมนูพิมพ์ของเบราว์เซอร์");
@@ -40,6 +56,13 @@ export function PrintButton({ fileName = "document" }: { fileName?: string }) {
     }
   }
 
+  if (ready) {
+    return (
+      <button type="button" onClick={() => share(ready)} className="btn-primary">
+        📤 แชร์ / บันทึกไฟล์ PDF
+      </button>
+    );
+  }
   return (
     <button type="button" onClick={savePdf} disabled={busy} className="btn-primary disabled:opacity-60">
       {busy ? "กำลังสร้าง PDF..." : "บันทึกเป็น PDF"}

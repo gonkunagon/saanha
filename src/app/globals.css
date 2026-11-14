@@ -90,4 +90,8 @@ form:not(:has(input[name="orderType"][value="shipping"]:checked)) .shipping-only
 
 /* เอกสาร A4 ในหลังบ้าน: กว้าง 210mm เสมอ บนจอแคบย่อทั้งแผ่น (A4Fit ตั้ง --a4-zoom) */
 .a4 { width: 210mm; zoom: var(--a4-zoom, 1); }
-@media print { .a4 { zoom: 1; } }
+/* ตอนพิมพ์: ขนาดจริง กว้างเท่าพื้นที่พิมพ์ (กระดาษ − ขอบ @page) และไม่ยืดตามความสูงจอ — กันหน้าว่างหน้าที่ 2 บนมือถือ */
+@media print {
+  .a4 { zoom: 1; width: auto; }
+  html, body { min-height: 0 !important; height: auto !important; }
+}

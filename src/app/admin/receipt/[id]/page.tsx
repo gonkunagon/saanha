@@ -191,7 +191,6 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
           <div className="grid grid-cols-[1fr_17rem] border-t-2 border-gray-800 px-4 py-3">
             <div>
               <p className="font-semibold">หมายเหตุ</p>
-              <p className="mt-1 text-[12px] text-gray-600">เอกสารนี้ไม่ใช่ใบกำกับภาษี และไม่สามารถใช้เป็นหลักฐานในการหักภาษีได้</p>
             </div>
             <dl className="space-y-1 text-[12px]">
               <div className="flex justify-between"><dt>ราคารวม</dt><dd>{formatMoney(grand, grandCur)}</dd></div>

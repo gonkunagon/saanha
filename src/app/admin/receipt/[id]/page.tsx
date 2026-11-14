@@ -12,6 +12,7 @@ import { amountInThaiWords } from "@/lib/thaiText";
 import { shippingCostOf } from "@/lib/shipping";
 import { LogoMark } from "@/components/Logo";
 import { PrintButton } from "../../quote/[id]/PrintButton";
+import { A4Fit } from "@/components/admin/A4Fit";
 
 // ใบเสร็จรับเงิน (หน้าพิมพ์ A4 · ไม่ใช่เอกสารทางภาษี: ไม่แสดงที่อยู่ / เลขผู้เสียภาษีของลูกค้า) แบบเดียวกับใบสรุปค่าขนส่ง) — ออกได้เมื่อลูกค้าชำระครบแล้ว
 // ออเดอร์สั่งซื้อ: ค่าสินค้า + ค่าขนส่งในจีน + ค่าขนส่งจีน–ไทย (คิว × เรท ของแต่ละตู้ ตามบิลค่าขนส่ง) · ออเดอร์ฝากส่ง: ค่าขนส่งที่กรอกในหน้าออเดอร์
@@ -113,10 +114,11 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   );
 
   return (
-    <div className="mx-auto max-w-[210mm] px-4 py-6 print:p-0">
+    <div className="mx-auto max-w-[calc(210mm+2rem)] px-4 py-6 print:p-0">
       <div className="mb-4 flex items-center justify-between print:hidden">
         <Link href={`/admin/orders/${order.id}`} className="text-sm text-gray-500 hover:underline">← กลับไปหน้าออเดอร์</Link>
         <PrintButton />
+        <A4Fit />
       </div>
       {!fullyPaid && (
         <p className="mb-4 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200 print:hidden">
@@ -124,7 +126,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
         </p>
       )}
 
-      <article className="flex min-h-[297mm] flex-col bg-white px-10 pt-10 pb-8 text-[12px] text-gray-800 shadow-lg ring-1 ring-gray-200 [print-color-adjust:exact] print:min-h-0 print:shadow-none print:ring-0">
+      <article className="a4 flex min-h-[297mm] flex-col bg-white px-10 pt-10 pb-8 text-[12px] text-gray-800 shadow-lg ring-1 ring-gray-200 [print-color-adjust:exact] print:min-h-0 print:shadow-none print:ring-0">
         {/* หัวใบ */}
         <header className="flex items-start justify-between">
           <div>

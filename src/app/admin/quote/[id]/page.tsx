@@ -12,6 +12,7 @@ import { amountInThaiWords } from "@/lib/thaiText";
 import { methodLabel } from "@/components/admin/ui";
 import { LogoMark } from "@/components/Logo";
 import { PrintButton } from "./PrintButton";
+import { A4Fit } from "@/components/admin/A4Fit";
 import { getQuoteRate, sameBangkokDay } from "@/lib/settings";
 import { RateBox } from "./RateBox";
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
@@ -98,10 +99,11 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
   ];
 
   return (
-    <div className="mx-auto max-w-[210mm] px-4 py-6 print:p-0">
+    <div className="mx-auto max-w-[calc(210mm+2rem)] px-4 py-6 print:p-0">
       <div className="mb-4 flex items-center justify-between print:hidden">
         <Link href="/admin/orders" className="text-sm text-gray-500 hover:underline">← กลับไปหน้าออเดอร์</Link>
         <PrintButton />
+        <A4Fit />
       </div>
 
       {q && <RateBox q={q} />}
@@ -131,7 +133,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
         </div>
       )}
 
-      <article className="flex min-h-[297mm] flex-col bg-white text-[13px] text-gray-800 shadow-lg ring-1 ring-gray-200 [print-color-adjust:exact] print:min-h-0 print:shadow-none print:ring-0">
+      <article className="a4 flex min-h-[297mm] flex-col bg-white text-[13px] text-gray-800 shadow-lg ring-1 ring-gray-200 [print-color-adjust:exact] print:min-h-0 print:shadow-none print:ring-0">
         {/* หัวกระดาษ */}
         <header className="mx-10 mt-8 flex items-stretch justify-between rounded-lg border-2 border-brand-600">
           <div className="flex items-center gap-4 px-6 py-5">
@@ -313,7 +315,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
 
       {/* หน้า 2: รายละเอียดสินค้า (ชื่อ จำนวน ขนาด/รายละเอียด รูป) ให้ลูกค้าตรวจและเซ็นยืนยัน — พิมพ์ขึ้นหน้าใหม่เสมอ */}
       {order.items.length > 0 && (
-        <article className="mt-6 flex min-h-[297mm] break-before-page flex-col bg-white text-[13px] text-gray-800 shadow-lg ring-1 ring-gray-200 [print-color-adjust:exact] print:mt-0 print:min-h-0 print:shadow-none print:ring-0">
+        <article className="a4 mt-6 flex min-h-[297mm] break-before-page flex-col bg-white text-[13px] text-gray-800 shadow-lg ring-1 ring-gray-200 [print-color-adjust:exact] print:mt-0 print:min-h-0 print:shadow-none print:ring-0">
           <header className="mx-10 mt-8 flex items-center justify-between rounded-lg border-2 border-brand-600 px-6 py-4">
             <div className="flex items-center gap-3">
               <LogoMark className="h-10 w-10 shrink-0 text-navy-700" />

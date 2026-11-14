@@ -12,6 +12,7 @@ import { amountInThaiWords } from "@/lib/thaiText";
 import { shippingCostOf, shippingRateOf } from "@/lib/shipping";
 import { methodLabel } from "@/components/admin/ui";
 import { PrintButton } from "../../../quote/[id]/PrintButton";
+import { A4Fit } from "@/components/admin/A4Fit";
 
 // ใบสรุปค่าขนส่ง (หน้าพิมพ์ A4 แบบเดียวกับใบเสนอราคา) — ค่าขนส่งจีน → ไทย ของ 1 ออเดอร์ใน 1 ตู้
 // ค่าขนส่ง = คิวรวม × เรท (บาท / คิว) ที่ตั้งในหน้าตู้
@@ -64,13 +65,14 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
   ];
 
   return (
-    <div className="mx-auto max-w-[210mm] px-4 py-6 print:p-0">
+    <div className="mx-auto max-w-[calc(210mm+2rem)] px-4 py-6 print:p-0">
       <div className="mb-4 flex items-center justify-between print:hidden">
         <Link href={`/admin/containers/${container.id}`} className="text-sm text-gray-500 hover:underline">← กลับไปหน้าตู้</Link>
         <PrintButton />
+        <A4Fit />
       </div>
 
-      <article className="flex min-h-[297mm] flex-col bg-white text-[13px] text-gray-800 shadow-lg ring-1 ring-gray-200 [print-color-adjust:exact] print:min-h-0 print:shadow-none print:ring-0">
+      <article className="a4 flex min-h-[297mm] flex-col bg-white text-[13px] text-gray-800 shadow-lg ring-1 ring-gray-200 [print-color-adjust:exact] print:min-h-0 print:shadow-none print:ring-0">
         {/* หัวกระดาษ: ชื่อเอกสารอย่างเดียว (ไม่แสดงข้อมูลบริษัท) */}
         <header className="border-b-4 border-accent-400 bg-white px-10 pt-9 pb-6">
           <p className="text-[11px] font-semibold tracking-[0.3em] text-brand-600">SHIPPING SUMMARY</p>

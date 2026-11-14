@@ -12,7 +12,7 @@ import { amountInThaiWords } from "@/lib/thaiText";
 import { LogoMark } from "@/components/Logo";
 import { PrintButton } from "../../quote/[id]/PrintButton";
 
-// ใบยืนยันการชำระเงิน (หน้าพิมพ์ A4 · ไม่ใช่เอกสารทางภาษี: ไม่แสดงที่อยู่ / เลขผู้เสียภาษีของลูกค้า) แบบเดียวกับใบสรุปค่าขนส่ง) — ออกได้เมื่อลูกค้าชำระครบแล้ว
+// ใบเสร็จรับเงิน (หน้าพิมพ์ A4 · ไม่ใช่เอกสารทางภาษี: ไม่แสดงที่อยู่ / เลขผู้เสียภาษีของลูกค้า) แบบเดียวกับใบสรุปค่าขนส่ง) — ออกได้เมื่อลูกค้าชำระครบแล้ว
 // ออเดอร์สั่งซื้อ: ค่าสินค้า + ค่าขนส่งในจีน · ออเดอร์ฝากส่ง: ค่าขนส่งที่กรอกในหน้าออเดอร์
 
 const thaiDate = (d: Date) => d.toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", dateStyle: "long" });
@@ -116,8 +116,8 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
         {/* หัวใบ */}
         <header className="flex items-start justify-between">
           <div>
-            <h1 className="text-[30px] leading-[1.25] font-bold text-gray-900">ใบยืนยันการชำระเงิน</h1>
-            <p className="text-[20px] leading-tight font-semibold text-gray-700">Payment Confirmation</p>
+            <h1 className="text-[34px] leading-[1.25] font-bold text-gray-900">ใบเสร็จรับเงิน</h1>
+            <p className="text-[20px] leading-tight font-semibold text-gray-700">Receipt</p>
           </div>
           <div className="flex items-center gap-2">
             <LogoMark className="h-11 w-11 text-navy-700" />
@@ -134,7 +134,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
             <Row label="ผู้ติดต่อ">{fullName || order.customerName}</Row>
           </dl>
           <dl className="space-y-1">
-            <Row label="เลขที่">{`PC-${order.code}`}</Row>
+            <Row label="เลขที่">{`RE-${order.code}`}</Row>
             <Row label="วันที่">{thaiDate(issued)}</Row>
             <Row label="อ้างอิง">{order.code}</Row>
             {order.purchaseOrderNo && <Row label="เลขคำสั่งซื้อ"><span className="break-all">{order.purchaseOrderNo}</span></Row>}

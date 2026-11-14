@@ -5,9 +5,9 @@ export const site = {
   phone: "095-956-9666",
   lineId: "@saanha", // LINE OA "SAANHA สรรหา" (basic ID @540tsqtl)
   lineUrl: "https://line.me/R/ti/p/%40saanha", // ลิงก์เพิ่มเพื่อน — แก้ให้ตรงกับ lineId
-  email: "contact@example.com", // TODO: ใส่อีเมลจริง
+  email: "contract.saanha@gmail.com",
   // ซ่อนไว้ก่อน (ไม่แสดงบนเว็บและใบเสนอราคา) — เปลี่ยนเป็น true เมื่อพร้อมแสดง
-  showEmail: false,
+  showEmail: true,
   showAddress: false,
   address: {
     th: "199/23 ถนนกัลปพฤกษ์ แขวงบางขุนเทียน เขตจอมทอง กรุงเทพมหานคร 10150",

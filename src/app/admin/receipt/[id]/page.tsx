@@ -51,13 +51,27 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   const totalThb = cur === "CNY" ? toThb(total, rate, cur) : total;
   const receivedThb = received.reduce((s, p) => s + (p.currency === "THB" ? p.amount : 0), 0);
 
-  // รายการในใบเสร็จ
-  const lines: [string, number][] = order.shippingOnly
-    ? [["ค่าขนส่งสินค้า จีน – ไทย (ฝากส่ง)", order.shippingCharge ?? 0]]
-    : [
-        ["ค่าสินค้า", customerGoodsOf(order) ?? 0],
-        ...((customerShippingOf(order) ?? 0) > 0 ? ([["ค่าขนส่งภายในจีน", customerShippingOf(order)!]] as [string, number][]) : []),
-      ];
+  // รายการในใบเสร็จ: สินค้าแต่ละรายการ (มีราคาขายครบ = แยกยอดทีละรายการ · ไม่ครบ = รวมเป็นบรรทัดค่าสินค้า มีชื่อสินค้าใต้บรรทัด)
+  type Line = { label: string; sub?: string[]; qty?: number | null; unit?: number | null; amount: number };
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  const itemName = (i: (typeof order.items)[number]) => `${i.description}${i.quantity ? ` × ${num(i.quantity)}` : ""}`;
+  const lines: Line[] = [];
+  if (order.shippingOnly) {
+    lines.push({ label: "ค่าขนส่งสินค้า จีน – ไทย (ฝากส่ง)", sub: order.items.map(itemName), amount: order.shippingCharge ?? 0 });
+  } else {
+    const goods = customerGoodsOf(order) ?? 0;
+    const priced = order.items.length > 0 && order.items.every((i) => i.sellPrice != null);
+    if (priced) {
+      for (const i of order.items) lines.push({ label: i.description, qty: i.quantity, unit: i.sellPrice, amount: r2(i.sellPrice! * (i.quantity ?? 1)) });
+      const diff = r2(goods - lines.reduce((s, l) => s + l.amount, 0));
+      if (Math.abs(diff) >= 0.01) lines.push({ label: "ค่าดำเนินการ", amount: diff });
+    } else {
+      lines.push({ label: "ค่าสินค้า", sub: order.items.map(itemName), amount: goods });
+    }
+    const chinaShip = customerShippingOf(order) ?? 0;
+    if (chinaShip > 0) lines.push({ label: "ค่าขนส่งภายในจีน", amount: chinaShip });
+  }
+  const money = (n: number) => n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const meta = [
     ["เลขที่ใบเสร็จ / No.", `RE-${order.code}`],
@@ -105,10 +119,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
               {order.purchaseOrderNo && (
                 <p><span className="inline-block w-28 text-gray-500">เลขคำสั่งซื้อ</span>{order.purchaseOrderNo}</p>
               )}
-              <p className="flex">
-                <span className="w-28 shrink-0 text-gray-500">สินค้า</span>
-                <span>{order.items.map((i) => `${i.description}${i.quantity ? ` × ${num(i.quantity)}` : ""}`).join(", ") || "-"}</span>
-              </p>
+              <p><span className="inline-block w-28 text-gray-500">จำนวนรายการ</span>{order.items.length} รายการ</p>
             </InfoBox>
           </div>
 
@@ -118,15 +129,22 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
               <tr className="text-brand-700 [&>th]:border-y-2 [&>th]:border-brand-600">
                 <th className="w-12 rounded-l-lg border-l-2 px-3 py-2.5 text-center font-semibold">#</th>
                 <th className="px-3 py-2.5 text-left font-semibold">รายการ / Description</th>
-                <th className="w-44 rounded-r-lg border-r-2 px-3 py-2.5 text-right font-semibold">จำนวนเงิน ({currencyLabel[cur]})</th>
+                <th className="w-20 px-3 py-2.5 text-right font-semibold">จำนวน</th>
+                <th className="w-32 px-3 py-2.5 text-right font-semibold whitespace-nowrap">ราคา / หน่วย</th>
+                <th className="w-40 rounded-r-lg border-r-2 px-3 py-2.5 text-right font-semibold">จำนวนเงิน ({currencyLabel[cur]})</th>
               </tr>
             </thead>
             <tbody>
-              {lines.map(([label, amount], n) => (
-                <tr key={label} className="[&>td]:border-b [&>td]:border-gray-100">
+              {lines.map((l, n) => (
+                <tr key={n} className="align-top [&>td]:border-b [&>td]:border-gray-100">
                   <td className="px-3 py-2.5 text-center text-gray-500">{n + 1}</td>
-                  <td className="px-3 py-2.5 font-medium text-gray-900">{label}</td>
-                  <td className="px-3 py-2.5 text-right">{formatMoney(amount, cur).replace(` ${currencyLabel[cur]}`, "")}</td>
+                  <td className="px-3 py-2.5">
+                    <p className="font-medium text-gray-900">{l.label}</p>
+                    {l.sub?.map((s, k) => <p key={k} className="text-[12px] text-gray-500">• {s}</p>)}
+                  </td>
+                  <td className="px-3 py-2.5 text-right">{l.qty != null ? num(l.qty) : ""}</td>
+                  <td className="px-3 py-2.5 text-right">{l.unit != null ? money(l.unit) : ""}</td>
+                  <td className="px-3 py-2.5 text-right">{money(l.amount)}</td>
                 </tr>
               ))}
             </tbody>

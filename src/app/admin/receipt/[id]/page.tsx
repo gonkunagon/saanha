@@ -9,7 +9,7 @@ import { requireUser } from "@/lib/auth";
 import { site } from "@/config/site";
 import { customerGoodsOf, customerPaidRateOf, customerShippingOf, customerTotalOf, formatMoney, orderBalance, paidOf, toThb } from "@/lib/money";
 import { amountInThaiWords } from "@/lib/thaiText";
-import { shippingCostOf, shippingRateOf } from "@/lib/shipping";
+import { shippingCostOf } from "@/lib/shipping";
 import { LogoMark } from "@/components/Logo";
 import { PrintButton } from "../../quote/[id]/PrintButton";
 
@@ -50,7 +50,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   const itemName = (i: (typeof order.items)[number]) => `${i.description}${i.quantity ? ` × ${num(i.quantity)}` : ""}`;
   const lines: Line[] = [];
   if (order.shippingOnly) {
-    lines.push({ label: "ค่าขนส่งสินค้า จีน – ไทย (ฝากส่ง)", sub: order.items.map(itemName), amount: order.shippingCharge ?? 0 });
+    lines.push({ label: "ค่าขนส่ง", amount: order.shippingCharge ?? 0 });
   } else {
     const goods = customerGoodsOf(order) ?? 0;
     const priced = order.items.length > 0 && order.items.every((i) => i.sellPrice != null);
@@ -72,17 +72,12 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   }
   const money = (n: number) => n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  // ค่าขนส่งจีน–ไทย (บาท) ของออเดอร์สั่งซื้อ: แยกบรรทัดตามตู้ — ยอดเดียวกับใบสรุปค่าขนส่งของตู้นั้น
+  // ค่าขนส่งจีน–ไทย (บาท) ของออเดอร์สั่งซื้อ: รวมทุกตู้เป็นบรรทัดเดียว "ค่าขนส่ง" — ยอดเดียวกับใบสรุปค่าขนส่ง
   const shipLines: Line[] = [];
   if (!order.shippingOnly) {
-    const byBox = new Map<number, typeof order.items>();
-    for (const i of order.items) if (i.containerId) byBox.set(i.containerId, [...(byBox.get(i.containerId) ?? []), i]);
-    for (const its of byBox.values()) {
-      const amount = shippingCostOf(its, order.shippingRate);
-      if (amount <= 0) continue;
-      const cbm = Math.round(its.reduce((s, i) => s + (i.cbm ?? 0), 0) * 10000) / 10000;
-      shipLines.push({ label: `ค่าขนส่งสินค้า จีน – ไทย (ตู้ ${its[0].container!.code} · ${cbm} คิว)`, unit: shippingRateOf(order.shippingRate), amount });
-    }
+    const boxed = order.items.filter((i) => i.containerId);
+    const amount = shippingCostOf(boxed, order.shippingRate);
+    if (amount > 0) shipLines.push({ label: "ค่าขนส่ง", amount });
   }
   const shipTotal = r2(shipLines.reduce((s, l) => s + (l.amount ?? 0), 0));
 

@@ -201,7 +201,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
           <div className="flex items-center justify-between border-t-2 border-gray-800 px-4 py-4">
             <p className="text-[13px] font-semibold">จำนวนเงินรวมทั้งสิ้น</p>
             <div className="text-right">
-              <p className="text-[17px] font-bold text-gray-900">{formatMoney(grand, grandCur)}</p>
+              <p className="text-[14px] font-bold text-gray-900">{formatMoney(grand, grandCur)}</p>
               <p className="text-[12px] text-gray-700">({amountInThaiWords(grand, grandCur)})</p>
             </div>
           </div>

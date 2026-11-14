@@ -7,7 +7,7 @@ import { db } from "@/db";
 import { orders } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { site } from "@/config/site";
-import { currencyLabel, customerGoodsOf, customerPaidRateOf, customerShippingOf, customerTotalOf, formatMoney, orderBalance, paidOf, toThb } from "@/lib/money";
+import { customerGoodsOf, customerPaidRateOf, customerShippingOf, customerTotalOf, formatMoney, orderBalance, paidOf, toThb } from "@/lib/money";
 import { amountInThaiWords } from "@/lib/thaiText";
 import { LogoMark } from "@/components/Logo";
 import { PrintButton } from "../../quote/[id]/PrintButton";
@@ -74,6 +74,16 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   // ยอดสุทธิในใบเสร็จ: ออเดอร์หยวน = เงินบาทที่รับจริง · ออเดอร์บาท = รวมเป็นเงิน
   const grand = cur === "CNY" ? receivedThb || totalThb || 0 : (total ?? 0);
   const grandCur = cur === "CNY" ? "THB" : cur;
+  // ออเดอร์หยวน: แปลงทุกบรรทัดเป็นบาท ตามสัดส่วนเงินบาทที่ลูกค้าโอนจริง (ไม่แสดงเรท / หยวน) — บรรทัดสุดท้ายรับเศษให้รวมตรงกับยอดที่โอน
+  if (cur === "CNY" && total) {
+    const k = grand / total;
+    for (const l of lines) {
+      if (l.unit != null) l.unit = r2(l.unit * k);
+      if (l.amount != null) l.amount = r2(l.amount * k);
+    }
+    const last = [...lines].reverse().find((l) => l.amount != null);
+    if (last) last.amount = r2(last.amount! + grand - lines.reduce((s, l) => s + (l.amount ?? 0), 0));
+  }
   // ช่องทางชำระที่ใช้จริง → ติ๊กในช่องการชำระเงิน
   const used = received.map((p) => p.method);
   const payBoxes: [string, boolean][] = [
@@ -181,13 +191,9 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
           <div className="grid grid-cols-[1fr_17rem] border-t-2 border-gray-800 px-4 py-3">
             <div>
               <p className="font-semibold">หมายเหตุ</p>
-              {cur === "CNY" && <p className="mt-1 text-[12px] text-gray-500">ราคาสินค้าเป็นเงินหยวน ชำระเป็นเงินบาทตามเรทที่ระบุ</p>}
             </div>
             <dl className="space-y-1 text-[12px]">
-              <div className="flex justify-between"><dt>ราคารวม</dt><dd>{formatMoney(total, cur)}</dd></div>
-              {cur === "CNY" && rate != null && (
-                <div className="flex justify-between"><dt>เรท</dt><dd>{rate} บาท / หยวน</dd></div>
-              )}
+              <div className="flex justify-between"><dt>ราคารวม</dt><dd>{formatMoney(grand, grandCur)}</dd></div>
               <div className="flex justify-between"><dt>ส่วนลด</dt><dd>0.00</dd></div>
             </dl>
           </div>

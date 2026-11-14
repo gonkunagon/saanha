@@ -239,13 +239,12 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
           {[
             ["อนุมัติโดย", site.name, thaiDate(issued), true],
             ["รับชำระ", site.name, thaiDate(issued), false],
-          ].map(([role, org, date, sign]) => (
+          ].map(([role, , date, sign]) => (
             <div key={String(role)}>
               <div className="relative mx-auto flex h-12 w-64 items-end justify-center border-b border-dotted border-gray-500">
                 {sign && <Image src={signature} alt="ลายเซ็น" className="absolute bottom-[-3px] left-1/2 h-[68px] w-auto -translate-x-1/2" />}
               </div>
               <p className="mt-1 font-semibold text-gray-800">{role}</p>
-              <p className="text-gray-400">({org})</p>
               <p className="mt-2">วันที่ {date}</p>
             </div>
           ))}

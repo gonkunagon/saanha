@@ -293,7 +293,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
         <span className="ml-auto flex items-center gap-3">
           {/* ปุ่มบันทึกบนหัว = ส่งฟอร์มแก้ไขออเดอร์ด้านล่าง */}
           {editing && <button form="order-edit-form" className="btn-primary">💾 บันทึก</button>}
-          {fullyPaid && <Link href={`/admin/receipt/${order.id}`} target="_blank" className="btn-secondary">🧾 ใบยืนยันการชำระเงิน</Link>}
+          {fullyPaid && <Link href={`/admin/receipt/${order.id}`} target="_blank" className="btn-secondary">🧾 ใบเสร็จรับเงิน</Link>}
           {!order.shippingOnly && <Link href={`/admin/quote/${order.id}`} target="_blank" className="btn-secondary">📄 ใบเสนอราคา</Link>}
           <DeleteOrderButton
             orderId={order.id}

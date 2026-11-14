@@ -80,7 +80,8 @@ body {
 
 /* หน้าพิมพ์ (เช่น ใบเสนอราคา) */
 @media print {
-  @page { size: A4; margin: 12mm; }
+  /* ขอบกระดาษ 0 = เบราว์เซอร์ไม่พิมพ์ URL / วันที่ / เลขหน้าที่มุมกระดาษ — ขอบจริงใส่เป็น padding ของ .a4 แทน */
+  @page { size: A4; margin: 0; }
   body { background: #ffffff !important; }
 }
 
@@ -92,6 +93,6 @@ form:not(:has(input[name="orderType"][value="shipping"]:checked)) .shipping-only
 .a4 { width: 210mm; zoom: var(--a4-zoom, 1); }
 /* ตอนพิมพ์: ขนาดจริง กว้างเท่าพื้นที่พิมพ์ (กระดาษ − ขอบ @page) และไม่ยืดตามความสูงจอ — กันหน้าว่างหน้าที่ 2 บนมือถือ */
 @media print {
-  .a4 { zoom: 1; width: auto; }
+  .a4 { zoom: 1; width: auto; padding: 12mm !important; }
   html, body { min-height: 0 !important; height: auto !important; }
 }

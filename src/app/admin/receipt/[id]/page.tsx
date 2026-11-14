@@ -9,11 +9,12 @@ import { requireUser } from "@/lib/auth";
 import { site } from "@/config/site";
 import { customerGoodsOf, customerPaidRateOf, customerShippingOf, customerTotalOf, formatMoney, orderBalance, paidOf, toThb } from "@/lib/money";
 import { amountInThaiWords } from "@/lib/thaiText";
+import { shippingCostOf, shippingRateOf } from "@/lib/shipping";
 import { LogoMark } from "@/components/Logo";
 import { PrintButton } from "../../quote/[id]/PrintButton";
 
 // ใบเสร็จรับเงิน (หน้าพิมพ์ A4 · ไม่ใช่เอกสารทางภาษี: ไม่แสดงที่อยู่ / เลขผู้เสียภาษีของลูกค้า) แบบเดียวกับใบสรุปค่าขนส่ง) — ออกได้เมื่อลูกค้าชำระครบแล้ว
-// ออเดอร์สั่งซื้อ: ค่าสินค้า + ค่าขนส่งในจีน · ออเดอร์ฝากส่ง: ค่าขนส่งที่กรอกในหน้าออเดอร์
+// ออเดอร์สั่งซื้อ: ค่าสินค้า + ค่าขนส่งในจีน + ค่าขนส่งจีน–ไทย (คิว × เรท ของแต่ละตู้ ตามบิลค่าขนส่ง) · ออเดอร์ฝากส่ง: ค่าขนส่งที่กรอกในหน้าออเดอร์
 
 const thaiDate = (d: Date) => d.toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", dateStyle: "long" });
 const num = (n: number | null) => (n == null ? "-" : n.toLocaleString("th-TH"));
@@ -23,7 +24,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   const { id } = await params;
   const order = await db.query.orders.findFirst({
     where: eq(orders.id, Number(id)),
-    with: { customer: true, items: true, payments: true },
+    with: { customer: true, items: { with: { container: true } }, payments: true },
   });
   if (!order) notFound();
 
@@ -71,19 +72,35 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   }
   const money = (n: number) => n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  // ยอดสุทธิในใบเสร็จ: ออเดอร์หยวน = เงินบาทที่รับจริง · ออเดอร์บาท = รวมเป็นเงิน
-  const grand = cur === "CNY" ? receivedThb || totalThb || 0 : (total ?? 0);
+  // ค่าขนส่งจีน–ไทย (บาท) ของออเดอร์สั่งซื้อ: แยกบรรทัดตามตู้ — ยอดเดียวกับใบสรุปค่าขนส่งของตู้นั้น
+  const shipLines: Line[] = [];
+  if (!order.shippingOnly) {
+    const byBox = new Map<number, typeof order.items>();
+    for (const i of order.items) if (i.containerId) byBox.set(i.containerId, [...(byBox.get(i.containerId) ?? []), i]);
+    for (const its of byBox.values()) {
+      const amount = shippingCostOf(its, order.shippingRate);
+      if (amount <= 0) continue;
+      const cbm = Math.round(its.reduce((s, i) => s + (i.cbm ?? 0), 0) * 10000) / 10000;
+      shipLines.push({ label: `ค่าขนส่งสินค้า จีน – ไทย (ตู้ ${its[0].container!.code} · ${cbm} คิว)`, unit: shippingRateOf(order.shippingRate), amount });
+    }
+  }
+  const shipTotal = r2(shipLines.reduce((s, l) => s + (l.amount ?? 0), 0));
+
+  // ยอดค่าสินค้าในใบเสร็จ: ออเดอร์หยวน = เงินบาทที่รับจริง (มีค่าขนส่ง = คิดจากเรท เพราะเงินที่รับอาจรวมค่าขนส่งแล้ว) · ออเดอร์บาท = รวมเป็นเงิน
+  const goodsGrand = cur === "CNY" ? (shipLines.length ? totalThb || receivedThb : receivedThb || totalThb) || 0 : (total ?? 0);
+  const grand = r2(goodsGrand + shipTotal);
   const grandCur = cur === "CNY" ? "THB" : cur;
   // ออเดอร์หยวน: แปลงทุกบรรทัดเป็นบาท ตามสัดส่วนเงินบาทที่ลูกค้าโอนจริง (ไม่แสดงเรท / หยวน) — บรรทัดสุดท้ายรับเศษให้รวมตรงกับยอดที่โอน
   if (cur === "CNY" && total) {
-    const k = grand / total;
+    const k = goodsGrand / total;
     for (const l of lines) {
       if (l.unit != null) l.unit = r2(l.unit * k);
       if (l.amount != null) l.amount = r2(l.amount * k);
     }
     const last = [...lines].reverse().find((l) => l.amount != null);
-    if (last) last.amount = r2(last.amount! + grand - lines.reduce((s, l) => s + (l.amount ?? 0), 0));
+    if (last) last.amount = r2(last.amount! + goodsGrand - lines.reduce((s, l) => s + (l.amount ?? 0), 0));
   }
+  lines.push(...shipLines);
   // ช่องทางชำระที่ใช้จริง → ติ๊กในช่องการชำระเงิน
   const used = received.map((p) => p.method);
   const payBoxes: [string, boolean][] = [

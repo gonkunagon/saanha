@@ -274,6 +274,9 @@ export default async function OrderPage({ params, searchParams }: Props) {
 
   const summary = summarizeOrder(order.items);
   const ship = orderShippingOf(order.items, order.shippingRate, order); // ค่าขนส่งของออเดอร์ฝากส่ง
+  // ลูกค้าชำระครบแล้ว = ออกใบเสร็จรับเงินได้
+  const balanceNow = orderBalance(order, order.payments);
+  const fullyPaid = customerTotalOf(order) != null && balanceNow != null && balanceNow <= 0 && (paidOf(order, order.payments) ?? 0) > 0;
   const orderContainers = [...new Map(order.items.filter((i) => i.container).map((i) => [i.container!.id, i.container!])).values()];
   const stages = order.items.map(stageOfItem);
   // ค่าเริ่มต้นของแถบอัปเดต = ขั้นถัดไปของรายการที่ช้าที่สุด (ข้ามขั้นที่ไม่บังคับ เช่น อยู่ระหว่างการผลิต)
@@ -290,6 +293,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
         <span className="ml-auto flex items-center gap-3">
           {/* ปุ่มบันทึกบนหัว = ส่งฟอร์มแก้ไขออเดอร์ด้านล่าง */}
           {editing && <button form="order-edit-form" className="btn-primary">💾 บันทึก</button>}
+          {fullyPaid && <Link href={`/admin/receipt/${order.id}`} target="_blank" className="btn-secondary">🧾 ใบเสร็จรับเงิน</Link>}
           {!order.shippingOnly && <Link href={`/admin/quote/${order.id}`} target="_blank" className="btn-secondary">📄 ใบเสนอราคา</Link>}
           <DeleteOrderButton
             orderId={order.id}

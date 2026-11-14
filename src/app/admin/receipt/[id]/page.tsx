@@ -87,7 +87,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
 
   const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div className="flex gap-3">
-      <dt className="w-24 shrink-0 text-gray-500">{label}</dt>
+      <dt className="w-[5.5rem] shrink-0 text-gray-500">{label}</dt>
       <dd className="min-w-0 flex-1 font-medium text-gray-900">{children || "-"}</dd>
     </div>
   );
@@ -104,21 +104,21 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
         </p>
       )}
 
-      <article className="flex min-h-[297mm] flex-col bg-white px-10 pt-10 pb-8 text-[13px] text-gray-800 shadow-lg ring-1 ring-gray-200 [print-color-adjust:exact] print:min-h-0 print:shadow-none print:ring-0">
+      <article className="flex min-h-[297mm] flex-col bg-white px-10 pt-10 pb-8 text-[12px] text-gray-800 shadow-lg ring-1 ring-gray-200 [print-color-adjust:exact] print:min-h-0 print:shadow-none print:ring-0">
         {/* หัวใบ */}
         <header className="flex items-start justify-between">
           <div>
-            <h1 className="text-[44px] leading-[1.2] font-bold text-gray-900">ใบเสร็จรับเงิน</h1>
-            <p className="text-[28px] leading-tight font-semibold text-gray-700">Receipt</p>
+            <h1 className="text-[34px] leading-[1.25] font-bold text-gray-900">ใบเสร็จรับเงิน</h1>
+            <p className="text-[20px] leading-tight font-semibold text-gray-700">Receipt</p>
           </div>
           <div className="flex items-center gap-2">
-            <LogoMark className="h-14 w-14 text-navy-700" />
-            <span className="font-logo text-2xl font-extrabold tracking-tight text-gray-900">{site.name}</span>
+            <LogoMark className="h-11 w-11 text-navy-700" />
+            <span className="font-logo text-xl font-extrabold tracking-tight text-gray-900">{site.name}</span>
           </div>
         </header>
 
         {/* ลูกค้า + เลขที่ / วันที่ */}
-        <section className="mt-6 grid grid-cols-[1fr_15rem] gap-6 border-y border-gray-800 py-4">
+        <section className="mt-6 grid grid-cols-[1fr_17rem] gap-6 border-y border-gray-800 py-4">
           <dl className="space-y-1">
             <Row label="ชื่อลูกค้า">{fullName ? `${order.customerName} (${fullName})` : order.customerName}</Row>
             <Row label="ที่อยู่"><span className="whitespace-pre-line">{address}</span></Row>
@@ -134,7 +134,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
         </section>
 
         {/* ผู้ออก */}
-        <section className="grid grid-cols-[1fr_15rem] gap-6 border-b border-gray-800 py-4">
+        <section className="grid grid-cols-[1fr_17rem] gap-6 border-b border-gray-800 py-4">
           <dl className="space-y-1">
             <Row label="ผู้ออก">{site.name}</Row>
             {site.showAddress && <Row label="ที่อยู่">{site.address.th}</Row>}
@@ -148,7 +148,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
 
         {/* ตารางรายการ + ยอดรวม */}
         <section className="mt-6 overflow-hidden rounded-xl border-2 border-gray-800">
-          <table className="w-full text-[13px]">
+          <table className="w-full text-[12px]">
             <thead>
               <tr className="border-b border-gray-800 text-[12px] [&>th]:px-4 [&>th]:py-2 [&>th]:font-semibold">
                 <th className="w-16 text-left">ลำดับ</th>
@@ -183,7 +183,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
               <p className="font-semibold">หมายเหตุ</p>
               {cur === "CNY" && <p className="mt-1 text-[12px] text-gray-500">ราคาสินค้าเป็นเงินหยวน ชำระเป็นเงินบาทตามเรทที่ระบุ</p>}
             </div>
-            <dl className="space-y-1 text-[13px]">
+            <dl className="space-y-1 text-[12px]">
               <div className="flex justify-between"><dt>ราคารวม</dt><dd>{formatMoney(total, cur)}</dd></div>
               {cur === "CNY" && rate != null && (
                 <div className="flex justify-between"><dt>เรท</dt><dd>{rate} บาท / หยวน</dd></div>
@@ -193,10 +193,10 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
           </div>
 
           <div className="flex items-center justify-between border-t-2 border-gray-800 px-4 py-4">
-            <p className="text-[15px] font-semibold">จำนวนเงินรวมทั้งสิ้น</p>
+            <p className="text-[13px] font-semibold">จำนวนเงินรวมทั้งสิ้น</p>
             <div className="text-right">
-              <p className="text-[20px] font-bold text-gray-900">{formatMoney(grand, grandCur)}</p>
-              <p className="text-[13px] text-gray-700">({amountInThaiWords(grand, grandCur)})</p>
+              <p className="text-[17px] font-bold text-gray-900">{formatMoney(grand, grandCur)}</p>
+              <p className="text-[12px] text-gray-700">({amountInThaiWords(grand, grandCur)})</p>
             </div>
           </div>
         </section>
@@ -204,7 +204,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
         {/* การชำระเงิน + หมายเหตุ */}
         <section className="mt-6 grid grid-cols-2 gap-8 border-b border-gray-800 pb-5">
           <div>
-            <p className="mb-2 text-[15px] font-semibold">การชำระเงิน</p>
+            <p className="mb-2 text-[13px] font-semibold">การชำระเงิน</p>
             <ul className="space-y-1">
               {payBoxes.map(([label, on]) => (
                 <li key={label} className="flex items-center gap-2">
@@ -217,7 +217,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
             </ul>
           </div>
           <div>
-            <p className="mb-2 text-[15px] font-semibold">รายละเอียดการชำระ</p>
+            <p className="mb-2 text-[13px] font-semibold">รายละเอียดการชำระ</p>
             {received.length === 0 ? (
               <p className="text-gray-500">-</p>
             ) : (

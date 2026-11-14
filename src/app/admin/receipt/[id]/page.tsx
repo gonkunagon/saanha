@@ -78,7 +78,6 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   const used = received.map((p) => p.method);
   const payBoxes: [string, boolean][] = [
     ["เงินสด", used.some((m) => m.includes("เงินสด"))],
-    ["บัตรเดบิต / บัตรเครดิต", used.some((m) => m.includes("บัตร"))],
     ["โอนผ่านบัญชี / พร้อมเพย์", used.some((m) => m.includes("โอน") || m.includes("พร้อมเพย์"))],
     ["อื่นๆ (Alipay / WeChat Pay)", used.some((m) => /Alipay|WeChat|อื่น/.test(m))],
   ];
@@ -120,10 +119,11 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
         {/* ลูกค้า + เลขที่ / วันที่ */}
         <section className="mt-6 grid grid-cols-[1fr_17rem] gap-6 border-y border-gray-800 py-4">
           <dl className="space-y-1">
-            <Row label="ชื่อลูกค้า">{fullName ? `${order.customerName} (${fullName})` : order.customerName}</Row>
+            <Row label="ชื่อลูกค้า">{order.customerName}</Row>
             <Row label="ที่อยู่"><span className="whitespace-pre-line">{address}</span></Row>
             <Row label="เบอร์โทรศัพท์">{order.customerPhone}</Row>
-            <Row label="LINE">{order.customerLineId}</Row>
+            {/* ผู้ติดต่อ = ชื่อจริง นามสกุล ในข้อมูลลูกค้า (ไม่มี = ชื่อที่ใช้เรียก) */}
+            <Row label="ผู้ติดต่อ">{fullName || order.customerName}</Row>
           </dl>
           <dl className="space-y-1">
             <Row label="เลขที่">{`RE-${order.code}`}</Row>

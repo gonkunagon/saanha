@@ -126,7 +126,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
         </p>
       )}
 
-      <article className="a4 flex min-h-[297mm] flex-col bg-white px-10 pt-10 pb-8 text-[12px] text-gray-800 shadow-lg ring-1 ring-gray-200 [print-color-adjust:exact] print:min-h-0 print:shadow-none print:ring-0">
+      <article className="a4 flex min-h-[297mm] flex-col bg-white px-10 pt-10 pb-8 print:p-0 text-[12px] text-gray-800 shadow-lg ring-1 ring-gray-200 [print-color-adjust:exact] print:min-h-0 print:shadow-none print:ring-0">
         {/* หัวใบ */}
         <header className="flex items-start justify-between">
           <div>
@@ -195,7 +195,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
                 </tr>
               ))}
               {Array.from({ length: blankRows }, (_, k) => (
-                <tr key={`b${k}`}><td colSpan={5}>&nbsp;</td></tr>
+                <tr key={`b${k}`} className={k >= 3 ? "print:hidden" : ""}><td colSpan={5}>&nbsp;</td></tr>
               ))}
             </tbody>
           </table>
@@ -237,7 +237,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
         </section>
 
         {/* ลายเซ็น */}
-        <div className="mt-auto grid grid-cols-2 gap-10 pt-14 text-center text-[12px] text-gray-600">
+        <div className="mt-auto grid grid-cols-2 gap-10 pt-14 print:pt-8 text-center text-[12px] text-gray-600">
           {[
             ["อนุมัติโดย", site.name, thaiDate(issued), true],
             ["รับชำระ", site.name, thaiDate(issued), false],

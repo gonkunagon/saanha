@@ -117,7 +117,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
     <div className="mx-auto max-w-[calc(210mm+2rem)] px-4 py-6 print:p-0">
       <div className="mb-4 flex items-center justify-between print:hidden">
         <Link href={`/admin/orders/${order.id}`} className="text-sm text-gray-500 hover:underline">← กลับไปหน้าออเดอร์</Link>
-        <PrintButton />
+        <PrintButton fileName={`RE-${order.code}`} />
         <A4Fit />
       </div>
       {!fullyPaid && (

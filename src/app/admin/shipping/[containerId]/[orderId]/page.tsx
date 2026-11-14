@@ -68,7 +68,7 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
     <div className="mx-auto max-w-[calc(210mm+2rem)] px-4 py-6 print:p-0">
       <div className="mb-4 flex items-center justify-between print:hidden">
         <Link href={`/admin/containers/${container.id}`} className="text-sm text-gray-500 hover:underline">← กลับไปหน้าตู้</Link>
-        <PrintButton />
+        <PrintButton fileName={`ค่าขนส่ง-${order.code}-${container.code}`} />
         <A4Fit />
       </div>
 

@@ -182,7 +182,7 @@ export function PackageFields({ prefix = "pkg_", defaults = [] }: { prefix?: str
                   <input type="hidden" name={`${prefix}heightCm`} value="" />
                   <span className="w-28"><input name={`${prefix}cbm`} type="number" step="0.0001" min={0} value={r.cbm} onChange={(e) => update(r.key, "cbm", e.target.value)} placeholder="คิวรวม" className={cell} aria-label="ปริมาณคิวรวมของแถวนี้" /></span>
                   <span className="text-xs text-gray-500">คิว (รวม)</span>
-                  <button type="button" onClick={() => toggleManual(r.key)} className="ml-1 shrink-0 rounded-lg border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50">ใส่ขนาด</button>
+                  <button type="button" onClick={() => toggleManual(r.key)} className="ml-1 shrink-0 rounded-lg border border-brand-200 px-2 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50">ใส่ขนาด</button>
                 </div>
               ) : (
               <div className="col-span-2 flex items-center gap-1 md:col-span-1">

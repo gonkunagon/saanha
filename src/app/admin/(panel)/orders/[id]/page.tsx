@@ -431,7 +431,12 @@ export default async function OrderPage({ params, searchParams }: Props) {
             {order.shippingOnly ? (<>
               {/* แยก 2 กล่องเหมือนออเดอร์สั่งซื้อ: จ่ายบริษัทขนส่ง (ต้นทุน · เขียว) กับ คิดลูกค้า (เหลือง) */}
               <InfoSection title="ยอดที่จ่ายบริษัทขนส่ง (ลูกค้าไม่เห็น)" tone="cost" footer={<PaymentsPanel order={order} payments={order.payments} direction="out" editing={payEditing === "out"} carrier />}>
-                <Info label="ต้นทุนค่าขนส่งของร้าน">{ship.cost != null && <b>{formatMoney(ship.cost, "THB")}</b>}</Info>
+                <Info label="ต้นทุนค่าขนส่งของร้าน">
+                  {ship.cost != null && <b>{formatMoney(ship.cost, "THB")}</b>}
+                  {order.shippingCostPerCbm != null && (
+                    <span className="ml-1 text-xs text-gray-500">({formatMoney(order.shippingCostPerCbm, "THB")} / คิว)</span>
+                  )}
+                </Info>
                 <Info label="จ่ายบริษัทขนส่งแล้ว">{shopPaid != null && formatMoney(shopPaid, "THB")}</Info>
                 <Info label="ค้างจ่ายบริษัทขนส่ง">
                   {order.shippingCost != null && <BalanceText balance={balanceOf(order.shippingCost, shopPaid ?? 0)} currency="THB" />}

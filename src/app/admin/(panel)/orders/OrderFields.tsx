@@ -97,11 +97,16 @@ export function OrderFields({
           </Field>
         </div>
         <div className="charge-per-cbm">
-          <PerCbmCharge defaultValue={order?.shippingChargePerCbm} />
+          <PerCbmCharge name="shippingChargePerCbm" label="ค่าขนส่งที่คิดลูกค้า (บาท / คิว)" defaultValue={order?.shippingChargePerCbm} />
         </div>
-        <Field label="ต้นทุนค่าขนส่งของร้าน (บาท · ลูกค้าไม่เห็น)">
-          <input name="shippingCost" type="number" step="0.01" min={0} defaultValue={order?.shippingCost ?? ""} className="input" />
-        </Field>
+        <div className="charge-total">
+          <Field label="ต้นทุนค่าขนส่งของร้าน (บาท · ลูกค้าไม่เห็น)">
+            <input name="shippingCost" type="number" step="0.01" min={0} defaultValue={order?.shippingCost ?? ""} className="input" />
+          </Field>
+        </div>
+        <div className="charge-per-cbm">
+          <PerCbmCharge name="shippingCostPerCbm" label="ต้นทุนค่าขนส่งของร้าน (บาท / คิว · ลูกค้าไม่เห็น)" defaultValue={order?.shippingCostPerCbm} />
+        </div>
       </div>
       <Field label="บริษัทขนส่งที่รับงานต่อ">
         <input name="provider" defaultValue={order?.provider ?? ""} className="input" />

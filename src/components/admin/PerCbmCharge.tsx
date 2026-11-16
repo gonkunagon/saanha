@@ -5,7 +5,7 @@ import { Field } from "@/components/admin/ui";
 
 // ฝากส่ง + ใส่คิวเอง: ช่องราคาต่อคิว + ช่อง "รวม" (ราคา × คิวรวมทุกแถวพัสดุในฟอร์ม · คำนวณทันทีที่พิมพ์)
 // คิวของแต่ละแถวมาจาก <input data-row-cbm> ที่ PackageFields ใส่ไว้
-export function PerCbmCharge({ defaultValue }: { defaultValue: number | null | undefined }) {
+export function PerCbmCharge({ name, label, defaultValue }: { name: string; label: string; defaultValue: number | null | undefined }) {
   const ref = useRef<HTMLDivElement>(null);
   const [price, setPrice] = useState(defaultValue == null ? "" : String(defaultValue));
   const [cbm, setCbm] = useState(0);
@@ -31,11 +31,11 @@ export function PerCbmCharge({ defaultValue }: { defaultValue: number | null | u
   const total = Number(price) > 0 ? Math.round(Number(price) * cbm * 100) / 100 : null;
   return (
     <div ref={ref} className="grid grid-cols-2 gap-3">
-      <Field label="ค่าขนส่งที่คิดลูกค้า (บาท / คิว)">
-        <input name="shippingChargePerCbm" type="number" step="0.01" min={0} value={price} onChange={(e) => setPrice(e.target.value)} className="input" />
+      <Field label={label}>
+        <input name={name} type="number" step="0.01" min={0} value={price} onChange={(e) => setPrice(e.target.value)} className="input" />
       </Field>
       <Field label={`รวม (${Math.round(cbm * 10_000) / 10_000} คิว)`}>
-        <input readOnly tabIndex={-1} value={total == null ? "" : total.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} className="input bg-gray-50 font-semibold" aria-label="รวมค่าขนส่ง (บาท)" />
+        <input readOnly tabIndex={-1} value={total == null ? "" : total.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} className="input bg-gray-50 font-semibold" aria-label={`รวม ${label}`} />
       </Field>
     </div>
   );

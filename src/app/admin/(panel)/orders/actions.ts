@@ -155,11 +155,15 @@ const hasManualCbm = (fd: FormData) => [...fd.entries()].some(([k, v]) => k.star
 
 // ฝากส่งที่คิดราคาต่อคิว: ค่าขนส่งที่คิดลูกค้า = ราคาต่อคิว × คิวรวมทุกรายการ
 async function chargeByCbm(tx: Tx, orderId: number) {
-  const [o] = await tx.select({ perCbm: orders.shippingChargePerCbm, shippingOnly: orders.shippingOnly }).from(orders).where(eq(orders.id, orderId));
-  if (!o?.shippingOnly || o.perCbm == null) return;
+  const [o] = await tx
+    .select({ perCbm: orders.shippingChargePerCbm, costPerCbm: orders.shippingCostPerCbm, shippingOnly: orders.shippingOnly })
+    .from(orders)
+    .where(eq(orders.id, orderId));
+  if (!o?.shippingOnly || (o.perCbm == null && o.costPerCbm == null)) return;
   const items = await tx.select({ cbm: orderItems.cbm }).from(orderItems).where(eq(orderItems.orderId, orderId));
   const cbm = items.reduce((s, i) => s + (i.cbm ?? 0), 0);
-  await tx.update(orders).set({ shippingCharge: Math.round(o.perCbm * cbm * 100) / 100 }).where(eq(orders.id, orderId));
+  const times = (v: number | null) => (v == null ? undefined : Math.round(v * cbm * 100) / 100);
+  await tx.update(orders).set({ shippingCharge: times(o.perCbm), shippingCost: times(o.costPerCbm) }).where(eq(orders.id, orderId));
 }
 
 function orderFields(fd: FormData) {
@@ -172,12 +176,14 @@ function orderFields(fd: FormData) {
       ? {}
       : shippingOnly
         ? {
-            shippingCharge: toNum(fd.get("shippingCharge")),
-            shippingCost: toNum(fd.get("shippingCost")),
+            // โหมดต่อคิว: ยอดรวมคิดจากราคาต่อคิว (chargeByCbm) — ไม่ใช้ช่องยอดเหมาที่ซ่อนอยู่
+            shippingCharge: hasManualCbm(fd) ? null : toNum(fd.get("shippingCharge")),
+            shippingCost: hasManualCbm(fd) ? null : toNum(fd.get("shippingCost")),
             // มีพัสดุที่ใส่คิวเอง = คิดราคาต่อคิว (ยอดรวมคำนวณหลังบันทึกพัสดุ — chargeByCbm)
             shippingChargePerCbm: hasManualCbm(fd) ? toNum(fd.get("shippingChargePerCbm")) : null,
+            shippingCostPerCbm: hasManualCbm(fd) ? toNum(fd.get("shippingCostPerCbm")) : null,
           }
-        : { shippingCharge: null, shippingCost: null, shippingChargePerCbm: null };
+        : { shippingCharge: null, shippingCost: null, shippingChargePerCbm: null, shippingCostPerCbm: null };
   return { ...fields, ...(shippingOnly ? noGoods : {}), ...shipping, shippingOnly };
 }
 

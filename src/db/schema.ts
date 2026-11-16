@@ -1,4 +1,4 @@
-import { boolean, customType, doublePrecision, integer, pgTable, text, timestamp as pgTimestamp } from "drizzle-orm/pg-core";
+import { boolean, customType, doublePrecision, integer, jsonb, pgTable, text, timestamp as pgTimestamp } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // โครงสร้างข้อมูล
@@ -220,8 +220,27 @@ export const ignoredImports = pgTable("ignored_imports", {
   createdAt: createdAt(),
 });
 
+// รอบจัดส่งของออเดอร์ (แยกส่งหลายรอบ): แต่ละรอบมีวันที่จัดส่ง + จำนวนสินค้าของแต่ละรายการ
+// quantities = { [itemId]: จำนวน } · รวมทุกรอบต้องไม่เกินจำนวนของรายการนั้น
+export const deliveryRounds = pgTable("delivery_rounds", {
+  id: id(),
+  orderId: integer("order_id")
+    .notNull()
+    .references(() => orders.id, { onDelete: "cascade" }),
+  roundNo: integer("round_no").notNull(),
+  deliveryDate: text("delivery_date"), // YYYY-MM-DD
+  quantities: jsonb("quantities").$type<Record<string, number>>().notNull(),
+  createdAt: createdAt(),
+});
+export type DeliveryRound = typeof deliveryRounds.$inferSelect;
+
+export const deliveryRoundsRelations = relations(deliveryRounds, ({ one }) => ({
+  order: one(orders, { fields: [deliveryRounds.orderId], references: [orders.id] }),
+}));
+
 export const ordersRelations = relations(orders, ({ one, many }) => ({
   items: many(orderItems),
+  rounds: many(deliveryRounds),
   payments: many(payments),
   customer: one(customers, { fields: [orders.customerId], references: [customers.id] }),
 }));

@@ -235,6 +235,39 @@ export const deliveryRounds = pgTable("delivery_rounds", {
 });
 export type DeliveryRound = typeof deliveryRounds.$inferSelect;
 
+// ปัญหาสินค้า (เสียหาย / สูญหาย / ส่งผิด-ไม่ครบ) ของรายการในออเดอร์ — ไม่แก้จำนวนกล่องของรายการ เก็บเป็นเรื่องแยก
+// - กล่องที่สูญหาย หักออกจากจำนวนที่ต้องส่ง (รอบส่ง) · กล่องเสียหาย/ส่งผิด ยังนับว่าส่งให้ลูกค้า
+// - compensation = เงินที่ร้านชดเชยลูกค้า (บาท · หักในบิลค่าขนส่งของตู้ที่รายการอยู่) · recovered = เงินที่เคลมคืนได้จากร้านจีน/ขนส่ง (บาท)
+export const issueKinds = ["damaged", "lost", "wrong"] as const;
+export const issueFoundAt = ["china", "thailand", "customer"] as const;
+export const issueResponsible = ["supplier", "carrier", "shop", "unknown"] as const;
+export const issueStatuses = ["open", "claiming", "closed"] as const;
+export const itemIssues = pgTable("item_issues", {
+  id: id(),
+  orderId: integer("order_id")
+    .notNull()
+    .references(() => orders.id, { onDelete: "cascade" }),
+  itemId: integer("item_id")
+    .notNull()
+    .references(() => orderItems.id, { onDelete: "cascade" }),
+  kind: text("kind", { enum: issueKinds }).notNull(),
+  boxes: integer("boxes"),
+  foundAt: text("found_at", { enum: issueFoundAt }),
+  responsible: text("responsible", { enum: issueResponsible }).notNull().default("unknown"),
+  compensation: doublePrecision("compensation"),
+  recovered: doublePrecision("recovered"),
+  status: text("status", { enum: issueStatuses }).notNull().default("open"),
+  note: text("note"),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+export type ItemIssue = typeof itemIssues.$inferSelect;
+
+export const itemIssuesRelations = relations(itemIssues, ({ one }) => ({
+  order: one(orders, { fields: [itemIssues.orderId], references: [orders.id] }),
+  item: one(orderItems, { fields: [itemIssues.itemId], references: [orderItems.id] }),
+}));
+
 export const deliveryRoundsRelations = relations(deliveryRounds, ({ one }) => ({
   order: one(orders, { fields: [deliveryRounds.orderId], references: [orders.id] }),
 }));
@@ -242,6 +275,7 @@ export const deliveryRoundsRelations = relations(deliveryRounds, ({ one }) => ({
 export const ordersRelations = relations(orders, ({ one, many }) => ({
   items: many(orderItems),
   rounds: many(deliveryRounds),
+  issues: many(itemIssues),
   payments: many(payments),
   customer: one(customers, { fields: [orders.customerId], references: [customers.id] }),
 }));

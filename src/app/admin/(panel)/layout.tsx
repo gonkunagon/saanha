@@ -8,6 +8,7 @@ const nav = [
   { href: "/admin/orders", label: "ออเดอร์" },
   { href: "/admin/containers", label: "ตู้" },
   { href: "/admin/customers", label: "ลูกค้า" },
+  { href: "/admin/issues", label: "ปัญหาสินค้า" },
   { href: "/admin/users", label: "พนักงาน", adminOnly: true },
   { href: "/admin/dashboard", label: "Dashboard", adminOnly: true },
 ];

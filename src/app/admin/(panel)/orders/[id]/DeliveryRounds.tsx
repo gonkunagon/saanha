@@ -3,8 +3,8 @@
 import { useState, useTransition } from "react";
 import { saveDeliveryRounds, setRoundDelivered, type RoundInput } from "../round-actions";
 
-// boxes = จำนวนกล่องทั้งหมดของรายการ (จากพัสดุ) — รอบส่งแบ่งเป็นกล่อง
-type Item = { id: number; description: string; boxes: number | null };
+// boxes = จำนวนกล่องที่ต้องส่ง (กล่องทั้งหมดจากพัสดุ − กล่องที่สูญหาย) — รอบส่งแบ่งเป็นกล่อง · lost = กล่องที่สูญหาย
+type Item = { id: number; description: string; boxes: number | null; lost?: number };
 
 const thaiDate = (d: string | null) =>
   d ? new Date(`${d}T00:00:00`).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" }) : "ยังไม่ระบุวัน";
@@ -164,7 +164,10 @@ export function DeliveryRounds({ orderId, items, saved }: { orderId: number; ite
               return (
                 <tr key={i.id}>
                   <td className="max-w-64 py-1.5 pr-3">{i.description}</td>
-                  <td className="px-2 py-1.5 text-right">{i.boxes ?? "-"}</td>
+                  <td className="px-2 py-1.5 text-right">
+                    {i.boxes ?? "-"}
+                    {!!i.lost && <span className="block text-[11px] text-brand-700">(หักสูญหาย {i.lost})</span>}
+                  </td>
                   {shown.map((r, n) => (
                     <td key={n} className="px-2 py-1.5 text-center">
                       {editing ? (

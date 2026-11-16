@@ -12,6 +12,8 @@ import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { OrderFields } from "../OrderFields";
 import { SavedNotice } from "./SavedNotice";
 import { DeliveryRounds } from "./DeliveryRounds";
+import { ItemIssues } from "./ItemIssues";
+import { issueNetLoss } from "@/lib/issues";
 import { listCustomersForPicker } from "@/lib/customers";
 import { deleteItem, updateItem, updateOrder } from "../actions";
 import { ItemPriceCells } from "./ItemPriceForm";
@@ -231,7 +233,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
   const order = await db.query.orders.findFirst({
     where: eq(orders.id, Number(id)),
     // รูปสินค้าโหลดแค่ id (ตัวรูปดึงผ่าน /admin/item-image/<id>)
-    with: { items: { with: { container: true, packages: true, images: { columns: { id: true } } } }, payments: true, customer: { columns: { address: true } }, rounds: { orderBy: (r, { asc }) => asc(r.roundNo) } },
+    with: { items: { with: { container: true, packages: true, images: { columns: { id: true } } } }, payments: true, customer: { columns: { address: true } }, rounds: { orderBy: (r, { asc }) => asc(r.roundNo) }, issues: { orderBy: (r, { asc }) => asc(r.id) } },
   });
   if (!order) notFound();
   const customers = await listCustomersForPicker();
@@ -242,6 +244,12 @@ export default async function OrderPage({ params, searchParams }: Props) {
   const sellRate = order.orderRate ?? customerPaidRateOf(order.payments); // ไม่ได้กรอกเรทคิดลูกค้า = เรทเฉลี่ยจากรายการรับเงิน
 
 
+
+  // ปัญหาสินค้า: กล่องที่สูญหาย (หักจากรอบส่ง) · เงินชดเชยลูกค้า / เคลมคืน (ฝากส่ง = หักจากค่าขนส่งที่คิดลูกค้า)
+  const lostOf = new Map<number, number>();
+  for (const is of order.issues) if (is.kind === "lost") lostOf.set(is.itemId, (lostOf.get(is.itemId) ?? 0) + (is.boxes ?? 0));
+  const compensation = Math.round(order.issues.reduce((s, is) => s + (is.compensation ?? 0), 0) * 100) / 100;
+  const issueLoss = issueNetLoss({ compensation, recovered: order.issues.reduce((s, is) => s + (is.recovered ?? 0), 0) });
 
   const summary = summarizeOrder(order.items);
   const ship = orderShippingOf(order.items, order.shippingRate, order); // ค่าขนส่งของออเดอร์ฝากส่ง
@@ -363,8 +371,15 @@ export default async function OrderPage({ params, searchParams }: Props) {
               {order.items.length > 0 && (
                 <DeliveryRounds
                   orderId={order.id}
-                  items={order.items.map((i) => ({ id: i.id, description: i.description, boxes: i.boxes }))}
+                  items={order.items.map((i) => ({ id: i.id, description: i.description, boxes: i.boxes == null ? null : Math.max(0, i.boxes - (lostOf.get(i.id) ?? 0)), lost: lostOf.get(i.id) ?? 0 }))}
                   saved={order.rounds.map((r) => ({ date: r.deliveryDate ?? "", qty: r.quantities, deliveredAt: r.deliveredAt?.toISOString() ?? null }))}
+                />
+              )}
+              {order.items.length > 0 && (
+                <ItemIssues
+                  orderId={order.id}
+                  items={order.items.map((i) => ({ id: i.id, description: i.description, boxes: i.boxes }))}
+                  issues={order.issues.map(({ id, itemId, kind, boxes, foundAt, responsible, compensation, recovered, status, note }) => ({ id, itemId, kind, boxes, foundAt, responsible, compensation, recovered, status, note }))}
                 />
               )}
             </section>
@@ -425,12 +440,17 @@ export default async function OrderPage({ params, searchParams }: Props) {
                     <span className="ml-1 text-xs text-gray-500">({formatMoney(order.shippingChargePerCbm, "THB")} / คิว)</span>
                   )}
                 </Info>
+                {compensation > 0 && <Info label="หักชดเชยสินค้าเสียหาย / สูญหาย">{formatMoney(-compensation, "THB")}</Info>}
                 <Info label="ชำระแล้ว">{paidOf(order, order.payments) != null && formatMoney(paidOf(order, order.payments), "THB")}</Info>
                 <Info label="ยอดค้างชำระ">
-                  {order.shippingCharge != null ? <BalanceText balance={orderBalance(order, order.payments)} currency="THB" /> : <span className="text-xs text-gray-500">ใส่ค่าขนส่งที่คิดลูกค้าในหน้าแก้ไข</span>}
+                  {order.shippingCharge != null ? (
+                    <BalanceText balance={(() => { const b = orderBalance(order, order.payments); return b == null ? null : Math.round((b - compensation) * 100) / 100; })()} currency="THB" />
+                  ) : (
+                    <span className="text-xs text-gray-500">ใส่ค่าขนส่งที่คิดลูกค้าในหน้าแก้ไข</span>
+                  )}
                 </Info>
-                <Info label="กำไรค่าขนส่ง">
-                  {ship.profit != null && <b className={ship.profit < 0 ? "text-brand-700" : "text-emerald-700"}>{formatMoney(ship.profit, "THB")}</b>}
+                <Info label={issueLoss !== 0 ? "กำไรค่าขนส่ง (หลังหักปัญหาสินค้า)" : "กำไรค่าขนส่ง"}>
+                  {ship.profit != null && (() => { const p = Math.round((ship.profit - issueLoss) * 100) / 100; return <b className={p < 0 ? "text-brand-700" : "text-emerald-700"}>{formatMoney(p, "THB")}</b>; })()}
                 </Info>
                 <Info label="บิลค่าขนส่ง" wide>
                   {orderContainers.length === 0 ? (

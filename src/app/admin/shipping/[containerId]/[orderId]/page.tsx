@@ -1,10 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import signature from "@/assets/signature.png";
 import { db } from "@/db";
-import { containers, orderItems, orders } from "@/db/schema";
+import { containers, itemIssues, orderItems, orders } from "@/db/schema";
+import { issueKindLabels } from "@/lib/issues";
 import { requireUser } from "@/lib/auth";
 import { site } from "@/config/site";
 import { formatMoney } from "@/lib/money";
@@ -59,6 +60,13 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
   const allHere = order.shippingOnly && perCbm == null && order.shippingCharge != null;
   const cost =
     perCbm != null ? Math.round(perCbm * cbm * 100) / 100 : allHere ? order.shippingCharge! : shippingCostOf(items, order.shippingRate);
+
+  // ชดเชยสินค้าเสียหาย / สูญหาย ของรายการในตู้นี้ → หักจากค่าขนส่ง
+  const issues = (
+    await db.select().from(itemIssues).where(inArray(itemIssues.itemId, items.map((i) => i.id)))
+  ).filter((is) => (is.compensation ?? 0) > 0);
+  const deduct = Math.round(issues.reduce((s, is) => s + (is.compensation ?? 0), 0) * 100) / 100;
+  const net = Math.round((cost - deduct) * 100) / 100;
 
   const meta = [
     ["อ้างอิงออเดอร์ / Ref.", order.code],
@@ -148,7 +156,7 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
             <div className="space-y-4">
               <div className="rounded-lg border border-accent-400 bg-accent-300/15 px-4 py-3">
                 <p className="text-[10px] text-gray-500">ค่าขนส่ง (ตัวอักษร)</p>
-                <p className="font-semibold text-gray-900">({amountInThaiWords(cost, "THB")})</p>
+                <p className="font-semibold text-gray-900">({amountInThaiWords(net, "THB")})</p>
               </div>
               <div>
                 <p className="mb-1 text-[11px] font-semibold tracking-wide text-brand-700 uppercase">หมายเหตุ / Notes</p>
@@ -168,9 +176,29 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
                 <dt>เรทค่าขนส่ง</dt>
                 <dd>{allHere ? "เหมาจ่าย" : `${num(perCbm ?? rate)} บาท / คิว`}</dd>
               </div>
+              {deduct > 0 && (
+                <>
+                  <div className="flex justify-between border-t border-gray-100 px-4 py-2 text-[12px] text-gray-600">
+                    <dt>ค่าขนส่ง</dt>
+                    <dd>{formatMoney(cost, "THB")}</dd>
+                  </div>
+                  {issues.map((is) => (
+                    <div key={is.id} className="flex justify-between gap-3 border-t border-gray-100 px-4 py-2 text-[12px] text-gray-600">
+                      <dt>
+                        หักชดเชยสินค้า{issueKindLabels[is.kind]}
+                        <span className="block text-[11px] text-gray-400">
+                          {items.find((i) => i.id === is.itemId)?.description}
+                          {is.boxes ? ` · ${is.boxes} กล่อง` : ""}
+                        </span>
+                      </dt>
+                      <dd className="whitespace-nowrap text-brand-700">−{formatMoney(is.compensation, "THB")}</dd>
+                    </div>
+                  ))}
+                </>
+              )}
               <div className="flex items-center justify-between border-t-2 border-brand-600 px-4 py-3.5 text-brand-700">
-                <dt className="font-semibold">ค่าขนส่งทั้งสิ้น</dt>
-                <dd className="text-lg font-bold">{formatMoney(cost, "THB")}</dd>
+                <dt className="font-semibold">{deduct > 0 ? "ยอดชำระสุทธิ" : "ค่าขนส่งทั้งสิ้น"}</dt>
+                <dd className="text-lg font-bold">{formatMoney(net, "THB")}</dd>
               </div>
             </dl>
           </div>

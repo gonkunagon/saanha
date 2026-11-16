@@ -16,6 +16,7 @@ import { shippingCostOf } from "@/lib/shipping";
 import {
   addOrdersToContainer,
   deleteContainer,
+  removeItemFromContainer,
   removeOrderFromContainer,
   setContainerStage,
   setContainerStatus,
@@ -240,7 +241,17 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
                   <td className="py-2 pr-4">{order.customerName}</td>
                   <td className="py-2 pr-4">
                     {own.map((i) => (
-                      <span key={i.id} className="block">{i.description}{i.quantity ? ` × ${i.quantity}` : ""}</span>
+                      <span key={i.id} className="flex items-center gap-2">
+                        <span>{i.description}{i.quantity ? ` × ${i.quantity}` : ""}</span>
+                        {/* ออเดอร์มีหลายรายการในตู้ → นำออกทีละรายการได้ */}
+                        {own.length > 1 && (
+                          <form action={removeItemFromContainer}>
+                            <input type="hidden" name="id" value={container.id} />
+                            <input type="hidden" name="itemId" value={i.id} />
+                            <ConfirmButton message={`นำ "${i.description}" ออกจากตู้นี้?`} className="text-xs text-gray-400 hover:text-brand-600">✕</ConfirmButton>
+                          </form>
+                        )}
+                      </span>
                     ))}
                   </td>
                   <td className="py-2 pr-4">{sum(own.map((i) => i.boxes)) || "-"}</td>
@@ -337,9 +348,17 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
                       <td className="py-2 pr-4 font-medium">{order.code}</td>
                       <td className="py-2 pr-4">{order.customerName}</td>
                       <td className="py-2 pr-4">
-                        {free.map((i) => (
-                          <span key={i.id} className="block">{i.description}{i.boxes ? ` · ${i.boxes} กล่อง` : ""}</span>
-                        ))}
+                        {/* ติ๊กช่องซ้าย = ทั้งออเดอร์ · หลายรายการ = เลือกเฉพาะบางรายการได้ */}
+                        {free.map((i) =>
+                          free.length > 1 ? (
+                            <label key={i.id} className="flex items-center gap-2">
+                              <input type="checkbox" name="itemId" value={i.id} className="h-3.5 w-3.5 accent-brand-600" />
+                              <span>{i.description}{i.quantity ? ` × ${i.quantity}` : ""}{i.boxes ? ` · ${i.boxes} กล่อง` : ""}</span>
+                            </label>
+                          ) : (
+                            <span key={i.id} className="block">{i.description}{i.quantity ? ` × ${i.quantity}` : ""}{i.boxes ? ` · ${i.boxes} กล่อง` : ""}</span>
+                          ),
+                        )}
                       </td>
                       <td className={`py-2 pr-4 ${order.method !== container.method ? "font-medium text-amber-700" : ""}`}>
                         {methodLabel(order.method)}
@@ -351,8 +370,8 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
                 </tbody>
               </table>
             </div>
-            <button className="btn-primary mt-4">เพิ่มออเดอร์ที่เลือกเข้าตู้</button>
-            <p className="mt-2 text-xs text-gray-500">⚠️ = วิธีขนส่งของออเดอร์ไม่ตรงกับตู้</p>
+            <button className="btn-primary mt-4">เพิ่มที่เลือกเข้าตู้</button>
+            <p className="mt-2 text-xs text-gray-500">ติ๊กช่องหน้าออเดอร์ = ทุกรายการที่ยังไม่เข้าตู้ · ติ๊กที่ชื่อสินค้า = เฉพาะรายการนั้น · ⚠️ = วิธีขนส่งของออเดอร์ไม่ตรงกับตู้</p>
           </form>
         )}
       </Card>

@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { desc, eq, inArray, isNull, ne, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { containers, orderItems, orders } from "@/db/schema";
+import { orders } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
-import { containerStageOf, stageOfItem, summarizeOrder, type ItemWithContainer } from "@/lib/orders";
+import { stageOfItem, summarizeOrder, type ItemWithContainer } from "@/lib/orders";
 import { formatThaiDateTime, nowLocalInputValue } from "@/lib/datetime";
-import { itemStageDates, itemStages, optionalStages, stageIndex, stageLabelsTh, type ItemStage } from "@/lib/stages";
+import { itemStageDates, itemStages, optionalStages, stageIndex, type ItemStage } from "@/lib/stages";
 import { Card, Field, StageBadge, methodLabel, ShippingOnlyBadge } from "@/components/admin/ui";
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { OrderFields } from "../OrderFields";
@@ -20,7 +20,7 @@ import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
 import { BalanceText } from "@/components/admin/ui";
 import { balanceOf, currencyLabel, customerGoodsOf, customerShippingOf, customerTotalOf, formatMoney, orderBalance, paidOf, customerPaidRateOf, shopPaidOf, shopPaidRateOf, supplierTotalOf, type CurrencyCode } from "@/lib/money";
 import { orderShippingOf } from "@/lib/shipping";
-import { StageUpdateForm, type ContainerOption } from "./StageUpdateForm";
+import { StageUpdateForm } from "./StageUpdateForm";
 import { PackageFields } from "@/components/admin/PackageFields";
 import { deleteItemImage, uploadItemImages } from "../image-actions";
 import type { ItemPackage } from "@/db/schema";
@@ -63,7 +63,7 @@ function ItemEditForm({ item }: { item: ItemWithPackages }) {
 }
 
 // พัสดุ + ตู้ ของแต่ละรายการ — อยู่ในฟอร์ม "แก้ไขข้อมูลออเดอร์" (ชื่อช่องมีเลขรายการกำกับ บันทึกพร้อมออเดอร์)
-function ItemShippingFields({ item, containerOptions }: { item: ItemWithPackages; containerOptions: ContainerOption[] }) {
+function ItemShippingFields({ item }: { item: ItemWithPackages }) {
   return (
     <div className="rounded-lg bg-gray-50 p-3 [&_input]:bg-white">
       <input type="hidden" name="shipItemId" value={item.id} />
@@ -72,20 +72,15 @@ function ItemShippingFields({ item, containerOptions }: { item: ItemWithPackages
         {item.quantity ? <span className="font-normal text-gray-500"> × {item.quantity}</span> : null}
       </p>
       <PackageFields prefix={`pkg_${item.id}_`} defaults={item.packages} />
-      <label className="mt-3 block">
-        <span className="mb-1 block text-sm text-gray-600">ตู้</span>
-        <span className="block w-full max-w-xs">
-          <select name={`containerCode_${item.id}`} defaultValue={item.container?.code ?? ""} className="input bg-white">
-            <option value="">— ไม่อยู่ในตู้ —</option>
-            {item.container && !containerOptions.some((c) => c.code === item.container!.code) && (
-              <option value={item.container.code}>{item.container.code}</option>
-            )}
-            {containerOptions.map((c) => (
-              <option key={c.code} value={c.code}>{c.label}</option>
-            ))}
-          </select>
-        </span>
-      </label>
+      {/* ตู้ = ดึงจากหน้าตู้ (แก้ไม่ได้ที่นี่ — นำเข้า/ออกจากตู้ที่หน้าตู้) */}
+      <p className="mt-3 text-sm">
+        <span className="text-gray-600">ตู้: </span>
+        {item.container ? (
+          <Link href={`/admin/containers/${item.container.id}`} className="font-medium text-brand-700 hover:underline">{item.container.code}</Link>
+        ) : (
+          <span className="text-gray-500">ยังไม่เข้าตู้ <span className="text-xs">(เพิ่มเข้าตู้ที่หน้าตู้)</span></span>
+        )}
+      </p>
     </div>
   );
 }
@@ -246,32 +241,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
   const costRate = order.costRate ?? shopPaidRateOf(order.payments);
   const sellRate = order.orderRate ?? customerPaidRateOf(order.payments); // ไม่ได้กรอกเรทคิดลูกค้า = เรทเฉลี่ยจากรายการรับเงิน
 
-  // ตู้ที่ยังไม่ถึงไทย ให้เลือกในรายการตู้ (ตู้ของวิธีขนส่งเดียวกันขึ้นก่อน)
-  const openContainers = await db.query.containers.findMany({
-    where: isNull(containers.arrivedAt),
-    orderBy: desc(containers.createdAt),
-  });
-  const containerOptions: ContainerOption[] = openContainers
-    .sort((a, b) => Number(b.method === order.method) - Number(a.method === order.method))
-    .map((c) => {
-      const stage = containerStageOf(c);
-      return {
-        code: c.code,
-        label: `${c.code} · ${methodLabel(c.method)} · ${stage ? stageLabelsTh[stage] : "รอโหลดสินค้า"}`,
-      };
-    });
 
-  // ตู้ของออเดอร์นี้มีออเดอร์อื่นอยู่ด้วยกี่ออเดอร์ (เตือนก่อนอัปเดตขั้นของตู้)
-  const containerIds = [...new Set(order.items.map((i) => i.containerId).filter((v): v is number => Boolean(v)))];
-  const others = containerIds.length
-    ? await db
-        .selectDistinct({ orderId: orderItems.orderId })
-        .from(orderItems)
-        .where(and(inArray(orderItems.containerId, containerIds), ne(orderItems.orderId, order.id)))
-    : [];
-  const sharedContainerNote = others.length
-    ? `ตู้ของออเดอร์นี้มีออเดอร์อื่นอีก ${others.length} ออเดอร์ สถานะของตู้ที่บันทึกจะเปลี่ยนให้ออเดอร์เหล่านั้นด้วย`
-    : null;
 
   const summary = summarizeOrder(order.items);
   const ship = orderShippingOf(order.items, order.shippingRate, order); // ค่าขนส่งของออเดอร์ฝากส่ง
@@ -407,9 +377,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
                 orderId={order.id}
                 defaultStage={nextStage}
                 defaultAt={nowLocalInputValue()}
-                containerOptions={containerOptions}
-                sharedContainerNote={sharedContainerNote}
-                hasItemsInContainer={order.items.some((i) => i.containerId)}
+                containers={orderContainers}
               />
             )}
 
@@ -634,7 +602,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
                 <div className="space-y-3 sm:col-span-2">
                   <span className="block text-sm text-gray-600">พัสดุ / ตู้ ของแต่ละรายการ</span>
                   {order.items.map((item) => (
-                    <ItemShippingFields key={item.id} item={item} containerOptions={containerOptions} />
+                    <ItemShippingFields key={item.id} item={item} />
                   ))}
                 </div>
               )

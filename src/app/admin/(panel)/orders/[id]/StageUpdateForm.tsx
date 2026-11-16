@@ -1,39 +1,35 @@
 "use client";
 
 import { startTransition, useActionState, useState } from "react";
-import { itemStages, stageIndex, stageLabelsTh, type ItemStage } from "@/lib/stages";
+import Link from "next/link";
+import { stageIndex, stageLabelsTh, type ItemStage } from "@/lib/stages";
 import { applyStage } from "../actions";
 
 export type ContainerOption = { code: string; label: string };
+
+// สถานะที่อัปเดตจากหน้าออเดอร์ได้ = ขั้นของรายการสินค้าเท่านั้น
+// ขั้นของตู้ (ปิดตู้ → ถึงโกดังไทย) และการเข้าตู้ จัดการที่หน้าตู้อย่างเดียว
+export const ORDER_PAGE_STAGES: ItemStage[] = ["in_production", "china_warehouse", "out_for_delivery", "delivered"];
 
 type Props = {
   formId: string;
   orderId: number;
   defaultStage: ItemStage;
   defaultAt: string;
-  containerOptions: ContainerOption[];
-  sharedContainerNote: string | null; // เตือนเมื่อตู้มีออเดอร์อื่นอยู่ด้วย
-  hasItemsInContainer: boolean; // มีรายการในออเดอร์นี้ที่อยู่ในตู้แล้ว (แสดงคำอธิบายตอนย้อนสถานะ)
+  containers: { id: number; code: string }[]; // ตู้ของออเดอร์นี้ (ลิงก์ไปอัปเดตที่หน้าตู้)
 };
 
-const NEW = "__new__";
-
 // แถบอัปเดตสถานะ: เลือกรายการ (checkbox ในรายการด้านบน) → เลือกสถานะ → บันทึก
-export function StageUpdateForm({
-  formId,
-  orderId,
-  defaultStage,
-  defaultAt,
-  containerOptions,
-  sharedContainerNote,
-  hasItemsInContainer,
-}: Props) {
+export function StageUpdateForm({ formId, orderId, defaultStage, defaultAt, containers }: Props) {
   const [error, action, pending] = useActionState(applyStage, null);
-  const [stage, setStage] = useState<ItemStage>(defaultStage);
-  const [container, setContainer] = useState(""); // "" = ใช้ตู้เดิมของรายการ
-  const needsContainer = stageIndex(stage) >= stageIndex("loaded");
+  // ขั้นถัดไปเป็นขั้นของตู้ = ตั้งต้นที่ขั้นของรายการที่ใกล้ที่สุด
+  const initial = ORDER_PAGE_STAGES.includes(defaultStage)
+    ? defaultStage
+    : stageIndex(defaultStage) < stageIndex("loaded")
+      ? "china_warehouse"
+      : "out_for_delivery";
+  const [stage, setStage] = useState<ItemStage>(initial);
   const needsDomestic = stageIndex(stage) >= stageIndex("out_for_delivery");
-  const isContainerStage = needsContainer && !needsDomestic;
 
   const toggleAll = (checked: boolean) =>
     document
@@ -64,13 +60,8 @@ export function StageUpdateForm({
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
         <label className="block">
           <span className="mb-1 block text-sm text-gray-600">สถานะใหม่</span>
-          <select
-            name="stage"
-            value={stage}
-            onChange={(e) => setStage(e.target.value as ItemStage)}
-            className="input bg-white"
-          >
-            {itemStages.slice(1).map((s) => (
+          <select name="stage" value={stage} onChange={(e) => setStage(e.target.value as ItemStage)} className="input bg-white">
+            {ORDER_PAGE_STAGES.map((s) => (
               <option key={s} value={s}>{stageLabelsTh[s]}</option>
             ))}
           </select>
@@ -79,18 +70,6 @@ export function StageUpdateForm({
           <span className="mb-1 block text-sm text-gray-600">วันเวลา</span>
           <input type="datetime-local" name="at" required defaultValue={defaultAt} className="input bg-white" />
         </label>
-        {needsContainer && (
-          <label className="block">
-            <span className="mb-1 block text-sm text-gray-600">ตู้</span>
-            <select value={container} onChange={(e) => setContainer(e.target.value)} className="input bg-white">
-              <option value="">— ใช้ตู้เดิมของรายการ —</option>
-              {containerOptions.map((c) => (
-                <option key={c.code} value={c.code}>{c.label}</option>
-              ))}
-              <option value={NEW}>+ สร้างตู้ใหม่…</option>
-            </select>
-          </label>
-        )}
         {needsDomestic && (
           <label className="block">
             <span className="mb-1 block text-sm text-gray-600">เลขพัสดุขนส่งในไทย</span>
@@ -100,23 +79,20 @@ export function StageUpdateForm({
         <button disabled={pending} className="btn-primary">{pending ? "กำลังบันทึก..." : "บันทึกสถานะ"}</button>
       </div>
 
-      {needsContainer && container === NEW ? (
-        <label className="mt-3 block max-w-xs">
-          <span className="mb-1 block text-sm text-gray-600">เลขตู้ใหม่</span>
-          <input name="containerCode" required autoFocus placeholder="เช่น SEA-2611-01" className="input bg-white uppercase" />
-        </label>
-      ) : (
-        <input type="hidden" name="containerCode" value={needsContainer ? container : ""} />
-      )}
-
-      {isContainerStage && sharedContainerNote && (
-        <p className="mt-3 text-sm text-amber-800">⚠️ {sharedContainerNote}</p>
-      )}
-      {!needsContainer && hasItemsInContainer && (
-        <p className="mt-3 text-sm text-gray-600">
-          ℹ️ รายการที่เลือกซึ่งอยู่ในตู้แล้ว จะถูกนำออกจากตู้ (กลับไปรอเข้าตู้) — ใช้เมื่อต้องการย้อนสถานะ
-        </p>
-      )}
+      <p className="mt-3 text-xs text-gray-600">
+        ℹ️ สถานะของตู้ (ปิดตู้ / ออกจากจีน / ถึงด่าน / ถึงโกดังไทย) และการนำสินค้าเข้าตู้ อัปเดตที่หน้าตู้
+        {containers.length > 0 && (
+          <>
+            {" "}·{" "}
+            {containers.map((c, n) => (
+              <span key={c.id}>
+                {n > 0 && ", "}
+                <Link href={`/admin/containers/${c.id}`} className="font-medium text-brand-700 hover:underline">{c.code}</Link>
+              </span>
+            ))}
+          </>
+        )}
+      </p>
       {error && <p className="mt-3 text-sm font-medium text-brand-700">{error}</p>}
     </form>
   );

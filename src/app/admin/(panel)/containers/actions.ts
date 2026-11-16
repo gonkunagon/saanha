@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
@@ -95,16 +95,29 @@ export async function setContainerStatus(fd: FormData) {
   refresh();
 }
 
-// เพิ่มทั้งออเดอร์เข้าตู้: รายการของออเดอร์ที่ยังไม่อยู่ตู้ไหนและยังไม่ส่งถึงลูกค้า
+// เพิ่มเข้าตู้ (ที่เดียวที่นำสินค้าเข้าตู้ได้): ติ๊กทั้งออเดอร์ (orderId) หรือเลือกทีละรายการ (itemId)
+// เฉพาะรายการที่ยังไม่อยู่ตู้ไหนและยังไม่ส่งถึงลูกค้า
 export async function addOrdersToContainer(fd: FormData) {
   await requireUser();
   const id = Number(fd.get("id"));
   const orderIds = fd.getAll("orderId").map(Number).filter(Boolean);
-  if (orderIds.length === 0) return;
+  const itemIds = fd.getAll("itemId").map(Number).filter(Boolean);
+  if (orderIds.length === 0 && itemIds.length === 0) return;
+  const pick = [orderIds.length ? inArray(orderItems.orderId, orderIds) : undefined, itemIds.length ? inArray(orderItems.id, itemIds) : undefined].filter(Boolean);
   await db
     .update(orderItems)
     .set({ containerId: id })
-    .where(and(inArray(orderItems.orderId, orderIds), isNull(orderItems.containerId), isNull(orderItems.deliveredAt)));
+    .where(and(or(...pick), isNull(orderItems.containerId), isNull(orderItems.deliveredAt)));
+  refresh();
+}
+
+// นำรายการเดียวออกจากตู้
+export async function removeItemFromContainer(fd: FormData) {
+  await requireUser();
+  await db
+    .update(orderItems)
+    .set({ containerId: null })
+    .where(and(eq(orderItems.id, Number(fd.get("itemId"))), eq(orderItems.containerId, Number(fd.get("id")))));
   refresh();
 }
 

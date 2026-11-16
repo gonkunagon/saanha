@@ -4,16 +4,16 @@ import { and, eq, inArray, isNotNull, type SQL } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { containers, currencies, ignoredImports, itemImages, itemPackages, orderItems, orders, payments, shippingMethods, type Currency, type ShippingMethod } from "@/db/schema";
+import { currencies, ignoredImports, itemImages, itemPackages, orderItems, orders, payments, shippingMethods, type Currency, type ShippingMethod } from "@/db/schema";
 import { findCustomerById } from "@/lib/customers";
 import { clampHandlingPct } from "@/lib/money";
 import { getQuoteRate } from "@/lib/settings";
 import { requireUser } from "@/lib/auth";
 import { parseLocalDateTime } from "@/lib/datetime";
 import { joinTracking } from "@/lib/tracking";
-import { nextOrderCode, orderCodePrefix, stageOfItem } from "@/lib/orders";
+import { nextOrderCode, orderCodePrefix } from "@/lib/orders";
 import { calcCbm } from "@/lib/cbm";
-import { containerStageFields, itemStages, optionalStages, stageIndex, type ContainerStage, type ItemStage } from "@/lib/stages";
+import { optionalStages, stageIndex, type ItemStage } from "@/lib/stages";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -37,15 +37,6 @@ const url = (v: FormDataEntryValue | null | undefined) => {
   const s = str(v);
   return s && /^https?:\/\//i.test(s) ? s : null;
 };
-
-// พิมพ์เลขตู้ได้เลย ถ้ายังไม่มีตู้นี้ ระบบสร้างให้อัตโนมัติ
-async function findOrCreateContainer(tx: Tx, code: string, m: ShippingMethod) {
-  const normalized = code.trim().toUpperCase();
-  const existing = await tx.query.containers.findFirst({ where: eq(containers.code, normalized) });
-  if (existing) return existing;
-  const [created] = await tx.insert(containers).values({ code: normalized, method: m }).returning();
-  return created;
-}
 
 // ---- พัสดุย่อยของรายการ ----
 
@@ -294,13 +285,11 @@ export async function updateOrder(fd: FormData) {
     for (const itemId of fd.getAll("shipItemId").map(Number).filter(Boolean)) {
       const item = await tx.query.orderItems.findFirst({ where: and(eq(orderItems.id, itemId), eq(orderItems.orderId, id)) });
       if (!item) continue;
-      const code = text(fd, `containerCode_${itemId}`);
-      const container = code ? await findOrCreateContainer(tx, code, fields.method) : null;
       const packages = parsePackages(fd, `pkg_${itemId}_`);
       await savePackages(tx, itemId, packages);
       await tx
         .update(orderItems)
-        .set({ ...packageTotals(packages), containerId: container?.id ?? null })
+        .set(packageTotals(packages)) // ตู้จัดการที่หน้าตู้เท่านั้น
         .where(eq(orderItems.id, itemId));
     }
     // เลขพัสดุภายในประเทศ: แก้ในฟอร์มออเดอร์ = ใส่ให้ทุกรายการในออเดอร์
@@ -421,44 +410,27 @@ export async function deleteItem(fd: FormData) {
 //   · ย้อนขั้นของตู้ = ล้างวันที่ของตู้ขั้นหลังจากนั้น (เฉพาะเมื่อรายการที่เลือกทุกรายการในตู้นั้นอยู่เลยขั้นที่เลือกไปแล้ว
 //     กันกรณีเพิ่มรายการใหม่เข้าตู้ที่ไปไกลกว่าแล้วทำให้ตู้ถอยหลังโดยไม่ตั้งใจ)
 
+// อัปเดตสถานะรายการจากหน้าออเดอร์: เฉพาะขั้นของรายการ (ผลิต / ถึงโกดังจีน / กำลังจัดส่ง / จัดส่งสำเร็จ)
+// ขั้นของตู้ + การเข้าตู้ อัปเดตที่หน้าตู้เท่านั้น (ไม่แตะตู้ที่นี่)
+const ORDER_PAGE_STAGES: ItemStage[] = ["in_production", "china_warehouse", "out_for_delivery", "delivered"];
+
 export async function applyStage(_prev: string | null, fd: FormData): Promise<string | null> {
   await requireUser();
   const orderId = Number(fd.get("orderId"));
   const itemIds = fd.getAll("itemId").map(Number).filter(Boolean);
   const stage = String(fd.get("stage")) as ItemStage;
   if (itemIds.length === 0) return "กรุณาเลือกรายการสินค้าอย่างน้อย 1 รายการ";
-  if (!itemStages.includes(stage) || stage === "ordered") return "กรุณาเลือกสถานะ";
+  if (!ORDER_PAGE_STAGES.includes(stage)) return "สถานะของตู้ อัปเดตที่หน้าตู้";
 
   const at = parseLocalDateTime(fd.get("at")) ?? new Date();
   const idx = stageIndex(stage);
   const reached = (s: ItemStage) => idx >= stageIndex(s);
-  const containerCode = text(fd, "containerCode");
   const domesticTracking = text(fd, "domesticTracking");
 
-  const order = await db.query.orders.findFirst({
-    where: eq(orders.id, orderId),
-    with: { items: { with: { container: true } } },
-  });
-  if (!order) return "ไม่พบออเดอร์";
-  const items = order.items.filter((i) => itemIds.includes(i.id));
-  const beforeContainer = !reached("loaded");
-
-  if (!beforeContainer && !containerCode && items.some((i) => !i.containerId)) {
-    return "มีรายการที่ยังไม่เข้าตู้ กรุณาใส่เลขตู้";
-  }
-
-  // ตู้ที่จะถูกย้อนสถานะ: ทุกรายการที่เลือกในตู้นั้นอยู่เลยขั้นที่เลือกไปแล้ว
-  const rewindContainers = new Set<number>();
-  if (!beforeContainer && !containerCode) {
-    for (const cid of new Set(items.map((i) => i.containerId).filter((v): v is number => Boolean(v)))) {
-      const inside = items.filter((i) => i.containerId === cid);
-      if (inside.every((i) => stageIndex(stageOfItem(i)) > idx)) rewindContainers.add(cid);
-    }
-  }
+  const items = await db.query.orderItems.findMany({ where: and(eq(orderItems.orderId, orderId), inArray(orderItems.id, itemIds)) });
+  if (items.length === 0) return "ไม่พบรายการ";
 
   await db.transaction(async (tx) => {
-    const target = containerCode ? await findOrCreateContainer(tx, containerCode, order.method) : null;
-
     for (const item of items) {
       // ขั้นที่เลือก = วันที่ใหม่ · ขั้นก่อนหน้าที่ว่าง = เติมให้ (ยกเว้นขั้นที่ข้ามได้) · ขั้นหลังจากนั้น = ล้าง
       const set = (s: ItemStage, current: Date | null) =>
@@ -466,8 +438,6 @@ export async function applyStage(_prev: string | null, fd: FormData): Promise<st
       await tx
         .update(orderItems)
         .set({
-          // ย้อนไปก่อนขึ้นตู้ = ยังไม่ได้อยู่ในตู้ไหน
-          containerId: beforeContainer ? null : target?.id ?? item.containerId,
           productionAt: set("in_production", item.productionAt),
           receivedAt: set("china_warehouse", item.receivedAt),
           outForDeliveryAt: set("out_for_delivery", item.outForDeliveryAt),
@@ -475,22 +445,6 @@ export async function applyStage(_prev: string | null, fd: FormData): Promise<st
           domesticTracking: reached("out_for_delivery") ? domesticTracking ?? item.domesticTracking : item.domesticTracking,
         })
         .where(eq(orderItems.id, item.id));
-    }
-
-    // ขั้นของตู้: เติมวันที่ของทุกขั้นจนถึงขั้นที่เลือก
-    if (reached("loaded")) {
-      const containerIds = [...new Set(items.map((i) => target?.id ?? i.containerId).filter((v): v is number => Boolean(v)))];
-      for (const cid of containerIds) {
-        const c = await tx.query.containers.findFirst({ where: eq(containers.id, cid) });
-        if (!c) continue;
-        const update: Partial<Record<(typeof containerStageFields)[ContainerStage], Date | null>> = {};
-        for (const [s, field] of Object.entries(containerStageFields) as [ContainerStage, (typeof containerStageFields)[ContainerStage]][]) {
-          if (s === stage) update[field] = at;
-          else if (reached(s) && !c[field]) update[field] = at;
-          else if (!reached(s) && c[field] && rewindContainers.has(cid)) update[field] = null; // ย้อนสถานะตู้
-        }
-        if (Object.keys(update).length) await tx.update(containers).set(update).where(eq(containers.id, cid));
-      }
     }
   });
 

@@ -47,9 +47,9 @@ export function DeliveryRounds({ orderId, items, saved }: { orderId: number; ite
   // ยืนยันส่งรอบนี้แล้ว → ระบบอัปเดตสถานะจัดส่งของรายการให้ (ครบทุกกล่อง = จัดส่งสำเร็จ · บางส่วน = กำลังจัดส่ง)
   const markDelivered = (n: number, r: RoundInput, on: boolean) => {
     const msg = on
-      ? `ยืนยันว่าส่งรอบ ${n + 1} แล้ว?
+      ? `ยืนยันว่าส่งรอบส่ง ${n + 1} แล้ว?
 สถานะของรายการในรอบนี้จะอัปเดตให้อัตโนมัติ`
-      : `ยกเลิกการยืนยันส่งรอบ ${n + 1}?
+      : `ยกเลิกการยืนยันส่งรอบส่ง ${n + 1}?
 สถานะจัดส่งของรายการจะถูกคำนวณใหม่`;
     if (!window.confirm(msg)) return;
     // วันที่ส่ง = วันที่จัดส่งของรอบ (ถ้าใส่ไว้ และไม่ใช่วันในอนาคต) ไม่งั้น = ตอนนี้
@@ -110,9 +110,9 @@ export function DeliveryRounds({ orderId, items, saved }: { orderId: number; ite
               {shown.map((r, n) => (
                 <th key={n} className="px-2 py-2 text-center font-normal">
                   <div className="flex items-center justify-center gap-1 font-semibold text-gray-800">
-                    รอบ {n + 1}
+                    รอบส่ง {n + 1}
                     {editing && (
-                      <button type="button" onClick={() => removeRound(n)} className="text-gray-400 hover:text-brand-600" aria-label={`ลบรอบ ${n + 1}`}>
+                      <button type="button" onClick={() => removeRound(n)} className="text-gray-400 hover:text-brand-600" aria-label={`ลบรอบส่ง ${n + 1}`}>
                         ✕
                       </button>
                     )}
@@ -125,7 +125,7 @@ export function DeliveryRounds({ orderId, items, saved }: { orderId: number; ite
                         value={r.date}
                         onChange={(e) => setDate(n, e.target.value)}
                         className="input mt-1 w-36 px-2 py-1 text-xs"
-                        aria-label={`วันที่จัดส่งรอบ ${n + 1}`}
+                        aria-label={`วันที่จัดส่งรอบส่ง ${n + 1}`}
                       />
                       <button type="button" onClick={() => fillRest(n)} className="mt-1 block w-full text-[11px] text-brand-600 hover:underline">
                         ใส่ที่เหลือทั้งหมด
@@ -175,7 +175,7 @@ export function DeliveryRounds({ orderId, items, saved }: { orderId: number; ite
                           onChange={(e) => setQty(n, i, e.target.value)}
                           placeholder="0"
                           className={`input w-20 px-2 py-1 text-center ${rest != null && rest < 0 ? "ring-2 ring-brand-500" : ""}`}
-                          aria-label={`${i.description} รอบ ${n + 1}`}
+                          aria-label={`${i.description} รอบส่ง ${n + 1}`}
                         />
                       ) : (
                         r.qty[key(i)] || "-"

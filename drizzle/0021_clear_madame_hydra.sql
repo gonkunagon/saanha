@@ -1,0 +1,1 @@
+ALTER TABLE "delivery_rounds" ADD COLUMN "delivered_at" timestamp with time zone;

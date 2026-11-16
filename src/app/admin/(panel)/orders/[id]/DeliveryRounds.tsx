@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { saveDeliveryRounds, type RoundInput } from "../round-actions";
+import { saveDeliveryRounds, setRoundDelivered, type RoundInput } from "../round-actions";
 
 type Item = { id: number; description: string; quantity: number | null };
 
@@ -43,6 +43,19 @@ export function DeliveryRounds({ orderId, items, saved }: { orderId: number; ite
       setError(err);
       if (!err) setEditing(false);
     });
+  // ยืนยันส่งรอบนี้แล้ว → ระบบอัปเดตสถานะจัดส่งของรายการให้ (ครบจำนวน = จัดส่งสำเร็จ · บางส่วน = กำลังจัดส่ง)
+  const markDelivered = (n: number, r: RoundInput, on: boolean) => {
+    const msg = on
+      ? `ยืนยันว่าส่งรอบ ${n + 1} แล้ว?
+สถานะของรายการในรอบนี้จะอัปเดตให้อัตโนมัติ`
+      : `ยกเลิกการยืนยันส่งรอบ ${n + 1}?
+สถานะจัดส่งของรายการจะถูกคำนวณใหม่`;
+    if (!window.confirm(msg)) return;
+    // วันที่ส่ง = วันที่จัดส่งของรอบ (ถ้าใส่ไว้ และไม่ใช่วันในอนาคต) ไม่งั้น = ตอนนี้
+    const planned = r.date ? new Date(`${r.date}T12:00:00`) : null;
+    const at = on ? (planned && planned.getTime() <= Date.now() ? planned : new Date()).toISOString() : null;
+    start(async () => setError(await setRoundDelivered(orderId, n + 1, at)));
+  };
   const cancel = () => {
     setRounds(saved);
     setError(null);
@@ -73,6 +86,7 @@ export function DeliveryRounds({ orderId, items, saved }: { orderId: number; ite
     <div className="mt-3 rounded-lg border border-gray-200 p-3">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold text-gray-800">🚚 รอบจัดส่ง ({shown.length} รอบ)</p>
+        {!editing && error && <span className="text-sm text-brand-700">{error}</span>}
         {!editing && (
           <button
             type="button"
@@ -104,6 +118,7 @@ export function DeliveryRounds({ orderId, items, saved }: { orderId: number; ite
                   </div>
                   {editing ? (
                     <>
+                      {r.deliveredAt && <div className="text-[11px] font-medium text-emerald-700">✅ ส่งแล้ว</div>}
                       <input
                         type="date"
                         value={r.date}
@@ -116,7 +131,26 @@ export function DeliveryRounds({ orderId, items, saved }: { orderId: number; ite
                       </button>
                     </>
                   ) : (
-                    <div>{thaiDate(r.date || null)}</div>
+                    <>
+                      <div>{thaiDate(r.date || null)}</div>
+                      {r.deliveredAt ? (
+                        <div className="mt-1 text-[11px] font-medium text-emerald-700">
+                          ✅ ส่งแล้ว{" "}
+                          <button type="button" disabled={pending} onClick={() => markDelivered(n, r, false)} className="font-normal text-gray-400 hover:text-brand-600 hover:underline">
+                            ยกเลิก
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={pending}
+                          onClick={() => markDelivered(n, r, true)}
+                          className="mt-1 rounded-md border border-emerald-600 px-2 py-0.5 text-[11px] font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                        >
+                          ยืนยันส่งรอบนี้แล้ว
+                        </button>
+                      )}
+                    </>
                   )}
                 </th>
               ))}

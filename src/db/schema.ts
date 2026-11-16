@@ -230,6 +230,7 @@ export const deliveryRounds = pgTable("delivery_rounds", {
   roundNo: integer("round_no").notNull(),
   deliveryDate: text("delivery_date"), // YYYY-MM-DD
   quantities: jsonb("quantities").$type<Record<string, number>>().notNull(),
+  deliveredAt: timestamp("delivered_at"), // กดยืนยันว่าส่งรอบนี้แล้ว → อัปเดตสถานะรายการให้
   createdAt: createdAt(),
 });
 export type DeliveryRound = typeof deliveryRounds.$inferSelect;

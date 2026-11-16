@@ -3,6 +3,7 @@ import type { PickerCustomer } from "@/lib/customers";
 import { Field, MethodSelect } from "@/components/admin/ui";
 import { PaymentFields } from "@/components/admin/PaymentFields";
 import { CustomerPicker } from "@/components/admin/CustomerPicker";
+import { PerCbmCharge } from "@/components/admin/PerCbmCharge";
 
 // ช่องข้อมูลออเดอร์ ใช้ทั้งตอนสร้างและแก้ไข
 // ลูกค้าต้องเลือกจากทะเบียนลูกค้า — preselectId มาจากปุ่ม "สร้างออเดอร์ให้ลูกค้านี้"
@@ -96,9 +97,7 @@ export function OrderFields({
           </Field>
         </div>
         <div className="charge-per-cbm">
-          <Field label="ค่าขนส่งที่คิดลูกค้า (บาท / คิว · คูณคิวรวมให้)">
-            <input name="shippingChargePerCbm" type="number" step="0.01" min={0} defaultValue={order?.shippingChargePerCbm ?? ""} className="input" />
-          </Field>
+          <PerCbmCharge defaultValue={order?.shippingChargePerCbm} />
         </div>
         <Field label="ต้นทุนค่าขนส่งของร้าน (บาท · ลูกค้าไม่เห็น)">
           <input name="shippingCost" type="number" step="0.01" min={0} defaultValue={order?.shippingCost ?? ""} className="input" />

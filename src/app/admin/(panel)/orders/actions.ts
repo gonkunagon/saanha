@@ -49,6 +49,11 @@ async function findOrCreateContainer(tx: Tx, code: string, m: ShippingMethod) {
 
 // ---- พัสดุย่อยของรายการ ----
 
+function manualCbm(v: FormDataEntryValue | undefined) {
+  const n = toNum(v);
+  return n != null && n > 0 ? Math.round(n * 10_000) / 10_000 : null;
+}
+
 // แถวพัสดุจากฟอร์ม (ช่องชื่อขึ้นต้นด้วย prefix ส่งมาหลายแถว) ข้ามแถวที่ว่างทั้งแถว
 function parsePackages(fd: FormData, prefix: string) {
   const col = (k: string) => fd.getAll(`${prefix}${k}`);
@@ -66,10 +71,11 @@ function parsePackages(fd: FormData, prefix: string) {
         widthCm,
         lengthCm,
         heightCm,
-        cbm: calcCbm(widthCm, lengthCm, heightCm, boxes),
+        // ไม่มีขนาด = ใช้คิวที่พนักงานใส่เอง (คิวรวมของแถว)
+        cbm: calcCbm(widthCm, lengthCm, heightCm, boxes) ?? manualCbm(col("cbm")[i]),
       };
     })
-    .filter((p) => p.chinaTrackingNo || [p.boxes, p.weightKg, p.widthCm, p.lengthCm, p.heightCm].some((v) => v != null));
+    .filter((p) => p.chinaTrackingNo || [p.boxes, p.weightKg, p.widthCm, p.lengthCm, p.heightCm, p.cbm].some((v) => v != null));
 }
 type PackageRow = ReturnType<typeof parsePackages>[number];
 

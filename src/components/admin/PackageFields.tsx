@@ -12,6 +12,7 @@ export type PackageInput = {
   widthCm?: number | null;
   lengthCm?: number | null;
   heightCm?: number | null;
+  cbm?: number | null;
 };
 
 // auto = เลขพัสดุจีนของแถวนี้ให้ระบบตั้งให้ (ตามแถวแรก) จนกว่าพนักงานจะพิมพ์เอง
@@ -25,6 +26,8 @@ type Row = {
   w: string;
   l: string;
   h: string;
+  manual: boolean; // ใส่ปริมาณคิวเอง (ไม่ใส่ขนาด) — cbm = คิวรวมของแถวนี้
+  cbm: string;
 };
 
 const str = (v?: number | string | null) => (v == null ? "" : String(v));
@@ -38,8 +41,14 @@ const toRow = (p: PackageInput, key: number): Row => ({
   w: str(p.widthCm),
   l: str(p.lengthCm),
   h: str(p.heightCm),
+  // มีคิวแต่ไม่มีขนาด = แถวที่ใส่คิวเอง
+  manual: p.cbm != null && !(p.widthCm && p.lengthCm && p.heightCm),
+  cbm: str(p.cbm),
 });
-const rowCbm = (r: Row) => calcCbm(Number(r.w) || null, Number(r.l) || null, Number(r.h) || null, Number(r.boxes) || null);
+const rowCbm = (r: Row) =>
+  r.manual
+    ? Number(r.cbm) > 0 ? Math.round(Number(r.cbm) * 10_000) / 10_000 : null
+    : calcCbm(Number(r.w) || null, Number(r.l) || null, Number(r.h) || null, Number(r.boxes) || null);
 
 // เลขพัสดุจีนของแถวที่ระบบตั้งให้ ต่อจากแถวแรก:
 // แถวแรกลงท้าย "-1" (แตกจากจำนวนกล่อง) เช่น 33333-1 → 33333-2, 33333-3
@@ -57,7 +66,8 @@ export function PackageFields({ prefix = "pkg_", defaults = [] }: { prefix?: str
   const [rows, setRows] = useState<Row[]>(() => (defaults.length ? defaults : [{}]).map(toRow));
   const [nextKey, setNextKey] = useState(rows.length);
 
-  const update = (key: number, field: keyof Omit<Row, "key" | "auto">, value: string) =>
+  const toggleManual = (key: number) => setRows((rs) => rs.map((r) => (r.key === key ? { ...r, manual: !r.manual } : r)));
+  const update = (key: number, field: keyof Omit<Row, "key" | "auto" | "manual">, value: string) =>
     setRows((rs) => {
       const next = rs.map((r) => {
         if (r.key !== key) return r;
@@ -84,11 +94,13 @@ export function PackageFields({ prefix = "pkg_", defaults = [] }: { prefix?: str
     const n = Math.floor(Number(row?.boxes));
     if (!row || row.boxes === boxesAtFocus.current || !(n > 1) || n > MAX_SPLIT) return;
     const base = row.tracking.trim();
+    // คิวที่ใส่เอง = คิวรวมของแถว → แตกแถวแล้วแบ่งเท่า ๆ กัน
+    const cbmEach = row.manual && Number(row.cbm) > 0 ? String(Math.round((Number(row.cbm) / n) * 10_000) / 10_000) : row.cbm;
     const copies: Row[] = Array.from({ length: n }, (_, i) => {
       const own = base && (at === 0 || !row.auto); // แถวนี้มีเลขของตัวเอง → รันเลข -1, -2, ...
-      if (i === 0) return { ...row, boxes: "1", tracking: own ? `${base}-1` : row.tracking };
+      if (i === 0) return { ...row, cbm: cbmEach, boxes: "1", tracking: own ? `${base}-1` : row.tracking };
       const follow = at === 0 || row.auto; // ต่อเลขจากแถวแรกอัตโนมัติ
-      return { ...row, key: nextKey + i - 1, importKey: "", boxes: "1", auto: follow, tracking: follow ? "" : `${base}-${i + 1}` };
+      return { ...row, cbm: cbmEach, key: nextKey + i - 1, importKey: "", boxes: "1", auto: follow, tracking: follow ? "" : `${base}-${i + 1}` };
     });
     setNextKey((k) => k + n - 1);
     setRows((rs) => autoNumber([...rs.slice(0, at), ...copies, ...rs.slice(at + 1)]));
@@ -162,13 +174,27 @@ export function PackageFields({ prefix = "pkg_", defaults = [] }: { prefix?: str
               <input name={`${prefix}boxes`} type="number" min={0} value={r.boxes} onChange={(e) => update(r.key, "boxes", e.target.value)} onFocus={(e) => (boxesAtFocus.current = e.target.value)} onBlur={() => splitRow(r.key)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), e.currentTarget.blur())} placeholder="กล่อง" className={cell} aria-label="จำนวนกล่อง" />
               <input name={`${prefix}weightKg`} type="number" step="0.01" min={0} value={r.weight} onChange={(e) => update(r.key, "weight", e.target.value)} placeholder="กก." className={cell} aria-label="น้ำหนักต่อกล่อง (กก.)" />
               {/* .input กว้างเต็มช่องเสมอ จึงคุมความกว้างด้วย span ที่ครอบ */}
+              {/* ช่องทุกชื่อต้องมีครบทุกแถว (เซิร์ฟเวอร์จับคู่ตามลำดับ) — โหมดที่ไม่ได้ใช้ส่งค่าว่าง */}
+              {r.manual ? (
+                <div className="col-span-2 flex items-center gap-1 md:col-span-1">
+                  <input type="hidden" name={`${prefix}widthCm`} value="" />
+                  <input type="hidden" name={`${prefix}lengthCm`} value="" />
+                  <input type="hidden" name={`${prefix}heightCm`} value="" />
+                  <span className="w-28"><input name={`${prefix}cbm`} type="number" step="0.0001" min={0} value={r.cbm} onChange={(e) => update(r.key, "cbm", e.target.value)} placeholder="คิวรวม" className={cell} aria-label="ปริมาณคิวรวมของแถวนี้" /></span>
+                  <span className="text-xs text-gray-500">คิว (รวม)</span>
+                  <button type="button" onClick={() => toggleManual(r.key)} className="ml-1 shrink-0 rounded-lg border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50">ใส่ขนาด</button>
+                </div>
+              ) : (
               <div className="col-span-2 flex items-center gap-1 md:col-span-1">
+                <input type="hidden" name={`${prefix}cbm`} value="" />
                 <span className="w-16"><input name={`${prefix}widthCm`} type="number" step="0.1" min={0} value={r.w} onChange={(e) => update(r.key, "w", e.target.value)} placeholder="กว้าง" className={cell} aria-label="กว้าง (ซม.)" /></span>
                 <span className="text-gray-400">×</span>
                 <span className="w-16"><input name={`${prefix}lengthCm`} type="number" step="0.1" min={0} value={r.l} onChange={(e) => update(r.key, "l", e.target.value)} placeholder="ยาว" className={cell} aria-label="ยาว (ซม.)" /></span>
                 <span className="text-gray-400">×</span>
                 <span className="w-16"><input name={`${prefix}heightCm`} type="number" step="0.1" min={0} value={r.h} onChange={(e) => update(r.key, "h", e.target.value)} placeholder="สูง" className={cell} aria-label="สูง (ซม.)" /></span>
+                <button type="button" onClick={() => toggleManual(r.key)} title="ไม่มีขนาดกล่อง — ใส่ปริมาณคิวเอง" className="ml-1 shrink-0 rounded-lg border border-brand-200 px-2 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50">ใส่คิวเอง</button>
               </div>
+              )}
               <span className="text-sm md:text-right">{cbm != null ? cbm.toFixed(4) : "–"} คิว</span>
               <button
                 type="button"

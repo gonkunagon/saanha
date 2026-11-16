@@ -80,7 +80,7 @@ function parsePackages(fd: FormData, prefix: string) {
 type PackageRow = ReturnType<typeof parsePackages>[number];
 
 // ยอดรวมของรายการ = ผลรวมพัสดุทุกแถว (ไม่มีข้อมูลเลย = ว่าง)
-function packageTotals(pkgs: PackageRow[]) {
+function packageTotals(pkgs: Pick<PackageRow, "boxes" | "weightKg" | "cbm">[]) {
   const sum = (vals: (number | null)[], digits: number) =>
     vals.some((v) => v != null)
       ? Math.round(vals.reduce<number>((s, v) => s + (v ?? 0), 0) * 10 ** digits) / 10 ** digits
@@ -559,4 +559,98 @@ export async function deletePayment(fd: FormData) {
   await requireUser();
   await db.delete(payments).where(eq(payments.id, Number(fd.get("paymentId"))));
   refresh();
+}
+
+// ---- แยกรอบส่ง ----
+// ย้ายบางกล่องของรายการไปเป็นรายการใหม่ (ชื่อเดิม + "(รอบ N)") ในตู้อื่น — แต่ละรายการอยู่ได้ตู้เดียว จึงแยกรายการแทน
+// ช่อง move_<packageId> = จำนวนกล่องที่ย้ายจากพัสดุแถวนั้น (ย้ายบางกล่อง = แตกแถว คิวแบ่งตามสัดส่วน)
+export async function splitItem(fd: FormData) {
+  await requireUser();
+  const itemId = Number(fd.get("itemId"));
+  let orderId: number | null = null;
+  await db.transaction(async (tx) => {
+    const item = await tx.query.orderItems.findFirst({
+      where: eq(orderItems.id, itemId),
+      with: { packages: true, order: { columns: { method: true } } },
+    });
+    if (!item) return;
+    orderId = item.orderId;
+
+    const moves = item.packages
+      .map((p) => {
+        const boxes = p.boxes && p.boxes > 0 ? p.boxes : 1;
+        const n = Math.min(boxes, Math.max(0, Math.floor(Number(fd.get(`move_${p.id}`)) || 0)));
+        return { p, boxes, n };
+      })
+      .filter((m) => m.n > 0);
+    if (moves.length === 0) return;
+
+    // ชื่อรายการรอบใหม่: นับรายการชื่อเดียวกันในออเดอร์ (ตัด "(รอบ x)" ท้ายชื่อออกก่อน)
+    const base = item.description.replace(/\s*\(รอบ \d+\)$/, "");
+    const siblings = await tx.select({ d: orderItems.description }).from(orderItems).where(eq(orderItems.orderId, item.orderId));
+    const round = siblings.filter((s) => s.d.replace(/\s*\(รอบ \d+\)$/, "") === base).length + 1;
+
+    const code = text(fd, "containerCode");
+    const container = code ? await findOrCreateContainer(tx, code, item.order.method) : null;
+
+    // จำนวนสินค้า: กรอกเอง หรือแบ่งตามสัดส่วนกล่อง
+    const totalBoxes = item.packages.reduce((s, p) => s + (p.boxes && p.boxes > 0 ? p.boxes : 1), 0);
+    const movedBoxes = moves.reduce((s, m) => s + m.n, 0);
+    const typedQty = toInt(fd.get("quantity"));
+    const newQty =
+      item.quantity == null ? typedQty : Math.min(item.quantity, typedQty ?? Math.round((item.quantity * movedBoxes) / totalBoxes));
+
+    const [created] = await tx
+      .insert(orderItems)
+      .values({
+        orderId: item.orderId,
+        containerId: container?.id ?? null,
+        description: `${base} (รอบ ${round})`,
+        spec: item.spec,
+        productUrl: item.productUrl,
+        quantity: newQty,
+        unitPrice: item.unitPrice,
+        sellPrice: item.sellPrice,
+        productionAt: item.productionAt,
+        receivedAt: item.receivedAt, // ถึงโกดังจีนพร้อมกัน — สถานะขนส่งตามตู้ใหม่
+      })
+      .returning({ id: orderItems.id });
+    if (item.quantity != null && newQty != null) {
+      await tx.update(orderItems).set({ quantity: Math.max(0, item.quantity - newQty) }).where(eq(orderItems.id, item.id));
+    }
+
+    // คิวของแถวที่เหลือ/ย้าย: มีขนาด = คำนวณใหม่ · ใส่คิวเอง = แบ่งตามสัดส่วนกล่อง
+    const cbmFor = (p: (typeof item.packages)[number], boxes: number, total: number) =>
+      calcCbm(p.widthCm, p.lengthCm, p.heightCm, boxes) ?? (p.cbm == null ? null : Math.round(((p.cbm * boxes) / total) * 10_000) / 10_000);
+    for (const { p, boxes, n } of moves) {
+      if (n >= boxes) {
+        await tx.update(itemPackages).set({ itemId: created.id }).where(eq(itemPackages.id, p.id));
+        continue;
+      }
+      await tx.update(itemPackages).set({ boxes: boxes - n, cbm: cbmFor(p, boxes - n, boxes) }).where(eq(itemPackages.id, p.id));
+      await tx.insert(itemPackages).values({
+        itemId: created.id,
+        chinaTrackingNo: p.chinaTrackingNo,
+        boxes: n,
+        weightKg: p.weightKg,
+        widthCm: p.widthCm,
+        lengthCm: p.lengthCm,
+        heightCm: p.heightCm,
+        cbm: cbmFor(p, n, boxes),
+      });
+    }
+
+    // รูปสินค้าใช้ร่วมกัน (ใบเสนอราคา) — คัดลอกไปรายการใหม่
+    const images = await tx.select({ mime: itemImages.mime, data: itemImages.data }).from(itemImages).where(eq(itemImages.itemId, item.id));
+    if (images.length) await tx.insert(itemImages).values(images.map((img) => ({ ...img, itemId: created.id })));
+
+    // ยอดรวมกล่อง/น้ำหนัก/คิว ของทั้งสองรายการ
+    for (const id of [item.id, created.id]) {
+      const pkgs = await tx.select().from(itemPackages).where(eq(itemPackages.itemId, id));
+      await tx.update(orderItems).set(packageTotals(pkgs)).where(eq(orderItems.id, id));
+    }
+    await syncGoodsFromItems(tx, item.orderId);
+  });
+  refresh();
+  if (orderId) redirect(`/admin/orders/${orderId}?saved=1`);
 }

@@ -12,7 +12,7 @@ import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { OrderFields } from "../OrderFields";
 import { SavedNotice } from "./SavedNotice";
 import { listCustomersForPicker } from "@/lib/customers";
-import { deleteItem, updateItem, updateOrder } from "../actions";
+import { deleteItem, splitItem, updateItem, updateOrder } from "../actions";
 import { ItemPriceCells } from "./ItemPriceForm";
 import { PaymentsPanel } from "./PaymentsCard";
 import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
@@ -57,6 +57,58 @@ function ItemEditForm({ item }: { item: ItemWithPackages }) {
       <p className="mt-2 text-xs text-gray-500">
         พัสดุและตู้ แก้ที่ &quot;แก้ไขข้อมูลออเดอร์&quot; ด้านล่าง · วันที่ของแต่ละสถานะ อัปเดตที่กล่อง &quot;อัปเดตสถานะรายการที่เลือก&quot;
       </p>
+    </form>
+  );
+}
+
+// แยกรอบส่ง: เลือกจำนวนกล่องของแต่ละแถวพัสดุที่จะส่งรอบใหม่ + ตู้ของรอบนั้น → แตกเป็นรายการใหม่ "(รอบ N)"
+const SPLIT_SUMMARY = "inline-flex cursor-pointer list-none items-center gap-1.5 rounded-lg border border-brand-600 px-3 py-1 text-xs font-medium text-brand-600 select-none hover:bg-brand-50 [&::-webkit-details-marker]:hidden";
+const boxesOf = (item: ItemWithPackages) => item.packages.reduce((s, p) => s + (p.boxes && p.boxes > 0 ? p.boxes : 1), 0);
+
+function SplitItemForm({ item, containerOptions }: { item: ItemWithPackages; containerOptions: ContainerOption[] }) {
+  return (
+    <form action={splitItem} className="mt-3 rounded-lg bg-gray-50 p-4 text-sm">
+      <input type="hidden" name="itemId" value={item.id} />
+      <p className="mb-2 font-medium">เลือกจำนวนกล่องที่จะส่งรอบใหม่</p>
+      <table className="w-full text-left">
+        <thead className="text-xs text-gray-500">
+          <tr><th className="py-1 pr-3 font-normal">Tracking no. จีน</th><th className="py-1 pr-3 text-right font-normal">กล่อง</th><th className="py-1 pr-3 text-right font-normal">คิว</th><th className="py-1 text-right font-normal">ย้ายไปรอบใหม่ (กล่อง)</th></tr>
+        </thead>
+        <tbody>
+          {item.packages.map((p) => {
+            const boxes = p.boxes && p.boxes > 0 ? p.boxes : 1;
+            return (
+              <tr key={p.id} className="border-t border-gray-200">
+                <td className="py-1.5 pr-3">{p.chinaTrackingNo || "-"}</td>
+                <td className="py-1.5 pr-3 text-right">{boxes}</td>
+                <td className="py-1.5 pr-3 text-right">{p.cbm ?? "-"}</td>
+                <td className="py-1.5 text-right">
+                  <span className="inline-block w-24"><input name={`move_${p.id}`} type="number" min={0} max={boxes} defaultValue={0} className="input bg-white px-2 text-center" aria-label="จำนวนกล่องที่ย้าย" /></span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <Field label="ตู้ของรอบใหม่">
+          <select name="containerCode" defaultValue="" className="input bg-white">
+            <option value="">— ยังไม่เข้าตู้ —</option>
+            {containerOptions.map((c) => (
+              <option key={c.code} value={c.code}>{c.label}</option>
+            ))}
+          </select>
+        </Field>
+        {item.quantity != null && (
+          <Field label={`จำนวนสินค้าที่ส่งรอบใหม่ (จาก ${item.quantity} · เว้นว่าง = แบ่งตามสัดส่วนกล่อง)`}>
+            <input name="quantity" type="number" min={0} max={item.quantity} className="input bg-white" />
+          </Field>
+        )}
+      </div>
+      <div className="mt-3 flex items-center gap-3">
+        <button className="btn-primary">✂️ แยกรอบส่ง</button>
+        <span className="text-xs text-gray-500">ระบบสร้างรายการใหม่ชื่อเดิม + &quot;(รอบ N)&quot; ย้ายกล่อง น้ำหนัก คิว ไปให้ แล้วคิดยอดใหม่ทั้งสองรายการ</span>
+      </div>
     </form>
   );
 }
@@ -585,6 +637,12 @@ export default async function OrderPage({ params, searchParams }: Props) {
                             <ItemEditForm item={item} />
                             <ItemPhotos item={item} />
                           </details>
+                          {boxesOf(item) >= 2 && (
+                            <details className="mt-2">
+                              <summary className={SPLIT_SUMMARY}>✂️ แยกรอบส่ง</summary>
+                              <SplitItemForm item={item} containerOptions={containerOptions} />
+                            </details>
+                          )}
                         </td>
                         <td className="px-3 py-3 text-right whitespace-nowrap">{item.quantity ?? "-"}</td>
                         {!order.shippingOnly && <ItemPriceCells itemId={item.id} quantity={item.quantity} unitPrice={item.unitPrice} sellPrice={item.sellPrice} />}

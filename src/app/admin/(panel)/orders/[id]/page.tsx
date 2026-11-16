@@ -436,6 +436,12 @@ export default async function OrderPage({ params, searchParams }: Props) {
                           <StageBadge stage={stages[idx]} />
                           <span>{formatThaiDateTime(itemStageDates(item, item.container)[stages[idx]])}</span>
                         </div>
+                        {boxesOf(item) >= 2 && (
+                          <details className="mt-2">
+                            <summary className={SPLIT_SUMMARY}>✂️ แยกรอบส่ง</summary>
+                            <SplitItemForm item={item} containerOptions={containerOptions} />
+                          </details>
+                        )}
                       </div>
                     </li>
                   ))}

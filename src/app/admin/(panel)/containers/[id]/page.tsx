@@ -24,8 +24,16 @@ import {
 
 const sum = (values: (number | null)[]) => values.reduce<number>((a, v) => a + (v ?? 0), 0);
 // ค่าขนส่งของออเดอร์ในตู้: ออเดอร์ฝากส่ง = ยอดที่กรอกเองในหน้าออเดอร์ (ไม่ใช้เรท/คิว · ยังไม่กรอก = 0)
-const shippingOf = (items: { cbm: number | null }[], order: { shippingRate: number | null; shippingOnly: boolean; shippingCharge: number | null }) =>
-  order.shippingOnly ? (order.shippingCharge ?? 0) : shippingCostOf(items, order.shippingRate);
+// ฝากส่ง: ต่อคิว (ราคา/คิว × คิวในตู้นี้) หรือเหมาจ่าย (ยอดที่ใส่ในหน้าออเดอร์)
+const shippingOf = (
+  items: { cbm: number | null }[],
+  order: { shippingRate: number | null; shippingOnly: boolean; shippingCharge: number | null; shippingChargePerCbm: number | null },
+) =>
+  !order.shippingOnly
+    ? shippingCostOf(items, order.shippingRate)
+    : order.shippingChargePerCbm != null
+      ? shippingCostOf(items, order.shippingChargePerCbm)
+      : (order.shippingCharge ?? 0);
 const baht = (n: number) => n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 // สถานะที่อัปเดตจากหน้าตู้ได้: ขั้นของตู้ 4 ขั้น + ส่งต่อให้ลูกค้า (ใส่ให้ทุกรายการในตู้)
@@ -242,13 +250,13 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
                   <td className="py-2 pr-4">
                     {order.shippingOnly ? (
                       <Link href={`/admin/orders/${order.id}?edit=1`} className="text-xs text-gray-500 hover:text-brand-600 hover:underline">
-                        ราคาเหมา (ใส่ในหน้าออเดอร์)
+                        {order.shippingChargePerCbm != null ? `${order.shippingChargePerCbm.toLocaleString("th-TH")} บาท / คิว (ใส่ในหน้าออเดอร์)` : "ราคาเหมา (ใส่ในหน้าออเดอร์)"}
                       </Link>
                     ) : (
                       <ShippingRateForm orderId={order.id} rate={order.shippingRate} defaultRate={DEFAULT_SHIPPING_RATE_PER_CBM} />
                     )}
                   </td>
-                  <td className="py-2 pr-4 text-right font-medium whitespace-nowrap">{order.shippingOnly && order.shippingCharge == null ? <span className="text-xs font-normal text-amber-700">ยังไม่ใส่ราคา</span> : baht(shippingOf(own, order))}</td>
+                  <td className="py-2 pr-4 text-right font-medium whitespace-nowrap">{order.shippingOnly && order.shippingCharge == null && order.shippingChargePerCbm == null ? <span className="text-xs font-normal text-amber-700">ยังไม่ใส่ราคา</span> : baht(shippingOf(own, order))}</td>
                   <td className="py-1 pr-4 text-center">
                     {/* ใบสรุปค่าขนส่ง A4 ของออเดอร์นี้ในตู้นี้ (ส่ง / พิมพ์ให้ลูกค้า) */}
                     <Link

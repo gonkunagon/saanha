@@ -583,7 +583,9 @@ export async function splitItem(fd: FormData) {
         return { p, boxes, n };
       })
       .filter((m) => m.n > 0);
-    if (moves.length === 0) return;
+    // ไม่ย้ายกล่องเลย = แยกตามจำนวนสินค้าอย่างเดียว (ต้องใส่จำนวน)
+    const typedQty = toInt(fd.get("quantity"));
+    if (moves.length === 0 && !(typedQty && typedQty > 0)) return;
 
     // ชื่อรายการรอบใหม่: นับรายการชื่อเดียวกันในออเดอร์ (ตัด "(รอบ x)" ท้ายชื่อออกก่อน)
     const base = item.description.replace(/\s*\(รอบ \d+\)$/, "");
@@ -596,9 +598,8 @@ export async function splitItem(fd: FormData) {
     // จำนวนสินค้า: กรอกเอง หรือแบ่งตามสัดส่วนกล่อง
     const totalBoxes = item.packages.reduce((s, p) => s + (p.boxes && p.boxes > 0 ? p.boxes : 1), 0);
     const movedBoxes = moves.reduce((s, m) => s + m.n, 0);
-    const typedQty = toInt(fd.get("quantity"));
     const newQty =
-      item.quantity == null ? typedQty : Math.min(item.quantity, typedQty ?? Math.round((item.quantity * movedBoxes) / totalBoxes));
+      item.quantity == null ? typedQty : Math.min(item.quantity, typedQty ?? (totalBoxes ? Math.round((item.quantity * movedBoxes) / totalBoxes) : 0));
 
     const [created] = await tx
       .insert(orderItems)

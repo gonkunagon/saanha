@@ -88,6 +88,10 @@ body {
 /* ออเดอร์ "ฝากส่งอย่างเดียว" (เลือก orderType=shipping ในฟอร์ม) — ซ่อนช่องค่าสินค้า / ราคา */
 form:has(input[name="orderType"][value="shipping"]:checked) .goods-only { display: none; }
 form:not(:has(input[name="orderType"][value="shipping"]:checked)) .shipping-only { display: none; }
+/* ฝากส่ง: มีพัสดุแถวที่ "ใส่คิวเอง" → ช่องค่าขนส่งเปลี่ยนเป็นราคาต่อคิว */
+.charge-per-cbm { display: none; }
+form:has(input[name$="manual"][value="1"]) .charge-total { display: none; }
+form:has(input[name$="manual"][value="1"]) .charge-per-cbm { display: block; }
 
 /* เอกสาร A4 ในหลังบ้าน: กว้าง 210mm เสมอ บนจอแคบย่อทั้งแผ่น (A4Fit ตั้ง --a4-zoom) */
 .a4 { width: 210mm; zoom: var(--a4-zoom, 1); }

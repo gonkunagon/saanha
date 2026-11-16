@@ -83,6 +83,8 @@ export const orders = pgTable("orders", {
   // ค่าขนส่งของออเดอร์ฝากส่ง (บาท): คิดลูกค้า / ต้นทุนที่ร้านจ่าย (ภายใน ลูกค้าไม่เห็น) — ว่าง = คำนวณจากคิว × เรท
   shippingCharge: doublePrecision("shipping_charge"),
   shippingCost: doublePrecision("shipping_cost"),
+  // ฝากส่ง + ใส่คิวเอง: ราคาต่อคิวที่คิดลูกค้า → shippingCharge = ราคา × คิวรวม (คำนวณตอนบันทึก)
+  shippingChargePerCbm: doublePrecision("shipping_charge_per_cbm"),
   intlTrackingNo: text("intl_tracking_no"), // Tracking no. ขนส่งจีน → ไทย (ใช้ภายใน ไม่ส่งไปหน้าติดตามพัสดุของลูกค้า)
   purchaseOrderNo: text("purchase_order_no"), // เลขคำสั่งซื้อ เช่น เลขออเดอร์จากร้านค้า 1688 / Taobao หรือเลข PO ของลูกค้า
   shopName: text("shop_name"), // ร้านค้าที่สั่งซื้อ

@@ -160,6 +160,8 @@ export function PackageFields({ prefix = "pkg_", defaults = [] }: { prefix?: str
             <div key={r.key} className="grid grid-cols-2 items-center gap-2 md:grid-cols-[13rem_4.5rem_5.5rem_auto_6rem_1.5rem]">
               <div className="col-span-2 flex gap-1 md:col-span-1">
                 <input type="hidden" name={`${prefix}importKey`} value={r.importKey} />
+                {/* แถวที่ใส่คิวเอง → ค่าขนส่งออเดอร์ฝากส่งเปลี่ยนเป็นราคาต่อคิว (CSS ใน globals.css) */}
+                <input type="hidden" name={`${prefix}manual`} value={r.manual ? "1" : ""} />
                 <input name={`${prefix}chinaTrackingNo`} value={r.tracking} onChange={(e) => update(r.key, "tracking", e.target.value)} placeholder={`Tracking no. ${i + 1}`} className="input" />
                 <button
                   type="button"

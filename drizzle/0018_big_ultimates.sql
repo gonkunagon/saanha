@@ -1,0 +1,1 @@
+ALTER TABLE "orders" ADD COLUMN "shipping_charge_per_cbm" double precision;

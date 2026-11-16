@@ -120,8 +120,9 @@ async function savePackages(tx: Tx, itemId: number, pkgs: PackageRow[]) {
 // ค่าสินค้าของออเดอร์ตามตารางรายการสินค้า: มีราคาซื้อสักรายการ → ค่าสินค้า (จ่ายร้าน) = Σ จำนวน × ราคาซื้อ
 // มีราคาขายสักรายการ → ค่าสินค้า (คิดลูกค้า) = Σ จำนวน × ราคาขาย · ไม่มีราคาเลย = ไม่แตะ (ใช้ยอดที่กรอกในฟอร์ม)
 async function syncGoodsFromItems(tx: Tx, orderId: number) {
-  // ออเดอร์ฝากส่งอย่างเดียว ไม่มีค่าสินค้า
+  // ออเดอร์ฝากส่งอย่างเดียว ไม่มีค่าสินค้า (แต่คิดค่าขนส่งต่อคิวใหม่ตามคิวล่าสุด)
   const [o] = await tx.select({ shippingOnly: orders.shippingOnly }).from(orders).where(eq(orders.id, orderId));
+  if (o?.shippingOnly) await chargeByCbm(tx, orderId);
   if (!o || o.shippingOnly) return;
   const items = await tx
     .select({ quantity: orderItems.quantity, unitPrice: orderItems.unitPrice, sellPrice: orderItems.sellPrice })
@@ -150,6 +151,17 @@ const noGoods = {
   currency: "THB" as const, // ค่าขนส่งเป็นบาท
 };
 
+const hasManualCbm = (fd: FormData) => [...fd.entries()].some(([k, v]) => k.startsWith("pkg_") && k.endsWith("_manual") && v === "1");
+
+// ฝากส่งที่คิดราคาต่อคิว: ค่าขนส่งที่คิดลูกค้า = ราคาต่อคิว × คิวรวมทุกรายการ
+async function chargeByCbm(tx: Tx, orderId: number) {
+  const [o] = await tx.select({ perCbm: orders.shippingChargePerCbm, shippingOnly: orders.shippingOnly }).from(orders).where(eq(orders.id, orderId));
+  if (!o?.shippingOnly || o.perCbm == null) return;
+  const items = await tx.select({ cbm: orderItems.cbm }).from(orderItems).where(eq(orderItems.orderId, orderId));
+  const cbm = items.reduce((s, i) => s + (i.cbm ?? 0), 0);
+  await tx.update(orders).set({ shippingCharge: Math.round(o.perCbm * cbm * 100) / 100 }).where(eq(orders.id, orderId));
+}
+
 function orderFields(fd: FormData) {
   // ฟอร์มที่ไม่มีช่องประเภท (หน้าที่เปิดค้างไว้ก่อนมีช่องนี้) = ไม่แตะค่าเดิม
   const shippingOnly = fd.has("orderType") ? fd.get("orderType") === "shipping" : undefined;
@@ -159,8 +171,13 @@ function orderFields(fd: FormData) {
     shippingOnly === undefined
       ? {}
       : shippingOnly
-        ? { shippingCharge: toNum(fd.get("shippingCharge")), shippingCost: toNum(fd.get("shippingCost")) }
-        : { shippingCharge: null, shippingCost: null };
+        ? {
+            shippingCharge: toNum(fd.get("shippingCharge")),
+            shippingCost: toNum(fd.get("shippingCost")),
+            // มีพัสดุที่ใส่คิวเอง = คิดราคาต่อคิว (ยอดรวมคำนวณหลังบันทึกพัสดุ — chargeByCbm)
+            shippingChargePerCbm: hasManualCbm(fd) ? toNum(fd.get("shippingChargePerCbm")) : null,
+          }
+        : { shippingCharge: null, shippingCost: null, shippingChargePerCbm: null };
   return { ...fields, ...(shippingOnly ? noGoods : {}), ...shipping, shippingOnly };
 }
 

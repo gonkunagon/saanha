@@ -89,9 +89,17 @@ export function OrderFields({
       </Field>
       {/* ค่าขนส่งของออเดอร์ฝากส่ง (แสดงเฉพาะเมื่อเลือกฝากส่งอย่างเดียว — CSS .shipping-only) */}
       <div className="shipping-only contents">
-        <Field label="ค่าขนส่งที่คิดลูกค้า (บาท)">
-          <input name="shippingCharge" type="number" step="0.01" min={0} defaultValue={order?.shippingCharge ?? ""} className="input" />
-        </Field>
+        {/* มีพัสดุที่ "ใส่คิวเอง" = คิดเป็นราคาต่อคิว (CSS .charge-total / .charge-per-cbm) */}
+        <div className="charge-total">
+          <Field label="ค่าขนส่งที่คิดลูกค้า (บาท)">
+            <input name="shippingCharge" type="number" step="0.01" min={0} defaultValue={order?.shippingCharge ?? ""} className="input" />
+          </Field>
+        </div>
+        <div className="charge-per-cbm">
+          <Field label="ค่าขนส่งที่คิดลูกค้า (บาท / คิว · คูณคิวรวมให้)">
+            <input name="shippingChargePerCbm" type="number" step="0.01" min={0} defaultValue={order?.shippingChargePerCbm ?? ""} className="input" />
+          </Field>
+        </div>
         <Field label="ต้นทุนค่าขนส่งของร้าน (บาท · ลูกค้าไม่เห็น)">
           <input name="shippingCost" type="number" step="0.01" min={0} defaultValue={order?.shippingCost ?? ""} className="input" />
         </Field>

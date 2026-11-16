@@ -438,7 +438,12 @@ export default async function OrderPage({ params, searchParams }: Props) {
                 </Info>
               </InfoSection>
               <InfoSection title="ค่าขนส่งที่คิดลูกค้า (ฝากส่งอย่างเดียว)" tone="money" footer={<PaymentsPanel order={order} payments={order.payments} direction="in" editing={payEditing === "in"} />}>
-                <Info label="ค่าขนส่งที่คิดลูกค้า">{ship.sell != null && <b>{formatMoney(ship.sell, "THB")}</b>}</Info>
+                <Info label="ค่าขนส่งที่คิดลูกค้า">
+                  {ship.sell != null && <b>{formatMoney(ship.sell, "THB")}</b>}
+                  {order.shippingChargePerCbm != null && (
+                    <span className="ml-1 text-xs text-gray-500">({formatMoney(order.shippingChargePerCbm, "THB")} / คิว)</span>
+                  )}
+                </Info>
                 <Info label="ชำระแล้ว">{paidOf(order, order.payments) != null && formatMoney(paidOf(order, order.payments), "THB")}</Info>
                 <Info label="ยอดค้างชำระ">
                   {order.shippingCharge != null ? <BalanceText balance={orderBalance(order, order.payments)} currency="THB" /> : <span className="text-xs text-gray-500">ใส่ค่าขนส่งที่คิดลูกค้าในหน้าแก้ไข</span>}

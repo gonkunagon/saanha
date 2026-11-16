@@ -105,7 +105,7 @@ export function OrderFields({
           </Field>
         </div>
         <div className="charge-per-cbm">
-          <PerCbmCharge name="shippingCostPerCbm" label="ต้นทุนค่าขนส่งของร้าน (บาท / คิว · ลูกค้าไม่เห็น)" defaultValue={order?.shippingCostPerCbm} />
+          <PerCbmCharge name="shippingCostPerCbm" label="ต้นทุนร้าน (บาท / คิว · ลูกค้าไม่เห็น)" defaultValue={order?.shippingCostPerCbm} />
         </div>
       </div>
       <Field label="บริษัทขนส่งที่รับงานต่อ">

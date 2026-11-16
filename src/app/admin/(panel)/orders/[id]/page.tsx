@@ -363,7 +363,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
               {order.items.length > 0 && (
                 <DeliveryRounds
                   orderId={order.id}
-                  items={order.items.map((i) => ({ id: i.id, description: i.description, quantity: i.quantity }))}
+                  items={order.items.map((i) => ({ id: i.id, description: i.description, boxes: i.boxes }))}
                   saved={order.rounds.map((r) => ({ date: r.deliveryDate ?? "", qty: r.quantities, deliveredAt: r.deliveredAt?.toISOString() ?? null }))}
                 />
               )}

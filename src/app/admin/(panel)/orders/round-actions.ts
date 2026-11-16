@@ -12,7 +12,7 @@ export type RoundInput = { date: string; qty: Record<string, number>; deliveredA
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 // สถานะจัดส่งของรายการ ตามรอบที่ยืนยันส่งแล้ว (เฉพาะรายการที่อยู่ในรอบส่ง):
-// - ส่งครบจำนวน → จัดส่งสำเร็จ (วันที่ = รอบสุดท้ายที่ส่ง) · ส่งบางส่วน → กำลังจัดส่ง · ยังไม่ส่งเลย → ล้างวันที่จัดส่ง
+// - ส่งครบทุกกล่อง → จัดส่งสำเร็จ (วันที่ = รอบสุดท้ายที่ส่ง) · ส่งบางส่วน → กำลังจัดส่ง · ยังไม่ส่งเลย → ล้างวันที่จัดส่ง
 // แตะเฉพาะรายการที่อยู่ในรอบที่ยืนยันส่งแล้ว + also (รายการที่เพิ่งยกเลิกยืนยัน) — แค่วางแผนรอบ ไม่เปลี่ยนสถานะ
 async function syncItemsFromRounds(tx: Tx, orderId: number, also: Set<string> = new Set()) {
   const rounds = await tx.select().from(deliveryRounds).where(eq(deliveryRounds.orderId, orderId)).orderBy(asc(deliveryRounds.roundNo));
@@ -26,8 +26,8 @@ async function syncItemsFromRounds(tx: Tx, orderId: number, also: Set<string> = 
     const dates = sent.map((r) => r.deliveredAt!.getTime());
     const first = dates.length ? new Date(Math.min(...dates)) : null;
     const last = dates.length ? new Date(Math.max(...dates)) : null;
-    // ไม่ได้ใส่จำนวนสินค้า = ส่งครบเมื่อทุกรอบที่มีรายการนี้ส่งแล้ว
-    const full = item.quantity != null ? sentQty >= item.quantity : sent.length === mine.length;
+    // รอบส่งนับเป็นกล่อง · ไม่มีจำนวนกล่อง = ส่งครบเมื่อทุกรอบที่มีรายการนี้ส่งแล้ว
+    const full = item.boxes ? sentQty >= item.boxes : sent.length === mine.length;
     await tx
       .update(orderItems)
       .set({
@@ -45,7 +45,7 @@ async function syncItemsFromRounds(tx: Tx, orderId: number, also: Set<string> = 
 export async function saveDeliveryRounds(orderId: number, rounds: RoundInput[]): Promise<string | null> {
   await requireUser();
   const items = await db
-    .select({ id: orderItems.id, description: orderItems.description, quantity: orderItems.quantity })
+    .select({ id: orderItems.id, description: orderItems.description, boxes: orderItems.boxes })
     .from(orderItems)
     .where(eq(orderItems.orderId, orderId));
   const clean = rounds.map((r) => {
@@ -61,10 +61,10 @@ export async function saveDeliveryRounds(orderId: number, rounds: RoundInput[]):
       deliveredAt: delivered && !isNaN(delivered.getTime()) ? delivered : null,
     };
   });
-  // รวมทุกรอบห้ามเกินจำนวนสินค้าของรายการนั้น
+  // รวมทุกรอบห้ามเกินจำนวนกล่องของรายการนั้น
   for (const i of items) {
     const sum = clean.reduce((s, r) => s + (r.qty[String(i.id)] ?? 0), 0);
-    if (i.quantity != null && sum > i.quantity) return `"${i.description}" รวมทุกรอบ ${sum} เกินจำนวนที่มี ${i.quantity}`;
+    if (i.boxes != null && sum > i.boxes) return `"${i.description}" รวมทุกรอบ ${sum} กล่อง เกินจำนวนกล่องที่มี ${i.boxes}`;
   }
   // รายการที่ถูกเอาออกจากรอบทั้งหมด: ล้างสถานะที่เคยมาจากรอบส่งที่ยืนยันแล้ว
   const before = await db.select().from(deliveryRounds).where(eq(deliveryRounds.orderId, orderId));

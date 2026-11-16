@@ -3,12 +3,13 @@
 import { useState, useTransition } from "react";
 import { saveDeliveryRounds, setRoundDelivered, type RoundInput } from "../round-actions";
 
-type Item = { id: number; description: string; quantity: number | null };
+// boxes = จำนวนกล่องทั้งหมดของรายการ (จากพัสดุ) — รอบส่งแบ่งเป็นกล่อง
+type Item = { id: number; description: string; boxes: number | null };
 
 const thaiDate = (d: string | null) =>
   d ? new Date(`${d}T00:00:00`).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" }) : "ยังไม่ระบุวัน";
 
-// แยกรอบส่ง: ปุ่มเดียวต่อออเดอร์ · เพิ่มรอบ 1, 2, 3, ... แต่ละรอบใส่วันที่จัดส่ง + จำนวนของแต่ละรายการ
+// แยกรอบส่ง: ปุ่มเดียวต่อออเดอร์ · เพิ่มรอบ 1, 2, 3, ... แต่ละรอบใส่วันที่จัดส่ง + จำนวนกล่องของแต่ละรายการ
 // รวมทุกรอบห้ามเกินจำนวนที่มี (ตรวจทั้งที่นี่และฝั่งเซิร์ฟเวอร์)
 export function DeliveryRounds({ orderId, items, saved }: { orderId: number; items: Item[]; saved: RoundInput[] }) {
   const [editing, setEditing] = useState(false);
@@ -19,7 +20,7 @@ export function DeliveryRounds({ orderId, items, saved }: { orderId: number; ite
   const key = (i: Item) => String(i.id);
   const used = (i: Item, except?: number) => rounds.reduce((s, r, n) => s + (n === except ? 0 : (r.qty[key(i)] ?? 0)), 0);
   const left = (i: Item, list = rounds) =>
-    i.quantity == null ? null : i.quantity - list.reduce((s, r) => s + (r.qty[key(i)] ?? 0), 0);
+    i.boxes == null ? null : i.boxes - list.reduce((s, r) => s + (r.qty[key(i)] ?? 0), 0);
   const over = items.filter((i) => (left(i) ?? 0) < 0);
 
   const setQty = (n: number, i: Item, v: string) =>
@@ -30,7 +31,7 @@ export function DeliveryRounds({ orderId, items, saved }: { orderId: number; ite
     setRounds((rs) =>
       rs.map((r, k) =>
         k === n
-          ? { ...r, qty: Object.fromEntries(items.map((i) => [key(i), i.quantity == null ? (r.qty[key(i)] ?? 0) : Math.max(0, i.quantity - used(i, n))])) }
+          ? { ...r, qty: Object.fromEntries(items.map((i) => [key(i), i.boxes == null ? (r.qty[key(i)] ?? 0) : Math.max(0, i.boxes - used(i, n))])) }
           : r,
       ),
     );
@@ -43,7 +44,7 @@ export function DeliveryRounds({ orderId, items, saved }: { orderId: number; ite
       setError(err);
       if (!err) setEditing(false);
     });
-  // ยืนยันส่งรอบนี้แล้ว → ระบบอัปเดตสถานะจัดส่งของรายการให้ (ครบจำนวน = จัดส่งสำเร็จ · บางส่วน = กำลังจัดส่ง)
+  // ยืนยันส่งรอบนี้แล้ว → ระบบอัปเดตสถานะจัดส่งของรายการให้ (ครบทุกกล่อง = จัดส่งสำเร็จ · บางส่วน = กำลังจัดส่ง)
   const markDelivered = (n: number, r: RoundInput, on: boolean) => {
     const msg = on
       ? `ยืนยันว่าส่งรอบ ${n + 1} แล้ว?
@@ -105,7 +106,7 @@ export function DeliveryRounds({ orderId, items, saved }: { orderId: number; ite
           <thead>
             <tr className="border-b border-gray-200 align-bottom text-xs text-gray-500">
               <th className="py-2 pr-3 text-left font-normal">สินค้า</th>
-              <th className="px-2 py-2 text-right font-normal">ทั้งหมด</th>
+              <th className="px-2 py-2 text-right font-normal">ทั้งหมด (กล่อง)</th>
               {shown.map((r, n) => (
                 <th key={n} className="px-2 py-2 text-center font-normal">
                   <div className="flex items-center justify-center gap-1 font-semibold text-gray-800">
@@ -154,7 +155,7 @@ export function DeliveryRounds({ orderId, items, saved }: { orderId: number; ite
                   )}
                 </th>
               ))}
-              <th className="py-2 pl-2 text-right font-normal">เหลือ</th>
+              <th className="py-2 pl-2 text-right font-normal">เหลือ (กล่อง)</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -163,7 +164,7 @@ export function DeliveryRounds({ orderId, items, saved }: { orderId: number; ite
               return (
                 <tr key={i.id}>
                   <td className="max-w-64 py-1.5 pr-3">{i.description}</td>
-                  <td className="px-2 py-1.5 text-right">{i.quantity ?? "-"}</td>
+                  <td className="px-2 py-1.5 text-right">{i.boxes ?? "-"}</td>
                   {shown.map((r, n) => (
                     <td key={n} className="px-2 py-1.5 text-center">
                       {editing ? (
@@ -195,7 +196,7 @@ export function DeliveryRounds({ orderId, items, saved }: { orderId: number; ite
       {editing && (
         <>
           {over.length > 0 && (
-            <p className="mt-2 text-sm text-brand-700">⚠️ รวมทุกรอบเกินจำนวนที่มี: {over.map((i) => i.description).join(", ")}</p>
+            <p className="mt-2 text-sm text-brand-700">⚠️ รวมทุกรอบเกินจำนวนกล่องที่มี: {over.map((i) => i.description).join(", ")}</p>
           )}
           {error && <p className="mt-2 text-sm text-brand-700">{error}</p>}
           <div className="mt-3 flex flex-wrap items-center gap-3">

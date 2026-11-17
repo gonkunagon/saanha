@@ -33,7 +33,7 @@ export default async function OrdersPage({ searchParams }: Props) {
       : undefined,
     orderBy: desc(orders.createdAt),
     limit: 200,
-    with: { items: { with: { container: true, packages: { columns: { chinaTrackingNo: true } } } }, payments: { columns: { appliedAmount: true, amount: true, currency: true, direction: true } } },
+    with: { items: { with: { container: true, packages: { columns: { chinaTrackingNo: true } } } }, payments: { columns: { appliedAmount: true, amount: true, currency: true, direction: true } }, issues: { columns: { status: true } } },
   });
 
   const rows = list
@@ -85,6 +85,7 @@ export default async function OrdersPage({ searchParams }: Props) {
                 <th className="py-2 pr-4">สถานะ</th>
                 <th className="py-2 pr-4">ยอดเงิน</th>
                 <th className="py-2 pr-4">สร้างเมื่อ</th>
+                <th className="py-2" aria-label="ปัญหาสินค้า" />
               </tr>
             </thead>
             <tbody>
@@ -129,10 +130,26 @@ export default async function OrdersPage({ searchParams }: Props) {
                     )}
                   </td>
                   <td className="py-2 pr-4 text-gray-500">{formatThaiDateTime(o.createdAt)}</td>
+                  {/* มีปัญหาสินค้า (เสียหาย / สูญหาย / ส่งผิด) — ยังไม่ปิดเรื่อง = เด่น · ปิดหมดแล้ว = จาง */}
+                  <td className="py-2 text-center">
+                    {o.issues.length > 0 && (() => {
+                      const open = o.issues.filter((i) => i.status !== "closed").length;
+                      return (
+                        <Link
+                          href={`/admin/orders/${o.id}`}
+                          title={open ? `มีปัญหาสินค้า ${open} เรื่องที่ยังไม่ปิด` : "มีปัญหาสินค้า (ปิดเรื่องแล้ว)"}
+                          aria-label={open ? `มีปัญหาสินค้า ${open} เรื่องที่ยังไม่ปิด` : "มีปัญหาสินค้า (ปิดเรื่องแล้ว)"}
+                          className={`text-xl ${open ? "" : "opacity-30 grayscale"}`}
+                        >
+                          ⚠️
+                        </Link>
+                      );
+                    })()}
+                  </td>
                 </tr>
               ))}
               {rows.length === 0 && (
-                <tr><td colSpan={7}className="py-6 text-center text-gray-400">ไม่พบออเดอร์</td></tr>
+                <tr><td colSpan={8}className="py-6 text-center text-gray-400">ไม่พบออเดอร์</td></tr>
               )}
             </tbody>
           </table>

@@ -85,7 +85,6 @@ export default async function OrdersPage({ searchParams }: Props) {
                 <th className="py-2 pr-4">สถานะ</th>
                 <th className="py-2 pr-4">ยอดเงิน</th>
                 <th className="py-2 pr-4">สร้างเมื่อ</th>
-                <th className="py-2" aria-label="ปัญหาสินค้า" />
               </tr>
             </thead>
             <tbody>
@@ -111,10 +110,21 @@ export default async function OrdersPage({ searchParams }: Props) {
                   </td>
                   <td className="py-2 pr-4">{s.itemCount} / {s.containerCount} ตู้</td>
                   <td className="py-2 pr-4">
-                    <StageBadge
-                      stage={s.stage as ItemStage}
-                      suffix={s.deliveredCount > 0 && s.stage !== "delivered" ? ` · ส่งแล้ว ${s.deliveredCount}/${s.itemCount}` : ""}
-                    />
+                    <span className="inline-flex items-center gap-1.5">
+                      <StageBadge
+                        stage={s.stage as ItemStage}
+                        suffix={s.deliveredCount > 0 && s.stage !== "delivered" ? ` · ส่งแล้ว ${s.deliveredCount}/${s.itemCount}` : ""}
+                      />
+                      {/* มีปัญหาสินค้าที่ยังไม่ปิดเรื่อง (เสียหาย / สูญหาย / ส่งผิด) — ปิดเรื่องหมดแล้ว = ไม่แสดง */}
+                      {(() => {
+                        const open = o.issues.filter((i) => i.status !== "closed").length;
+                        return open > 0 ? (
+                          <Link href={`/admin/orders/${o.id}`} title={`มีปัญหาสินค้า ${open} เรื่องที่ยังไม่ปิด`} aria-label={`มีปัญหาสินค้า ${open} เรื่องที่ยังไม่ปิด`} className="text-base leading-none">
+                            ⚠️
+                          </Link>
+                        ) : null;
+                      })()}
+                    </span>
                   </td>
                   <td className="py-2 pr-4 whitespace-nowrap">
                     {o.shippingOnly && o.shippingCharge == null ? (
@@ -130,21 +140,10 @@ export default async function OrdersPage({ searchParams }: Props) {
                     )}
                   </td>
                   <td className="py-2 pr-4 text-gray-500">{formatThaiDateTime(o.createdAt)}</td>
-                  {/* มีปัญหาสินค้าที่ยังไม่ปิดเรื่อง (เสียหาย / สูญหาย / ส่งผิด) — ปิดเรื่องหมดแล้ว = ไม่แสดง */}
-                  <td className="py-2 text-center">
-                    {(() => {
-                      const open = o.issues.filter((i) => i.status !== "closed").length;
-                      return open > 0 ? (
-                        <Link href={`/admin/orders/${o.id}`} title={`มีปัญหาสินค้า ${open} เรื่องที่ยังไม่ปิด`} aria-label={`มีปัญหาสินค้า ${open} เรื่องที่ยังไม่ปิด`} className="text-xl">
-                          ⚠️
-                        </Link>
-                      ) : null;
-                    })()}
-                  </td>
                 </tr>
               ))}
               {rows.length === 0 && (
-                <tr><td colSpan={8}className="py-6 text-center text-gray-400">ไม่พบออเดอร์</td></tr>
+                <tr><td colSpan={7}className="py-6 text-center text-gray-400">ไม่พบออเดอร์</td></tr>
               )}
             </tbody>
           </table>

@@ -130,20 +130,15 @@ export default async function OrdersPage({ searchParams }: Props) {
                     )}
                   </td>
                   <td className="py-2 pr-4 text-gray-500">{formatThaiDateTime(o.createdAt)}</td>
-                  {/* มีปัญหาสินค้า (เสียหาย / สูญหาย / ส่งผิด) — ยังไม่ปิดเรื่อง = เด่น · ปิดหมดแล้ว = จาง */}
+                  {/* มีปัญหาสินค้าที่ยังไม่ปิดเรื่อง (เสียหาย / สูญหาย / ส่งผิด) — ปิดเรื่องหมดแล้ว = ไม่แสดง */}
                   <td className="py-2 text-center">
-                    {o.issues.length > 0 && (() => {
+                    {(() => {
                       const open = o.issues.filter((i) => i.status !== "closed").length;
-                      return (
-                        <Link
-                          href={`/admin/orders/${o.id}`}
-                          title={open ? `มีปัญหาสินค้า ${open} เรื่องที่ยังไม่ปิด` : "มีปัญหาสินค้า (ปิดเรื่องแล้ว)"}
-                          aria-label={open ? `มีปัญหาสินค้า ${open} เรื่องที่ยังไม่ปิด` : "มีปัญหาสินค้า (ปิดเรื่องแล้ว)"}
-                          className={`text-xl ${open ? "" : "opacity-30 grayscale"}`}
-                        >
+                      return open > 0 ? (
+                        <Link href={`/admin/orders/${o.id}`} title={`มีปัญหาสินค้า ${open} เรื่องที่ยังไม่ปิด`} aria-label={`มีปัญหาสินค้า ${open} เรื่องที่ยังไม่ปิด`} className="text-xl">
                           ⚠️
                         </Link>
-                      );
+                      ) : null;
                     })()}
                   </td>
                 </tr>

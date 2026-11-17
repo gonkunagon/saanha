@@ -90,7 +90,20 @@ export function OrderFields({
       </Field>
       {/* ค่าขนส่งของออเดอร์ฝากส่ง (แสดงเฉพาะเมื่อเลือกฝากส่งอย่างเดียว — CSS .shipping-only) */}
       <div className="shipping-only contents">
-        {/* มีพัสดุที่ "ใส่คิวเอง" = คิดเป็นราคาต่อคิว (CSS .charge-total / .charge-per-cbm) */}
+        {/* เลือกวิธีคิดค่าขนส่ง: ราคาเหมา (ยอดรวม) หรือ ราคาต่อคิว (× คิวรวม) — CSS .charge-total / .charge-per-cbm */}
+        <div className="sm:col-span-2">
+          <span className="mb-1 block text-sm text-gray-600">คิดค่าขนส่งแบบ</span>
+          <div className="flex flex-wrap gap-2">
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm has-checked:border-brand-600 has-checked:bg-brand-50 has-checked:text-brand-700">
+              <input type="radio" name="chargeMode" value="flat" defaultChecked={order?.shippingChargePerCbm == null && order?.shippingCostPerCbm == null} className="accent-brand-600" />
+              ราคาเหมา (ยอดรวม)
+            </label>
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm has-checked:border-brand-600 has-checked:bg-brand-50 has-checked:text-brand-700">
+              <input type="radio" name="chargeMode" value="cbm" defaultChecked={order?.shippingChargePerCbm != null || order?.shippingCostPerCbm != null} className="accent-brand-600" />
+              ราคาต่อคิว (บาท / คิว × คิวรวม)
+            </label>
+          </div>
+        </div>
         <div className="charge-total">
           <Field label="ค่าขนส่งที่คิดลูกค้า (บาท)">
             <input name="shippingCharge" type="number" step="0.01" min={0} defaultValue={order?.shippingCharge ?? ""} className="input" />

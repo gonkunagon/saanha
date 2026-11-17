@@ -142,7 +142,11 @@ const noGoods = {
   currency: "THB" as const, // ค่าขนส่งเป็นบาท
 };
 
-const hasManualCbm = (fd: FormData) => [...fd.entries()].some(([k, v]) => k.startsWith("pkg_") && k.endsWith("_manual") && v === "1");
+// คิดค่าขนส่งแบบราคาต่อคิว (ปุ่มเลือก "คิดค่าขนส่งแบบ") · หน้าเก่าที่ไม่มีปุ่มนี้ = มีพัสดุที่ใส่คิวเอง
+const perCbmMode = (fd: FormData) =>
+  fd.has("chargeMode")
+    ? fd.get("chargeMode") === "cbm"
+    : [...fd.entries()].some(([k, v]) => k.startsWith("pkg_") && k.endsWith("_manual") && v === "1");
 
 // ฝากส่งที่คิดราคาต่อคิว: ค่าขนส่งที่คิดลูกค้า = ราคาต่อคิว × คิวรวมทุกรายการ
 async function chargeByCbm(tx: Tx, orderId: number) {
@@ -168,11 +172,11 @@ function orderFields(fd: FormData) {
       : shippingOnly
         ? {
             // โหมดต่อคิว: ยอดรวมคิดจากราคาต่อคิว (chargeByCbm) — ไม่ใช้ช่องยอดเหมาที่ซ่อนอยู่
-            shippingCharge: hasManualCbm(fd) ? null : toNum(fd.get("shippingCharge")),
-            shippingCost: hasManualCbm(fd) ? null : toNum(fd.get("shippingCost")),
-            // มีพัสดุที่ใส่คิวเอง = คิดราคาต่อคิว (ยอดรวมคำนวณหลังบันทึกพัสดุ — chargeByCbm)
-            shippingChargePerCbm: hasManualCbm(fd) ? toNum(fd.get("shippingChargePerCbm")) : null,
-            shippingCostPerCbm: hasManualCbm(fd) ? toNum(fd.get("shippingCostPerCbm")) : null,
+            shippingCharge: perCbmMode(fd) ? null : toNum(fd.get("shippingCharge")),
+            shippingCost: perCbmMode(fd) ? null : toNum(fd.get("shippingCost")),
+            // ราคาต่อคิว: ยอดรวมคำนวณหลังบันทึกพัสดุ (chargeByCbm)
+            shippingChargePerCbm: perCbmMode(fd) ? toNum(fd.get("shippingChargePerCbm")) : null,
+            shippingCostPerCbm: perCbmMode(fd) ? toNum(fd.get("shippingCostPerCbm")) : null,
           }
         : { shippingCharge: null, shippingCost: null, shippingChargePerCbm: null, shippingCostPerCbm: null };
   return { ...fields, ...(shippingOnly ? noGoods : {}), ...shipping, shippingOnly };

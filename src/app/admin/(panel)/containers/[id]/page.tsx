@@ -260,9 +260,20 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
                   <td className="py-2 pr-4"><StageBadge stage={summary.stage} /></td>
                   <td className="py-2 pr-4">
                     {order.shippingOnly ? (
-                      <Link href={`/admin/orders/${order.id}?edit=1`} className="text-xs text-gray-500 hover:text-brand-600 hover:underline">
-                        {order.shippingChargePerCbm != null ? `${order.shippingChargePerCbm.toLocaleString("th-TH")} บาท / คิว (ใส่ในหน้าออเดอร์)` : "ราคาเหมา (ใส่ในหน้าออเดอร์)"}
-                      </Link>
+                      // ดึงจากหน้าออเดอร์ (แก้ที่หน้าออเดอร์) — ราคาต่อคิว × คิวในตู้นี้ หรือราคาเหมา
+                      order.shippingChargePerCbm != null ? (
+                        <Link href={`/admin/orders/${order.id}?edit=1`} className="text-sm hover:text-brand-600 hover:underline">
+                          {order.shippingChargePerCbm.toLocaleString("th-TH")} <span className="text-xs text-gray-500">บาท / คิว (จากหน้าออเดอร์)</span>
+                        </Link>
+                      ) : order.shippingCharge != null ? (
+                        <Link href={`/admin/orders/${order.id}?edit=1`} className="text-sm hover:text-brand-600 hover:underline">
+                          ราคาเหมา <span className="text-xs text-gray-500">(จากหน้าออเดอร์)</span>
+                        </Link>
+                      ) : (
+                        <Link href={`/admin/orders/${order.id}?edit=1`} className="text-xs font-medium text-amber-700 hover:underline">
+                          ⚠️ หน้าออเดอร์ยังไม่ใส่ค่าขนส่ง — กดเพื่อใส่
+                        </Link>
+                      )
                     ) : (
                       <ShippingRateForm orderId={order.id} rate={order.shippingRate} defaultRate={DEFAULT_SHIPPING_RATE_PER_CBM} />
                     )}

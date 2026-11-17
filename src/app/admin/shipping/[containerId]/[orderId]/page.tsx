@@ -58,6 +58,8 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
   // ฝากส่งแบบต่อคิว (ใส่คิวเอง) = ราคาต่อคิวในหน้าออเดอร์ × คิวของรายการในตู้นี้
   const perCbm = order.shippingOnly ? order.shippingChargePerCbm : null;
   const allHere = order.shippingOnly && perCbm == null && order.shippingCharge != null;
+  // ฝากส่งที่หน้าออเดอร์ยังไม่ใส่ค่าขนส่ง = ยังออกบิลไม่ได้ (ไม่เดาด้วยเรทมาตรฐาน)
+  const noPrice = order.shippingOnly && perCbm == null && order.shippingCharge == null;
   const cost =
     perCbm != null ? Math.round(perCbm * cbm * 100) / 100 : allHere ? order.shippingCharge! : shippingCostOf(items, order.shippingRate);
 
@@ -67,6 +69,16 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
   ).filter((is) => (is.compensation ?? 0) > 0);
   const deduct = Math.round(issues.reduce((s, is) => s + (is.compensation ?? 0), 0) * 100) / 100;
   const net = Math.round((cost - deduct) * 100) / 100;
+
+  if (noPrice) {
+    return (
+      <div className="mx-auto max-w-xl px-4 py-16 text-center">
+        <p className="text-lg font-semibold text-gray-800">ออเดอร์ {order.code} ยังไม่ได้ใส่ค่าขนส่ง</p>
+        <p className="mt-2 text-sm text-gray-600">บิลค่าขนส่งดึงราคาจากหน้าออเดอร์ (ราคาเหมา หรือ ราคาต่อคิว) — ใส่ราคาที่หน้าออเดอร์ก่อน</p>
+        <Link href={`/admin/orders/${order.id}?edit=1`} className="btn-primary mt-6 inline-block">ไปใส่ค่าขนส่งที่หน้าออเดอร์</Link>
+      </div>
+    );
+  }
 
   const meta = [
     ["อ้างอิงออเดอร์ / Ref.", order.code],

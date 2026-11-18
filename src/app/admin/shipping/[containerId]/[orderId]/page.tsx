@@ -1,10 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import signature from "@/assets/signature.png";
 import { db } from "@/db";
-import { containers, itemIssues, orderItems, orders } from "@/db/schema";
+import { containers, itemIssues, orderExtraCharges, orderItems, orders } from "@/db/schema";
 import { issueKindLabels } from "@/lib/issues";
 import { requireUser } from "@/lib/auth";
 import { site } from "@/config/site";
@@ -68,7 +68,17 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
     await db.select().from(itemIssues).where(inArray(itemIssues.itemId, items.map((i) => i.id)))
   ).filter((is) => (is.compensation ?? 0) > 0);
   const deduct = Math.round(issues.reduce((s, is) => s + (is.compensation ?? 0), 0) * 100) / 100;
-  const net = Math.round((cost - deduct) * 100) / 100;
+
+  // ค่าใช้จ่ายเพิ่มเติม (หน้าออเดอร์) ที่คิดลูกค้า → บวกในบิลของตู้ที่เลือก (ไม่ระบุ = ตู้แรกของออเดอร์)
+  const boxIds = (
+    await db.selectDistinct({ id: orderItems.containerId }).from(orderItems).where(and(eq(orderItems.orderId, order.id), isNotNull(orderItems.containerId)))
+  ).map((r) => r.id!);
+  const firstBox = Math.min(...boxIds);
+  const extras = (await db.select().from(orderExtraCharges).where(eq(orderExtraCharges.orderId, order.id)).orderBy(orderExtraCharges.id)).filter(
+    (x) => (x.charge ?? 0) > 0 && (x.containerId != null && boxIds.includes(x.containerId) ? x.containerId : firstBox) === container.id,
+  );
+  const extra = Math.round(extras.reduce((s, x) => s + (x.charge ?? 0), 0) * 100) / 100;
+  const net = Math.round((cost + extra - deduct) * 100) / 100;
 
   if (noPrice) {
     return (
@@ -188,12 +198,18 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
                 <dt>เรทค่าขนส่ง</dt>
                 <dd>{allHere ? "เหมาจ่าย" : `${num(perCbm ?? rate)} บาท / คิว`}</dd>
               </div>
-              {deduct > 0 && (
+              {(deduct > 0 || extra > 0) && (
                 <>
                   <div className="flex justify-between border-t border-gray-100 px-4 py-2 text-[12px] text-gray-600">
                     <dt>ค่าขนส่ง</dt>
                     <dd>{formatMoney(cost, "THB")}</dd>
                   </div>
+                  {extras.map((x) => (
+                    <div key={`x${x.id}`} className="flex justify-between gap-3 border-t border-gray-100 px-4 py-2 text-[12px] text-gray-600">
+                      <dt className="whitespace-pre-line">{x.description}</dt>
+                      <dd className="whitespace-nowrap">+{formatMoney(x.charge, "THB")}</dd>
+                    </div>
+                  ))}
                   {issues.map((is) => (
                     <div key={is.id} className="flex justify-between gap-3 border-t border-gray-100 px-4 py-2 text-[12px] text-gray-600">
                       <dt>
@@ -209,7 +225,7 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
                 </>
               )}
               <div className="flex items-center justify-between border-t-2 border-brand-600 px-4 py-3.5 text-brand-700">
-                <dt className="font-semibold">{deduct > 0 ? "ยอดชำระสุทธิ" : "ค่าขนส่งทั้งสิ้น"}</dt>
+                <dt className="font-semibold">{deduct > 0 ? "ยอดชำระสุทธิ" : extra > 0 ? "รวมทั้งสิ้น" : "ค่าขนส่งทั้งสิ้น"}</dt>
                 <dd className="text-lg font-bold">{formatMoney(net, "THB")}</dd>
               </div>
             </dl>

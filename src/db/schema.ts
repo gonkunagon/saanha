@@ -86,6 +86,9 @@ export const orders = pgTable("orders", {
   // ฝากส่ง + ใส่คิวเอง: ราคาต่อคิวที่คิดลูกค้า → shippingCharge = ราคา × คิวรวม (คำนวณตอนบันทึก)
   shippingChargePerCbm: doublePrecision("shipping_charge_per_cbm"),
   shippingCostPerCbm: doublePrecision("shipping_cost_per_cbm"), // ต้นทุนต่อคิว (เหมือนกัน → shippingCost)
+  // ผลรวมค่าใช้จ่ายเพิ่มเติม (order_extra_charges) — เก็บไว้ให้หน้ารายการ / ยอดค้างคำนวณได้โดยไม่ต้อง join
+  extraCharge: doublePrecision("extra_charge").notNull().default(0), // คิดลูกค้า
+  extraCost: doublePrecision("extra_cost").notNull().default(0), // จ่ายบริษัทขนส่ง
   intlTrackingNo: text("intl_tracking_no"), // Tracking no. ขนส่งจีน → ไทย (ใช้ภายใน ไม่ส่งไปหน้าติดตามพัสดุของลูกค้า)
   purchaseOrderNo: text("purchase_order_no"), // เลขคำสั่งซื้อ เช่น เลขออเดอร์จากร้านค้า 1688 / Taobao หรือเลข PO ของลูกค้า
   shopName: text("shop_name"), // ร้านค้าที่สั่งซื้อ
@@ -263,6 +266,25 @@ export const itemIssues = pgTable("item_issues", {
 });
 export type ItemIssue = typeof itemIssues.$inferSelect;
 
+// ค่าใช้จ่ายเพิ่มเติมจากการขนส่ง (ฝากส่ง) เช่น ค่าตีลังไม้ ค่ายกของ ค่าส่งต่อ — คิดลูกค้า / ต้นทุน แยกกัน
+// containerId = ใส่ในบิลค่าขนส่งของตู้ไหน (ว่าง = ตู้แรกของออเดอร์)
+export const orderExtraCharges = pgTable("order_extra_charges", {
+  id: id(),
+  orderId: integer("order_id")
+    .notNull()
+    .references(() => orders.id, { onDelete: "cascade" }),
+  containerId: integer("container_id").references(() => containers.id, { onDelete: "set null" }),
+  description: text("description").notNull(),
+  charge: doublePrecision("charge"),
+  cost: doublePrecision("cost"),
+  createdAt: createdAt(),
+});
+export type OrderExtraCharge = typeof orderExtraCharges.$inferSelect;
+
+export const orderExtraChargesRelations = relations(orderExtraCharges, ({ one }) => ({
+  order: one(orders, { fields: [orderExtraCharges.orderId], references: [orders.id] }),
+}));
+
 export const itemIssuesRelations = relations(itemIssues, ({ one }) => ({
   order: one(orders, { fields: [itemIssues.orderId], references: [orders.id] }),
   item: one(orderItems, { fields: [itemIssues.itemId], references: [orderItems.id] }),
@@ -276,6 +298,7 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
   items: many(orderItems),
   rounds: many(deliveryRounds),
   issues: many(itemIssues),
+  extras: many(orderExtraCharges),
   payments: many(payments),
   customer: one(customers, { fields: [orders.customerId], references: [customers.id] }),
 }));

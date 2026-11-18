@@ -9,10 +9,13 @@ type ShipItem = { cbm: number | null; container: { costPerCbm: number | null } |
 export function orderShippingOf(
   items: ShipItem[],
   rate: number | null,
-  manual?: { shippingCharge: number | null; shippingCost: number | null; shippingOnly: boolean },
+  manual?: { shippingCharge: number | null; shippingCost: number | null; shippingOnly: boolean; extraCharge?: number | null; extraCost?: number | null },
 ) {
   if (manual?.shippingOnly) {
-    const { shippingCharge: sell, shippingCost: cost } = manual;
+    // รวมค่าใช้จ่ายเพิ่มเติม (คิดลูกค้า / จ่ายบริษัทขนส่ง) เข้าไปด้วย
+    const add = (base: number | null, extra: number | null | undefined) => (base == null ? null : Math.round((base + (extra ?? 0)) * 100) / 100);
+    const sell = add(manual.shippingCharge, manual.extraCharge);
+    const cost = add(manual.shippingCost, manual.extraCost);
     return { sell, cost, profit: sell != null && cost != null ? Math.round((sell - cost) * 100) / 100 : null };
   }
   const inBox = items.filter((i) => i.container);

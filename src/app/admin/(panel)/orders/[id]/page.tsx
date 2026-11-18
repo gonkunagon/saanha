@@ -13,6 +13,7 @@ import { OrderFields } from "../OrderFields";
 import { SavedNotice } from "./SavedNotice";
 import { DeliveryRounds } from "./DeliveryRounds";
 import { ItemIssues } from "./ItemIssues";
+import { ExtraCharges } from "./ExtraCharges";
 import { issueNetLoss } from "@/lib/issues";
 import { listCustomersForPicker } from "@/lib/customers";
 import { deleteItem, updateItem, updateOrder } from "../actions";
@@ -233,7 +234,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
   const order = await db.query.orders.findFirst({
     where: eq(orders.id, Number(id)),
     // รูปสินค้าโหลดแค่ id (ตัวรูปดึงผ่าน /admin/item-image/<id>)
-    with: { items: { with: { container: true, packages: true, images: { columns: { id: true } } } }, payments: true, customer: { columns: { address: true } }, rounds: { orderBy: (r, { asc }) => asc(r.roundNo) }, issues: { orderBy: (r, { asc }) => asc(r.id) } },
+    with: { items: { with: { container: true, packages: true, images: { columns: { id: true } } } }, payments: true, customer: { columns: { address: true } }, rounds: { orderBy: (r, { asc }) => asc(r.roundNo) }, issues: { orderBy: (r, { asc }) => asc(r.id) }, extras: { orderBy: (r, { asc }) => asc(r.id) } },
   });
   if (!order) notFound();
   const customers = await listCustomersForPicker();
@@ -423,23 +424,42 @@ export default async function OrderPage({ params, searchParams }: Props) {
               {/* แยก 2 กล่องเหมือนออเดอร์สั่งซื้อ: จ่ายบริษัทขนส่ง (ต้นทุน · เขียว) กับ คิดลูกค้า (เหลือง) */}
               <InfoSection title="ยอดที่จ่ายบริษัทขนส่ง (ลูกค้าไม่เห็น)" tone="cost" footer={<PaymentsPanel order={order} payments={order.payments} direction="out" editing={payEditing === "out"} carrier />}>
                 <Info label="ต้นทุนค่าขนส่งของร้าน">
-                  {ship.cost != null && <b>{formatMoney(ship.cost, "THB")}</b>}
+                  {order.shippingCost != null && <b>{formatMoney(order.shippingCost, "THB")}</b>}
                   {order.shippingCostPerCbm != null && (
                     <span className="ml-1 text-xs text-gray-500">({formatMoney(order.shippingCostPerCbm, "THB")} / คิว)</span>
                   )}
                 </Info>
+                {order.extraCost > 0 && (
+                  <>
+                    <Info label="ค่าใช้จ่ายเพิ่มเติม (จ่ายบริษัทขนส่ง)">{formatMoney(order.extraCost, "THB")}</Info>
+                    <Info label="รวมต้นทุนทั้งหมด">{ship.cost != null && <b>{formatMoney(ship.cost, "THB")}</b>}</Info>
+                  </>
+                )}
                 <Info label="จ่ายบริษัทขนส่งแล้ว">{shopPaid != null && formatMoney(shopPaid, "THB")}</Info>
                 <Info label="ค้างจ่ายบริษัทขนส่ง">
-                  {order.shippingCost != null && <BalanceText balance={balanceOf(order.shippingCost, shopPaid ?? 0)} currency="THB" />}
+                  {ship.cost != null && <BalanceText balance={balanceOf(ship.cost, shopPaid ?? 0)} currency="THB" />}
                 </Info>
               </InfoSection>
-              <InfoSection title="ค่าขนส่งที่คิดลูกค้า (ฝากส่งอย่างเดียว)" tone="money" footer={<PaymentsPanel order={order} payments={order.payments} direction="in" editing={payEditing === "in"} />}>
+              <InfoSection title="ค่าขนส่งที่คิดลูกค้า (ฝากส่งอย่างเดียว)" tone="money" footer={<>
+                <ExtraCharges
+                  orderId={order.id}
+                  boxes={orderContainers.map((c) => ({ id: c.id, code: c.code })).sort((a, b) => a.id - b.id)}
+                  rows={order.extras.map(({ id, containerId, description, charge, cost }) => ({ id, containerId, description, charge, cost }))}
+                />
+                <PaymentsPanel order={order} payments={order.payments} direction="in" editing={payEditing === "in"} />
+              </>}>
                 <Info label="ค่าขนส่งที่คิดลูกค้า">
-                  {ship.sell != null && <b>{formatMoney(ship.sell, "THB")}</b>}
+                  {order.shippingCharge != null && <b>{formatMoney(order.shippingCharge, "THB")}</b>}
                   {order.shippingChargePerCbm != null && (
                     <span className="ml-1 text-xs text-gray-500">({formatMoney(order.shippingChargePerCbm, "THB")} / คิว)</span>
                   )}
                 </Info>
+                {order.extraCharge > 0 && (
+                  <>
+                    <Info label="ค่าใช้จ่ายเพิ่มเติม">+{formatMoney(order.extraCharge, "THB")}</Info>
+                    <Info label="รวมค่าขนส่งทั้งหมด">{ship.sell != null && <b>{formatMoney(ship.sell, "THB")}</b>}</Info>
+                  </>
+                )}
                 {compensation > 0 && <Info label="หักชดเชยสินค้าเสียหาย / สูญหาย">{formatMoney(-compensation, "THB")}</Info>}
                 <Info label="ชำระแล้ว">{paidOf(order, order.payments) != null && formatMoney(paidOf(order, order.payments), "THB")}</Info>
                 <Info label="ยอดค้างชำระ">

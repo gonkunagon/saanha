@@ -25,7 +25,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   const { id } = await params;
   const order = await db.query.orders.findFirst({
     where: eq(orders.id, Number(id)),
-    with: { customer: true, items: { with: { container: true } }, payments: true },
+    with: { customer: true, items: { with: { container: true } }, payments: true, extras: { orderBy: (r, { asc }) => asc(r.id) } },
   });
   if (!order) notFound();
 
@@ -52,6 +52,8 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   const lines: Line[] = [];
   if (order.shippingOnly) {
     lines.push({ label: "ค่าขนส่ง", amount: order.shippingCharge ?? 0 });
+    // ค่าใช้จ่ายเพิ่มเติมที่คิดลูกค้า (หน้าออเดอร์)
+    for (const x of order.extras) if ((x.charge ?? 0) > 0) lines.push({ label: x.description, amount: x.charge });
   } else {
     const goods = customerGoodsOf(order) ?? 0;
     const priced = order.items.length > 0 && order.items.every((i) => i.sellPrice != null);

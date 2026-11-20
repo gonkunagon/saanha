@@ -4,6 +4,7 @@ import { Field, MethodSelect } from "@/components/admin/ui";
 import { PaymentFields } from "@/components/admin/PaymentFields";
 import { CustomerPicker } from "@/components/admin/CustomerPicker";
 import { PerCbmCharge } from "@/components/admin/PerCbmCharge";
+import { DEFAULT_SHIPPING_RATE_PER_CBM } from "@/config/rates";
 
 // ช่องข้อมูลออเดอร์ ใช้ทั้งตอนสร้างและแก้ไข
 // ลูกค้าต้องเลือกจากทะเบียนลูกค้า — preselectId มาจากปุ่ม "สร้างออเดอร์ให้ลูกค้านี้"
@@ -119,6 +120,39 @@ export function OrderFields({
         </div>
         <div className="charge-per-cbm">
           <PerCbmCharge name="shippingCostPerCbm" label="ต้นทุนร้าน (บาท / คิว · ลูกค้าไม่เห็น)" defaultValue={order?.shippingCostPerCbm} />
+        </div>
+      </div>
+      {/* ออเดอร์สั่งซื้อ: ค่าขนส่งจีน → ไทย (บาท · ออกในบิลค่าขนส่งของตู้) — ราคาต่อคิว (เรทเดียวกับหน้าตู้) หรือราคาเหมา
+          ใช้ชื่อช่องแยก (purchase*) ไม่ให้ชนกับช่องของออเดอร์ฝากส่ง · CSS .p-charge-total / .p-charge-per-cbm */}
+      <div className="goods-only contents">
+        <div className="sm:col-span-2">
+          <span className="mb-1 block text-sm text-gray-600">คิดค่าขนส่ง (จีน → ไทย) แบบ</span>
+          <div className="flex flex-wrap gap-2">
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm has-checked:border-brand-600 has-checked:bg-brand-50 has-checked:text-brand-700">
+              <input type="radio" name="purchaseChargeMode" value="cbm" defaultChecked={order?.shippingOnly || order?.shippingCharge == null} className="accent-brand-600" />
+              ราคาต่อคิว (บาท / คิว × คิวรวม)
+            </label>
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm has-checked:border-brand-600 has-checked:bg-brand-50 has-checked:text-brand-700">
+              <input type="radio" name="purchaseChargeMode" value="flat" defaultChecked={!order?.shippingOnly && order?.shippingCharge != null} className="accent-brand-600" />
+              ราคาเหมา (ยอดรวม)
+            </label>
+          </div>
+        </div>
+        <div className="p-charge-per-cbm">
+          <Field label="ค่าขนส่งที่คิดลูกค้า (บาท / คิว)">
+            <input name="purchaseShippingRate" type="number" step="0.01" min={0} defaultValue={order?.shippingOnly ? "" : (order?.shippingRate ?? "")} placeholder={`ว่าง = เรทมาตรฐาน ${DEFAULT_SHIPPING_RATE_PER_CBM.toLocaleString("th-TH")}`} className="input" />
+          </Field>
+          <p className="mt-1 text-xs text-gray-500">เรทเดียวกับที่ตั้งในหน้าตู้ · ต้นทุนต่อคิวตั้งที่หน้าตู้</p>
+        </div>
+        <div className="p-charge-total">
+          <Field label="ค่าขนส่งที่คิดลูกค้า (บาท · เหมา)">
+            <input name="purchaseShippingCharge" type="number" step="0.01" min={0} defaultValue={order?.shippingOnly ? "" : (order?.shippingCharge ?? "")} className="input" />
+          </Field>
+        </div>
+        <div className="p-charge-total">
+          <Field label="ต้นทุนค่าขนส่งของร้าน (บาท · ลูกค้าไม่เห็น)">
+            <input name="purchaseShippingCost" type="number" step="0.01" min={0} defaultValue={order?.shippingOnly ? "" : (order?.shippingCost ?? "")} className="input" />
+          </Field>
         </div>
       </div>
       <Field label="บริษัทขนส่งที่รับงานต่อ">

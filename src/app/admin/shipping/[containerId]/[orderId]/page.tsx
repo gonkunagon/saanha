@@ -57,7 +57,8 @@ export default async function ShippingSummaryPage({ params }: { params: Promise<
   // ออเดอร์ฝากส่ง = ค่าขนส่งที่กรอกเองในหน้าออเดอร์ (ราคาเหมา ไม่ใช้เรท/คิว)
   // ฝากส่งแบบต่อคิว (ใส่คิวเอง) = ราคาต่อคิวในหน้าออเดอร์ × คิวของรายการในตู้นี้
   const perCbm = order.shippingOnly ? order.shippingChargePerCbm : null;
-  const allHere = order.shippingOnly && perCbm == null && order.shippingCharge != null;
+  // ราคาเหมา (ฝากส่ง หรือออเดอร์สั่งซื้อที่เลือกเหมา) = ยอดที่กรอกในหน้าออเดอร์
+  const allHere = perCbm == null && order.shippingCharge != null;
   // ฝากส่งที่หน้าออเดอร์ยังไม่ใส่ค่าขนส่ง = ยังออกบิลไม่ได้ (ไม่เดาด้วยเรทมาตรฐาน)
   const noPrice = order.shippingOnly && perCbm == null && order.shippingCharge == null;
   const cost =

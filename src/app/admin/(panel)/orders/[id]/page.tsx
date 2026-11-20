@@ -23,6 +23,7 @@ import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
 import { BalanceText } from "@/components/admin/ui";
 import { balanceOf, currencyLabel, customerGoodsOf, customerShippingOf, customerTotalOf, formatMoney, orderBalance, paidOf, customerPaidRateOf, shopPaidOf, shopPaidRateOf, supplierTotalOf, type CurrencyCode } from "@/lib/money";
 import { orderShippingOf } from "@/lib/shipping";
+import { DEFAULT_SHIPPING_RATE_PER_CBM } from "@/config/rates";
 import { StageUpdateForm } from "./StageUpdateForm";
 import { PackageFields } from "@/components/admin/PackageFields";
 import { deleteItemImage, uploadItemImages } from "../image-actions";
@@ -541,6 +542,21 @@ export default async function OrderPage({ params, searchParams }: Props) {
                 />
               }
             >
+              <Info label="ค่าขนส่งที่คิดลูกค้า">
+                <Link href={`/admin/orders/${order.id}?edit=1`} className="hover:text-brand-600 hover:underline">
+                  {order.shippingCharge != null ? (
+                    <>
+                      <b>{formatMoney(order.shippingCharge, "THB")}</b> <span className="text-xs text-gray-500">(ราคาเหมา)</span>
+                    </>
+                  ) : (
+                    <>
+                      {formatMoney(order.shippingRate ?? DEFAULT_SHIPPING_RATE_PER_CBM, "THB")} / คิว{" "}
+                      <span className="text-xs text-gray-500">{order.shippingRate == null ? "(เรทมาตรฐาน)" : "(ราคาต่อคิว)"}</span>
+                    </>
+                  )}
+                </Link>
+              </Info>
+              {order.shippingCharge != null && <Info label="ต้นทุนค่าขนส่ง (เหมา · ลูกค้าไม่เห็น)">{order.shippingCost != null && formatMoney(order.shippingCost, "THB")}</Info>}
               <Info label="ค่าจัดส่งเพิ่มเติม (คิดลูกค้า)">{order.extraCharge > 0 && <b>+{formatMoney(order.extraCharge, "THB")}</b>}</Info>
               <Info label="ค่าจัดส่งเพิ่มเติม (จ่ายบริษัทขนส่ง)">{order.extraCost > 0 && formatMoney(order.extraCost, "THB")}</Info>
               <Info label="บิลค่าขนส่ง">

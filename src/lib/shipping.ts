@@ -19,8 +19,9 @@ export function orderShippingOf(
     return { sell, cost, profit: sell != null && cost != null ? Math.round((sell - cost) * 100) / 100 : null };
   }
   const inBox = items.filter((i) => i.container);
-  const charge = manual?.shippingOnly ? manual.shippingCharge : null;
-  const manualCost = manual?.shippingOnly ? manual.shippingCost : null;
+  // ออเดอร์สั่งซื้อที่เลือกราคาเหมา = ใช้ยอดที่กรอก · ไม่กรอก = คิว × เรท
+  const charge = manual?.shippingCharge ?? null;
+  const manualCost = charge != null ? (manual?.shippingCost ?? null) : null;
   if (inBox.length === 0 && charge == null && manualCost == null) return { sell: null, cost: null, profit: null };
   const r2 = (n: number) => Math.round(n * 100) / 100;
   const sell = charge ?? r2(inBox.reduce((s, i) => s + (i.cbm ?? 0), 0) * shippingRateOf(rate));

@@ -31,7 +31,7 @@ const shippingOf = (
   order: { shippingRate: number | null; shippingOnly: boolean; shippingCharge: number | null; shippingChargePerCbm: number | null },
 ) =>
   !order.shippingOnly
-    ? shippingCostOf(items, order.shippingRate)
+    ? (order.shippingCharge ?? shippingCostOf(items, order.shippingRate)) // สั่งซื้อ: ราคาเหมาจากหน้าออเดอร์ หรือ คิว × เรท
     : order.shippingChargePerCbm != null
       ? shippingCostOf(items, order.shippingChargePerCbm)
       : (order.shippingCharge ?? 0);
@@ -274,6 +274,10 @@ export default async function ContainerPage({ params }: { params: Promise<{ id: 
                           ⚠️ หน้าออเดอร์ยังไม่ใส่ค่าขนส่ง — กดเพื่อใส่
                         </Link>
                       )
+                    ) : order.shippingCharge != null ? (
+                      <Link href={`/admin/orders/${order.id}?edit=1`} className="text-sm hover:text-brand-600 hover:underline">
+                        ราคาเหมา <span className="text-xs text-gray-500">(จากหน้าออเดอร์)</span>
+                      </Link>
                     ) : (
                       <ShippingRateForm orderId={order.id} rate={order.shippingRate} defaultRate={DEFAULT_SHIPPING_RATE_PER_CBM} />
                     )}

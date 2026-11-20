@@ -92,6 +92,10 @@ form:not(:has(input[name="orderType"][value="shipping"]:checked)) .shipping-only
 .charge-per-cbm { display: none; }
 form:has(input[name="chargeMode"][value="cbm"]:checked) .charge-total { display: none; }
 form:has(input[name="chargeMode"][value="cbm"]:checked) .charge-per-cbm { display: block; }
+/* ออเดอร์สั่งซื้อ: ราคาต่อคิว (ค่าเริ่มต้น) / ราคาเหมา (purchaseChargeMode=flat) */
+.p-charge-total { display: none; }
+form:has(input[name="purchaseChargeMode"][value="flat"]:checked) .p-charge-total { display: block; }
+form:has(input[name="purchaseChargeMode"][value="flat"]:checked) .p-charge-per-cbm { display: none; }
 
 /* เอกสาร A4 ในหลังบ้าน: กว้าง 210mm เสมอ บนจอแคบย่อทั้งแผ่น (A4Fit ตั้ง --a4-zoom) */
 .a4 { width: 210mm; zoom: var(--a4-zoom, 1); }

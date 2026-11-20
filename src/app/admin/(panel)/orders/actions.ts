@@ -178,7 +178,16 @@ function orderFields(fd: FormData) {
             shippingChargePerCbm: perCbmMode(fd) ? toNum(fd.get("shippingChargePerCbm")) : null,
             shippingCostPerCbm: perCbmMode(fd) ? toNum(fd.get("shippingCostPerCbm")) : null,
           }
-        : { shippingCharge: null, shippingCost: null, shippingChargePerCbm: null, shippingCostPerCbm: null };
+        : {
+            shippingChargePerCbm: null,
+            shippingCostPerCbm: null,
+            // ออเดอร์สั่งซื้อ: ราคาเหมา = ยอดรวม · ราคาต่อคิว = เรท (shippingRate เดียวกับหน้าตู้) — ฟอร์มเก่าไม่มีปุ่ม = ล้างแบบเดิม
+            ...(fd.get("purchaseChargeMode") === "flat"
+              ? { shippingCharge: toNum(fd.get("purchaseShippingCharge")), shippingCost: toNum(fd.get("purchaseShippingCost")) }
+              : fd.has("purchaseChargeMode")
+                ? { shippingCharge: null, shippingCost: null, shippingRate: toNum(fd.get("purchaseShippingRate")) }
+                : { shippingCharge: null, shippingCost: null }),
+          };
   return { ...fields, ...(shippingOnly ? noGoods : {}), ...shipping, shippingOnly };
 }
 

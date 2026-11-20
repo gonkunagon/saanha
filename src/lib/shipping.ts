@@ -29,7 +29,10 @@ export function orderShippingOf(
     (inBox.length > 0 && inBox.every((i) => i.container!.costPerCbm != null)
       ? r2(inBox.reduce((s, i) => s + (i.cbm ?? 0) * i.container!.costPerCbm!, 0))
       : null);
-  return { sell, cost, profit: cost == null ? null : r2(sell - cost) };
+  // ค่าจัดส่ง / ค่าใช้จ่ายเพิ่มเติม (บาท) ของออเดอร์ — บวกทั้งฝั่งขายและต้นทุน
+  const sellAll = r2(sell + (manual?.extraCharge ?? 0));
+  const costAll = cost == null ? null : r2(cost + (manual?.extraCost ?? 0));
+  return { sell: sellAll, cost: costAll, profit: costAll == null ? null : r2(sellAll - costAll) };
 }
 export const shippingCostOf = (items: { cbm: number | null }[], rate: number | null) =>
   Math.round(items.reduce((s, i) => s + (i.cbm ?? 0), 0) * shippingRateOf(rate) * 100) / 100;

@@ -529,6 +529,33 @@ export default async function OrderPage({ params, searchParams }: Props) {
                 <BalanceText balance={orderBalance(order, order.payments)} currency={order.currency} />
               </Info>
             </InfoSection>
+            {/* ออเดอร์สั่งซื้อ: ค่าขนส่งจีน → ไทย คิดแยกในบิลค่าขนส่งของตู้ (บาท) — ค่าจัดส่ง / ค่าใช้จ่ายเพิ่มเติม ใส่ตรงนี้แล้วไปขึ้นในบิล */}
+            <InfoSection
+              title="ค่าขนส่ง / ค่าจัดส่งเพิ่มเติม (บาท · คิดในบิลค่าขนส่ง)"
+              tone="money"
+              footer={
+                <ExtraCharges
+                  orderId={order.id}
+                  boxes={orderContainers.map((c) => ({ id: c.id, code: c.code })).sort((a, b) => a.id - b.id)}
+                  rows={order.extras.map(({ id, containerId, description, charge, cost }) => ({ id, containerId, description, charge, cost }))}
+                />
+              }
+            >
+              <Info label="ค่าจัดส่งเพิ่มเติม (คิดลูกค้า)">{order.extraCharge > 0 && <b>+{formatMoney(order.extraCharge, "THB")}</b>}</Info>
+              <Info label="ค่าจัดส่งเพิ่มเติม (จ่ายบริษัทขนส่ง)">{order.extraCost > 0 && formatMoney(order.extraCost, "THB")}</Info>
+              <Info label="บิลค่าขนส่ง">
+                {orderContainers.length === 0 ? (
+                  <span className="text-gray-400">ยังไม่เข้าตู้ (ออกบิลได้เมื่อจัดเข้าตู้แล้ว)</span>
+                ) : (
+                  orderContainers.map((c, n) => (
+                    <span key={c.id}>
+                      {n > 0 && " · "}
+                      <Link href={`/admin/shipping/${c.id}/${order.id}`} target="_blank" className="text-brand-700 hover:underline">🧾 ตู้ {c.code}</Link>
+                    </span>
+                  ))
+                )}
+              </Info>
+            </InfoSection>
             </>)}
 
             <dl className="grid gap-x-6 gap-y-4 px-1 text-sm sm:grid-cols-2 lg:grid-cols-3">

@@ -492,7 +492,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
             {/* ยอดเงิน 2 ฝั่ง: จ่ายร้านค้า (ต้นทุน) กับ คิดลูกค้า — ราคาและเรทไม่เท่ากัน */}
             <InfoSection title="ยอดที่จ่ายร้านค้า" tone="cost" footer={<PaymentsPanel order={order} payments={order.payments} direction="out" editing={payEditing === "out"} />}>
               <Info label="ค่าสินค้า (จ่ายร้าน)">{order.totalAmount != null && formatMoney(order.totalAmount, order.currency)}</Info>
-              <Info label="ค่าขนส่งภายในจีน (จ่ายร้าน)">{order.chinaShippingFee != null && formatMoney(order.chinaShippingFee, order.currency)}</Info>
+              {order.chinaShippingFee != null && <Info label="ค่าขนส่งภายในจีน (จ่ายร้าน)">{formatMoney(order.chinaShippingFee, order.currency)}</Info>}
               <Info label="รวมจ่ายร้าน">{supplierTotalOf(order) != null && <b>{formatMoney(supplierTotalOf(order), order.currency)}</b>}</Info>
               {order.currency === "CNY" && (
                 <>
@@ -513,7 +513,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
               <Info label={order.customerGoodsAmount == null && order.handlingFeePct > 0 ? `ค่าสินค้า (คิดลูกค้า · รวมค่าดำเนินการ ${order.handlingFeePct}%)` : "ค่าสินค้า (คิดลูกค้า)"}>
                 {customerGoodsOf(order) != null && formatMoney(customerGoodsOf(order), order.currency)}
               </Info>
-              <Info label="ค่าขนส่งภายในจีน (คิดลูกค้า)">{customerShippingOf(order) != null && formatMoney(customerShippingOf(order), order.currency)}</Info>
+              {customerShippingOf(order) != null && <Info label="ค่าขนส่งภายในจีน (คิดลูกค้า)">{formatMoney(customerShippingOf(order), order.currency)}</Info>}
               <Info label="รวมเป็นเงินทั้งสิ้น">{customerTotalOf(order) != null && <b>{formatMoney(customerTotalOf(order), order.currency)}</b>}</Info>
               {order.currency === "CNY" && (
                 <>
@@ -553,7 +553,6 @@ export default async function OrderPage({ params, searchParams }: Props) {
                 </Link>
               </Info>
               {order.shippingCharge != null && <Info label="ต้นทุนค่าขนส่ง (เหมา · ลูกค้าไม่เห็น)">{order.shippingCost != null && formatMoney(order.shippingCost, "THB")}</Info>}
-              <Info label="ค่าจัดส่งเพิ่มเติม (คิดลูกค้า)">{order.extraCharge > 0 && <b>+{formatMoney(order.extraCharge, "THB")}</b>}</Info>
               <Info label="บิลค่าขนส่ง">
                 {orderContainers.length === 0 ? (
                   <span className="text-gray-400">ยังไม่เข้าตู้ (ออกบิลได้เมื่อจัดเข้าตู้แล้ว)</span>
@@ -567,7 +566,12 @@ export default async function OrderPage({ params, searchParams }: Props) {
                 )}
               </Info>
               {/* ค่าขนส่งรวม (คิว × เรท หรือราคาเหมา + ค่าจัดส่งเพิ่มเติม) เทียบกับเงินค่าขนส่งที่ลูกค้าโอนแล้ว */}
-              <Info label="รวมค่าขนส่งที่คิดลูกค้า">{ship.sell != null && <b>{formatMoney(ship.sell, "THB")}</b>}</Info>
+              <Info label="รวมค่าขนส่งที่คิดลูกค้า">
+                {ship.sell != null && <b>{formatMoney(ship.sell, "THB")}</b>}
+                {ship.sell != null && order.extraCharge > 0 && (
+                  <span className="ml-1 text-xs text-gray-500">(รวมค่าใช้จ่ายเพิ่มเติม {formatMoney(order.extraCharge, "THB")})</span>
+                )}
+              </Info>
               <Info label="ชำระค่าขนส่งแล้ว">{shipPaid != null && formatMoney(shipPaid, "THB")}</Info>
               <Info label="ค่าขนส่งค้างชำระ">
                 {ship.sell != null ? (
@@ -577,21 +581,26 @@ export default async function OrderPage({ params, searchParams }: Props) {
                 )}
               </Info>
             </InfoSection>
-            {/* ค่าใช้จ่ายเพิ่มเติม (ค่าจัดส่ง ฯลฯ) แยกกล่อง — ยอดคิดลูกค้าบวกเข้ารวมค่าขนส่งด้านบนและในบิลค่าขนส่ง */}
-            <InfoSection
-              title="ค่าใช้จ่ายเพิ่มเติม (บาท · บวกในบิลค่าขนส่ง)"
-              tone="money"
-              footer={
+            {/* ค่าใช้จ่ายเพิ่มเติม (ค่าจัดส่ง ฯลฯ) แยกกล่อง — ยอดคิดลูกค้าบวกเข้ารวมค่าขนส่งด้านบนและในบิลค่าขนส่ง
+                ยังไม่มีรายการ = แถบบางๆ แถวเดียว (หัวข้อ + ปุ่มเพิ่ม) ไม่กินที่ */}
+            {(() => {
+              const extras = (
                 <ExtraCharges
                   orderId={order.id}
                   boxes={orderContainers.map((c) => ({ id: c.id, code: c.code })).sort((a, b) => a.id - b.id)}
                   rows={order.extras.map(({ id, containerId, description, charge, cost }) => ({ id, containerId, description, charge, cost }))}
+                  bare={order.extras.length === 0}
                 />
-              }
-            >
-              <Info label="รวมคิดลูกค้า">{order.extraCharge > 0 && <b>+{formatMoney(order.extraCharge, "THB")}</b>}</Info>
-              <Info label="รวมจ่ายบริษัทขนส่ง (ลูกค้าไม่เห็น)">{order.extraCost > 0 && formatMoney(order.extraCost, "THB")}</Info>
-            </InfoSection>
+              );
+              return order.extras.length === 0 ? (
+                <section className="rounded-lg border border-accent-300 bg-accent-300/10 px-4 py-2.5">{extras}</section>
+              ) : (
+                <InfoSection title="ค่าใช้จ่ายเพิ่มเติม (บาท · บวกในบิลค่าขนส่ง)" tone="money" footer={extras}>
+                  <Info label="รวมคิดลูกค้า">{order.extraCharge > 0 && <b>+{formatMoney(order.extraCharge, "THB")}</b>}</Info>
+                  <Info label="รวมจ่ายบริษัทขนส่ง (ลูกค้าไม่เห็น)">{order.extraCost > 0 && formatMoney(order.extraCost, "THB")}</Info>
+                </InfoSection>
+              );
+            })()}
             </>)}
 
             <dl className="grid gap-x-6 gap-y-4 px-1 text-sm sm:grid-cols-2 lg:grid-cols-3">

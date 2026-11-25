@@ -60,13 +60,14 @@ function ExtraForm({ orderId, boxes, row, onDone }: { orderId: number; boxes: Bo
 }
 
 // ค่าใช้จ่ายเพิ่มเติมจากการขนส่ง (ฝากส่ง) — ยอดคิดลูกค้าบวกเข้ายอดค้างชำระ + บิลค่าขนส่ง · ยอดจ่ายบริษัทขนส่งบวกเข้าต้นทุน
-export function ExtraCharges({ orderId, boxes, rows }: { orderId: number; boxes: Box[]; rows: ExtraRow[] }) {
+// bare = แสดงเป็นแถบแถวเดียว (ยังไม่มีรายการ) — ไม่มีเส้นคั่นด้านบน ไม่มีข้อความ "ยังไม่มี..."
+export function ExtraCharges({ orderId, boxes, rows, bare }: { orderId: number; boxes: Box[]; rows: ExtraRow[]; bare?: boolean }) {
   const [open, setOpen] = useState<"new" | number | null>(null);
   const [pending, start] = useTransition();
   const boxCode = (id: number | null) => (boxes.length > 1 ? (boxes.find((b) => b.id === id) ?? boxes[0])?.code : null);
 
   return (
-    <div className="mt-4 border-t border-accent-300 pt-3">
+    <div className={bare ? "" : "mt-4 border-t border-accent-300 pt-3"}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold text-gray-800">ค่าใช้จ่ายเพิ่มเติม ({rows.length})</p>
         {open !== "new" && (
@@ -80,8 +81,8 @@ export function ExtraCharges({ orderId, boxes, rows }: { orderId: number; boxes:
         )}
       </div>
       {open === "new" && <ExtraForm orderId={orderId} boxes={boxes} row={null} onDone={() => setOpen(null)} />}
-      {rows.length === 0 && open !== "new" && <p className="mt-1 text-sm text-gray-500">ยังไม่มีค่าใช้จ่ายเพิ่มเติม</p>}
-      <ul className="mt-1 divide-y divide-accent-300/50">
+      {rows.length === 0 && open !== "new" && !bare && <p className="mt-1 text-sm text-gray-500">ยังไม่มีค่าใช้จ่ายเพิ่มเติม</p>}
+      {rows.length > 0 && <ul className="mt-1 divide-y divide-accent-300/50">
         {rows.map((r) => (
           <li key={r.id} className="py-2">
             {open === r.id ? (
@@ -112,7 +113,7 @@ export function ExtraCharges({ orderId, boxes, rows }: { orderId: number; boxes:
             )}
           </li>
         ))}
-      </ul>
+      </ul>}
     </div>
   );
 }

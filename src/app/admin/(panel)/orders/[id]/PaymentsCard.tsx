@@ -104,8 +104,9 @@ export async function PaymentsPanel({
               <tr>
                 <th className="py-1.5 pr-4">{t.date}</th>
                 <th className="py-1.5 pr-4 text-right">ยอดโอน</th>
-                <th className="py-1.5 pr-4 text-right">คิดเป็น ({currencyLabel[cur]})</th>
-                <th className="py-1.5 pr-4 text-right">เรท</th>
+                {/* ค่าขนส่ง = บาทเสมอ ไม่มีแปลงสกุล → ไม่ต้องมีคอลัมน์คิดเป็น / เรท */}
+                {!shipping && <th className="py-1.5 pr-4 text-right">คิดเป็น ({currencyLabel[cur]})</th>}
+                {!shipping && <th className="py-1.5 pr-4 text-right">เรท</th>}
                 <th className="py-1.5 pr-4">ช่องทาง</th>
                 <th className="py-1.5 pr-4">{t.bank}</th>
                 {editing && <th className="py-1.5" aria-label="ลบ" />}
@@ -116,8 +117,8 @@ export async function PaymentsPanel({
                 <tr key={p.id} className="border-t border-black/5 align-top">
                   <td className="py-1.5 pr-4 whitespace-nowrap">{formatThaiDateTime(p.paidAt)}</td>
                   <td className="py-1.5 pr-4 text-right font-semibold whitespace-nowrap">{formatMoney(p.amount, p.currency)}</td>
-                  <td className="py-1.5 pr-4 text-right whitespace-nowrap">{formatMoney(p.appliedAmount, cur)}</td>
-                  <td className="py-1.5 pr-4 text-right whitespace-nowrap">
+                  {!shipping && <td className="py-1.5 pr-4 text-right whitespace-nowrap">{formatMoney(p.appliedAmount, cur)}</td>}
+                  {!shipping && <td className="py-1.5 pr-4 text-right whitespace-nowrap">
                     {p.rate == null ? (
                       <span className="text-gray-400">-</span>
                     ) : editing ? (
@@ -130,7 +131,7 @@ export async function PaymentsPanel({
                     ) : (
                       <span>{p.rate} บาท/หยวน</span>
                     )}
-                  </td>
+                  </td>}
                   <td className="py-1.5 pr-4">{p.method}</td>
                   <td className="py-1.5 pr-4 text-gray-600">{p.bank ?? p.note ?? "-"}</td>
                   {editing && (
@@ -146,9 +147,9 @@ export async function PaymentsPanel({
             </tbody>
             <tfoot>
               <tr className="border-t border-black/10">
-                <td className="py-1.5 pr-4 font-medium" colSpan={2}>{t.paid}</td>
+                <td className="py-1.5 pr-4 font-medium" colSpan={shipping ? 1 : 2}>{t.paid}</td>
                 <td className="py-1.5 pr-4 text-right font-bold whitespace-nowrap text-green-700">{formatMoney(total, cur)}</td>
-                <td colSpan={editing ? 4 : 3} />
+                <td colSpan={(shipping ? 2 : 3) + (editing ? 1 : 0)} />
               </tr>
             </tfoot>
           </table>

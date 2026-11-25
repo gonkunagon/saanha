@@ -534,16 +534,9 @@ export default async function OrderPage({ params, searchParams }: Props) {
             </InfoSection>
             {/* ออเดอร์สั่งซื้อ: ค่าขนส่งจีน → ไทย คิดแยกในบิลค่าขนส่งของตู้ (บาท) — ค่าจัดส่ง / ค่าใช้จ่ายเพิ่มเติม ใส่ตรงนี้แล้วไปขึ้นในบิล */}
             <InfoSection
-              title="ค่าขนส่ง / ค่าจัดส่งเพิ่มเติม (บาท · คิดในบิลค่าขนส่ง)"
+              title="ค่าขนส่ง (บาท · คิดในบิลค่าขนส่ง)"
               tone="money"
-              footer={<>
-                <ExtraCharges
-                  orderId={order.id}
-                  boxes={orderContainers.map((c) => ({ id: c.id, code: c.code })).sort((a, b) => a.id - b.id)}
-                  rows={order.extras.map(({ id, containerId, description, charge, cost }) => ({ id, containerId, description, charge, cost }))}
-                />
-                <PaymentsPanel order={order} payments={order.payments} direction="in" editing={payEditing === "ship"} shipping />
-              </>}
+              footer={<PaymentsPanel order={order} payments={order.payments} direction="in" editing={payEditing === "ship"} shipping />}
             >
               <Info label="ค่าขนส่งที่คิดลูกค้า">
                 <Link href={`/admin/orders/${order.id}?edit=1`} className="hover:text-brand-600 hover:underline">
@@ -561,7 +554,6 @@ export default async function OrderPage({ params, searchParams }: Props) {
               </Info>
               {order.shippingCharge != null && <Info label="ต้นทุนค่าขนส่ง (เหมา · ลูกค้าไม่เห็น)">{order.shippingCost != null && formatMoney(order.shippingCost, "THB")}</Info>}
               <Info label="ค่าจัดส่งเพิ่มเติม (คิดลูกค้า)">{order.extraCharge > 0 && <b>+{formatMoney(order.extraCharge, "THB")}</b>}</Info>
-              <Info label="ค่าจัดส่งเพิ่มเติม (จ่ายบริษัทขนส่ง)">{order.extraCost > 0 && formatMoney(order.extraCost, "THB")}</Info>
               <Info label="บิลค่าขนส่ง">
                 {orderContainers.length === 0 ? (
                   <span className="text-gray-400">ยังไม่เข้าตู้ (ออกบิลได้เมื่อจัดเข้าตู้แล้ว)</span>
@@ -584,6 +576,21 @@ export default async function OrderPage({ params, searchParams }: Props) {
                   <span className="text-xs text-gray-500">รู้ยอดเมื่อจัดเข้าตู้ หรือใส่ราคาเหมา</span>
                 )}
               </Info>
+            </InfoSection>
+            {/* ค่าใช้จ่ายเพิ่มเติม (ค่าจัดส่ง ฯลฯ) แยกกล่อง — ยอดคิดลูกค้าบวกเข้ารวมค่าขนส่งด้านบนและในบิลค่าขนส่ง */}
+            <InfoSection
+              title="ค่าใช้จ่ายเพิ่มเติม (บาท · บวกในบิลค่าขนส่ง)"
+              tone="money"
+              footer={
+                <ExtraCharges
+                  orderId={order.id}
+                  boxes={orderContainers.map((c) => ({ id: c.id, code: c.code })).sort((a, b) => a.id - b.id)}
+                  rows={order.extras.map(({ id, containerId, description, charge, cost }) => ({ id, containerId, description, charge, cost }))}
+                />
+              }
+            >
+              <Info label="รวมคิดลูกค้า">{order.extraCharge > 0 && <b>+{formatMoney(order.extraCharge, "THB")}</b>}</Info>
+              <Info label="รวมจ่ายบริษัทขนส่ง (ลูกค้าไม่เห็น)">{order.extraCost > 0 && formatMoney(order.extraCost, "THB")}</Info>
             </InfoSection>
             </>)}
 

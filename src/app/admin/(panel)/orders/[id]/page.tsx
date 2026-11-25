@@ -21,7 +21,7 @@ import { ItemPriceCells } from "./ItemPriceForm";
 import { PaymentsPanel } from "./PaymentsCard";
 import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
 import { BalanceText } from "@/components/admin/ui";
-import { balanceOf, currencyLabel, customerGoodsOf, customerShippingOf, customerTotalOf, formatMoney, orderBalance, paidOf, customerPaidRateOf, shopPaidOf, shopPaidRateOf, supplierTotalOf, type CurrencyCode } from "@/lib/money";
+import { balanceOf, currencyLabel, customerGoodsOf, customerShippingOf, customerTotalOf, formatMoney, orderBalance, paidOf, customerPaidRateOf, shippingPaidOf, shopPaidOf, shopPaidRateOf, supplierTotalOf, type CurrencyCode } from "@/lib/money";
 import { orderShippingOf } from "@/lib/shipping";
 import { DEFAULT_SHIPPING_RATE_PER_CBM } from "@/config/rates";
 import { StageUpdateForm } from "./StageUpdateForm";
@@ -231,7 +231,8 @@ export default async function OrderPage({ params, searchParams }: Props) {
   const editing = sp.edit === "1";
   // ?pay=1 = เพิ่ม/ลบการชำระเงินในหน้าดูออเดอร์ (ไม่อยู่ในหน้าแก้ไขออเดอร์)
   // ?pay=in = แก้รายการรับเงินจากลูกค้า · ?pay=out = แก้รายการจ่ายร้านค้า (pay=1 เดิม = in)
-  const payEditing = sp.pay === "out" ? "out" : sp.pay === "in" || sp.pay === "1" ? "in" : null;
+  // ?pay=ship = แก้รายการรับเงินค่าขนส่ง (ออเดอร์สั่งซื้อ)
+  const payEditing = sp.pay === "out" ? "out" : sp.pay === "ship" ? "ship" : sp.pay === "in" || sp.pay === "1" ? "in" : null;
   const order = await db.query.orders.findFirst({
     where: eq(orders.id, Number(id)),
     // รูปสินค้าโหลดแค่ id (ตัวรูปดึงผ่าน /admin/item-image/<id>)
@@ -240,7 +241,8 @@ export default async function OrderPage({ params, searchParams }: Props) {
   if (!order) notFound();
   const customers = await listCustomersForPicker();
   // เงินเข้า (ลูกค้าโอน) / เงินออก (จ่ายร้าน) · เรทที่เราจ่าย = ที่กรอกในออเดอร์ หรือเรทเฉลี่ยจากรายการจ่ายร้าน
-  const inPayments = order.payments.filter((p) => p.direction !== "out");
+  const inPayments = order.payments.filter((p) => p.direction !== "out" && p.purpose !== "shipping");
+  const shipPaid = shippingPaidOf(order.payments); // ค่าขนส่งที่ลูกค้าโอนแล้ว (ออเดอร์สั่งซื้อ · บาท)
   const shopPaid = shopPaidOf(order.payments);
   const costRate = order.costRate ?? shopPaidRateOf(order.payments);
   const sellRate = order.orderRate ?? customerPaidRateOf(order.payments); // ไม่ได้กรอกเรทคิดลูกค้า = เรทเฉลี่ยจากรายการรับเงิน
@@ -534,13 +536,14 @@ export default async function OrderPage({ params, searchParams }: Props) {
             <InfoSection
               title="ค่าขนส่ง / ค่าจัดส่งเพิ่มเติม (บาท · คิดในบิลค่าขนส่ง)"
               tone="money"
-              footer={
+              footer={<>
                 <ExtraCharges
                   orderId={order.id}
                   boxes={orderContainers.map((c) => ({ id: c.id, code: c.code })).sort((a, b) => a.id - b.id)}
                   rows={order.extras.map(({ id, containerId, description, charge, cost }) => ({ id, containerId, description, charge, cost }))}
                 />
-              }
+                <PaymentsPanel order={order} payments={order.payments} direction="in" editing={payEditing === "ship"} shipping />
+              </>}
             >
               <Info label="ค่าขนส่งที่คิดลูกค้า">
                 <Link href={`/admin/orders/${order.id}?edit=1`} className="hover:text-brand-600 hover:underline">
@@ -569,6 +572,16 @@ export default async function OrderPage({ params, searchParams }: Props) {
                       <Link href={`/admin/shipping/${c.id}/${order.id}`} target="_blank" className="text-brand-700 hover:underline">🧾 ตู้ {c.code}</Link>
                     </span>
                   ))
+                )}
+              </Info>
+              {/* ค่าขนส่งรวม (คิว × เรท หรือราคาเหมา + ค่าจัดส่งเพิ่มเติม) เทียบกับเงินค่าขนส่งที่ลูกค้าโอนแล้ว */}
+              <Info label="รวมค่าขนส่งที่คิดลูกค้า">{ship.sell != null && <b>{formatMoney(ship.sell, "THB")}</b>}</Info>
+              <Info label="ชำระค่าขนส่งแล้ว">{shipPaid != null && formatMoney(shipPaid, "THB")}</Info>
+              <Info label="ค่าขนส่งค้างชำระ">
+                {ship.sell != null ? (
+                  <BalanceText balance={balanceOf(ship.sell, shipPaid ?? 0)} currency="THB" />
+                ) : (
+                  <span className="text-xs text-gray-500">รู้ยอดเมื่อจัดเข้าตู้ หรือใส่ราคาเหมา</span>
                 )}
               </Info>
             </InfoSection>
@@ -677,7 +690,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
             // ค่าสินค้าตามตารางรายการสินค้า (ถ้ามีราคา) — ช่องในฟอร์มเป็นแบบอ่านอย่างเดียว
             order={{ ...order, totalAmount: itemTotals.buy ?? order.totalAmount, customerGoodsAmount: itemTotals.sell ?? order.customerGoodsAmount }}
             customers={customers}
-            paymentsLinked={order.payments.some((p) => p.direction !== "out")}
+            paymentsLinked={order.payments.some((p) => p.direction !== "out" && p.purpose !== "shipping")}
             domesticTracking={order.items.find((i) => i.domesticTracking)?.domesticTracking}
             goodsFromItems={{ buy: order.items.some((i) => i.unitPrice != null), sell: order.items.some((i) => i.sellPrice != null) }}
             shipping={

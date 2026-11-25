@@ -475,6 +475,22 @@ export async function addPayment(fd: FormData) {
   const order = await db.query.orders.findFirst({ where: eq(orders.id, orderId), columns: { currency: true, orderRate: true, costRate: true } });
   if (!order) return;
   const direction = fd.get("direction") === "out" ? ("out" as const) : ("in" as const);
+  // ค่าขนส่ง (บิลค่าขนส่งของตู้) = เงินบาทเสมอ แยกจากค่าสินค้า
+  if (fd.get("purpose") === "shipping") {
+    await db.insert(payments).values({
+      orderId,
+      direction,
+      purpose: "shipping",
+      amount,
+      currency: "THB",
+      appliedAmount: amount,
+      paidAt: parseLocalDateTime(fd.get("paidAt")) ?? new Date(),
+      method: paymentMethod,
+      bank: text(fd, "bank"),
+    });
+    refresh();
+    return;
+  }
   const c = String(fd.get("currency"));
   const currency: Currency = (currencies as readonly string[]).includes(c) ? (c as Currency) : "THB";
   // ยอดที่คิดเป็นสกุลของออเดอร์: สกุลเดียวกันใช้ยอดเดิม · คนละสกุลแปลงด้วยเรทที่กรอกเอง หรือเรทใบเสนอราคาของวันนี้

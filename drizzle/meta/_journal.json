@@ -169,6 +169,13 @@
       "when": 1794977275224,
       "tag": "0023_orange_nebula",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1795611713863,
+      "tag": "0024_wandering_randall",
+      "breakpoints": true
     }
   ]
 }

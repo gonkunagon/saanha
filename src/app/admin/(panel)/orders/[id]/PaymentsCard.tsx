@@ -40,6 +40,15 @@ const CARRIER_TEXT = {
   paid: "รวมจ่ายบริษัทขนส่งแล้ว",
 };
 
+// ออเดอร์สั่งซื้อ: ลูกค้าโอนค่าขนส่งตามบิลค่าขนส่ง (บาท)
+const SHIPPING_TEXT = {
+  ...TEXT.in,
+  title: "การรับเงินค่าขนส่งจากลูกค้า",
+  empty: "ยังไม่มีรายการรับเงินค่าขนส่ง",
+  add: "+ บันทึกรับเงินค่าขนส่ง",
+  paid: "รวมรับค่าขนส่งแล้ว",
+};
+
 // รายการเงินเข้า/ออกของออเดอร์ (แสดงในกล่อง "ยอดที่คิดลูกค้า" / "ยอดที่จ่ายร้านค้า")
 // in = ลูกค้าโอนเข้าบัญชีเรา (หักยอดค้างชำระ) · out = เราโอนจ่ายร้านค้า (ใช้หาเรทที่เราจ่ายจริง)
 // กด "แก้ไข" (?pay=in / ?pay=out) จึงเพิ่ม/ลบ/แก้เรทได้
@@ -49,23 +58,28 @@ export async function PaymentsPanel({
   direction,
   editing,
   carrier,
+  shipping,
 }: {
   carrier?: boolean; // เงินออกของออเดอร์ฝากส่ง = จ่ายบริษัทขนส่ง
+  shipping?: boolean; // ค่าขนส่งตามบิลค่าขนส่ง (ออเดอร์สั่งซื้อ) — เงินบาท แยกจากค่าสินค้า
   order: Pick<Order, "id" | "currency" | "orderRate" | "costRate">;
   payments: Payment[];
   direction: PaymentDirection;
   editing: boolean;
 }) {
-  const t = carrier && direction === "out" ? CARRIER_TEXT : TEXT[direction];
-  const list = payments.filter((p) => p.direction === direction).sort((a, b) => a.paidAt.getTime() - b.paidAt.getTime());
-  const cur = order.currency;
+  const t = shipping ? SHIPPING_TEXT : carrier && direction === "out" ? CARRIER_TEXT : TEXT[direction];
+  const list = payments
+    .filter((p) => p.direction === direction && (p.purpose === "shipping") === !!shipping)
+    .sort((a, b) => a.paidAt.getTime() - b.paidAt.getTime());
+  const cur = shipping ? "THB" : order.currency;
   const other = currencies.find((c) => c !== cur)!;
   const total = Math.round(list.reduce((s, p) => s + p.appliedAmount, 0) * 100) / 100;
   // เรทตั้งต้นตอนบันทึก (เว้นว่าง): เรทของออเดอร์ฝั่งนั้น · ไม่มี = เรทใบเสนอราคาวันนี้
   const orderSideRate = direction === "in" ? order.orderRate : order.costRate;
-  const todayRate = editing && orderSideRate == null ? (await getQuoteRate()).rate : null;
+  const todayRate = editing && !shipping && orderSideRate == null ? (await getQuoteRate()).rate : null;
   const fallbackRate = orderSideRate ?? todayRate;
-  const anchor = `pay-${direction}`;
+  const key = shipping ? "ship" : direction;
+  const anchor = `pay-${key}`;
 
   return (
     <div id={anchor} className="mt-4 scroll-mt-4 border-t border-black/10 pt-3">
@@ -74,7 +88,7 @@ export async function PaymentsPanel({
           {t.title} ({list.length})
         </h4>
         <Link
-          href={editing ? `/admin/orders/${order.id}#${anchor}` : `/admin/orders/${order.id}?pay=${direction}#${anchor}`}
+          href={editing ? `/admin/orders/${order.id}#${anchor}` : `/admin/orders/${order.id}?pay=${key}#${anchor}`}
           className="inline-flex items-center gap-1.5 rounded-lg border border-brand-600 bg-white px-3 py-1 text-xs font-medium text-brand-600 hover:bg-brand-50"
         >
           {editing ? "✓ เสร็จแล้ว" : "✏️ แก้ไข"}
@@ -145,9 +159,11 @@ export async function PaymentsPanel({
         <form action={addPayment} className="mt-3 grid gap-3 rounded-lg bg-white/70 p-3 ring-1 ring-black/5 sm:grid-cols-2 lg:grid-cols-4">
           <input type="hidden" name="orderId" value={order.id} />
           <input type="hidden" name="direction" value={direction} />
-          <Field label="ยอดโอน *">
+          {shipping && <input type="hidden" name="purpose" value="shipping" />}
+          <Field label={shipping ? "ยอดโอน (บาท) *" : "ยอดโอน *"}>
             <input name="amount" type="number" step="0.01" min={0.01} required className="input bg-white" />
           </Field>
+          {!shipping && (<>
           <Field label="สกุลเงินที่โอน">
             <select name="currency" defaultValue={cur === "CNY" ? "THB" : cur} className="input bg-white">
               {currencies.map((c) => <option key={c} value={c}>{currencyLabel[c]}</option>)}
@@ -163,6 +179,7 @@ export async function PaymentsPanel({
               className="input bg-white"
             />
           </Field>
+          </>)}
           <Field label={`${t.date} *`}>
             <input name="paidAt" type="datetime-local" required defaultValue={nowLocalInputValue()} className="input bg-white" />
           </Field>

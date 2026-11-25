@@ -31,7 +31,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
 
   const total = customerTotalOf(order);
   const balance = orderBalance(order, order.payments);
-  const received = order.payments.filter((p) => p.direction !== "out").sort((a, b) => a.paidAt.getTime() - b.paidAt.getTime());
+  const received = order.payments.filter((p) => p.direction !== "out" && p.purpose !== "shipping").sort((a, b) => a.paidAt.getTime() - b.paidAt.getTime());
   const paid = paidOf(order, order.payments);
   const fullyPaid = total != null && balance != null && balance <= 0 && (paid ?? 0) > 0;
 

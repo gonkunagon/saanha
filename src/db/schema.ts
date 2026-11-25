@@ -197,10 +197,14 @@ export const itemImages = pgTable("item_images", {
 // ทิศทางเงิน: in = ลูกค้าโอนเข้าบัญชีเรา · out = เราโอนจ่ายร้านค้าจีน
 export const paymentDirections = ["in", "out"] as const;
 export type PaymentDirection = (typeof paymentDirections)[number];
+// เงินก้อนนี้จ่ายค่าอะไร: goods = ค่าสินค้า (กล่องยอดที่คิดลูกค้า / จ่ายร้าน) · shipping = ค่าขนส่งตามบิลค่าขนส่ง (บาท · ออเดอร์สั่งซื้อ)
+export const paymentPurposes = ["goods", "shipping"] as const;
+export type PaymentPurpose = (typeof paymentPurposes)[number];
 
 export const payments = pgTable("payments", {
   id: id(),
   direction: text("direction", { enum: paymentDirections }).notNull().default("in"),
+  purpose: text("purpose", { enum: paymentPurposes }).notNull().default("goods"),
   orderId: integer("order_id")
     .notNull()
     .references(() => orders.id, { onDelete: "cascade" }),

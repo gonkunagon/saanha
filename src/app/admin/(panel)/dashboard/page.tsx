@@ -34,7 +34,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const sp = await searchParams;
   const all = await db.query.orders.findMany({
     with: {
-      payments: { columns: { appliedAmount: true, amount: true, currency: true, direction: true } },
+      payments: { columns: { appliedAmount: true, amount: true, currency: true, direction: true, purpose: true } },
       // ค่าขนส่ง: คิวของรายการที่เข้าตู้แล้ว × เรทออเดอร์ (ขาย) / ต้นทุน/คิว ของตู้ (ทุน)
       items: { columns: { cbm: true }, with: { container: { columns: { costPerCbm: true } } } },
     },

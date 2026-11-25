@@ -509,7 +509,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
               </Info>
             </InfoSection>
 
-            <InfoSection title="ยอดที่คิดลูกค้า" tone="money" footer={<PaymentsPanel order={order} payments={order.payments} direction="in" editing={payEditing === "in"} />}>
+            <InfoSection title="ยอดที่คิดลูกค้า (ค่าสินค้า)" tone="money" footer={<PaymentsPanel order={order} payments={order.payments} direction="in" editing={payEditing === "in"} />}>
               <Info label={order.customerGoodsAmount == null && order.handlingFeePct > 0 ? `ค่าสินค้า (คิดลูกค้า · รวมค่าดำเนินการ ${order.handlingFeePct}%)` : "ค่าสินค้า (คิดลูกค้า)"}>
                 {customerGoodsOf(order) != null && formatMoney(customerGoodsOf(order), order.currency)}
               </Info>

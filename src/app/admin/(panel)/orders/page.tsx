@@ -7,7 +7,8 @@ import { summarizeOrder } from "@/lib/orders";
 import { formatThaiDateTime } from "@/lib/datetime";
 import { itemStages, stageLabelsTh, type ItemStage } from "@/lib/stages";
 import { BalanceText, Card, ShippingOnlyBadge, StageBadge, methodLabel } from "@/components/admin/ui";
-import { customerTotalOf, formatMoney, orderBalance } from "@/lib/money";
+import { balanceOf, customerTotalOf, formatMoney, orderBalance, shippingPaidOf } from "@/lib/money";
+import { orderShippingOf } from "@/lib/shipping";
 import { SyncJjButton } from "./SyncJjButton";
 import { getSyncStatus } from "@/lib/jjsync";
 
@@ -83,7 +84,8 @@ export default async function OrdersPage({ searchParams }: Props) {
                 <th className="py-2 pr-4">วิธีขนส่ง / Tracking no.</th>
                 <th className="py-2 pr-4">รายการ / ตู้</th>
                 <th className="py-2 pr-4">สถานะ</th>
-                <th className="py-2 pr-4">ยอดเงิน</th>
+                <th className="py-2 pr-4">ค่าสินค้า</th>
+                <th className="py-2 pr-4">ค่าขนส่ง</th>
                 <th className="py-2 pr-4">สร้างเมื่อ</th>
               </tr>
             </thead>
@@ -127,9 +129,10 @@ export default async function OrdersPage({ searchParams }: Props) {
                     </span>
                   </td>
                   <td className="py-2 pr-4 whitespace-nowrap">
-                    {o.shippingOnly && o.shippingCharge == null ? (
-                      <span className="text-xs text-gray-500">คิดตามบิลค่าขนส่ง</span>
-                    ) : o.totalAmount != null || o.shippingOnly ? (
+                    {/* ฝากส่ง = ไม่มีค่าสินค้า (ยอดของออเดอร์อยู่ในช่องค่าขนส่ง) */}
+                    {o.shippingOnly ? (
+                      <span className="text-gray-400">-</span>
+                    ) : o.totalAmount != null ? (
                       <>
                         {/* ยอดเต็ม = ค่าสินค้า + ค่าดำเนินการ (ตรงกับรวมเป็นเงินทั้งสิ้นในใบเสนอราคา) */}
                         <span className="block text-xs text-gray-500">เต็ม {formatMoney(customerTotalOf(o), o.currency)}</span>
@@ -139,11 +142,34 @@ export default async function OrdersPage({ searchParams }: Props) {
                       <span className="text-gray-400">-</span>
                     )}
                   </td>
+                  {/* ค่าขนส่งตามบิลค่าขนส่ง (ออเดอร์สั่งซื้อ · บาท) เทียบกับเงินค่าขนส่งที่ลูกค้าโอนแล้ว · ฝากส่ง = อยู่ในช่องยอดเงินแล้ว */}
+                  <td className="py-2 pr-4 whitespace-nowrap">
+                    {o.shippingOnly ? (
+                      // ฝากส่ง: ยอดของออเดอร์ = ค่าขนส่ง (+ ค่าใช้จ่ายเพิ่มเติม) หักด้วยเงินที่ลูกค้าโอน
+                      o.shippingCharge == null ? (
+                        <span className="text-xs text-gray-500">คิดตามบิลค่าขนส่ง</span>
+                      ) : (
+                        <>
+                          <span className="block text-xs text-gray-500">เต็ม {formatMoney(customerTotalOf(o), "THB")}</span>
+                          <BalanceText balance={orderBalance(o, o.payments)} currency="THB" />
+                        </>
+                      )
+                    ) : (() => {
+                      const sell = orderShippingOf(o.items, o.shippingRate, o).sell;
+                      if (sell == null) return <span className="text-xs text-gray-400">ยังไม่เข้าตู้</span>;
+                      return (
+                        <>
+                          <span className="block text-xs text-gray-500">เต็ม {formatMoney(sell, "THB")}</span>
+                          <BalanceText balance={balanceOf(sell, shippingPaidOf(o.payments) ?? 0)} currency="THB" />
+                        </>
+                      );
+                    })()}
+                  </td>
                   <td className="py-2 pr-4 text-gray-500">{formatThaiDateTime(o.createdAt)}</td>
                 </tr>
               ))}
               {rows.length === 0 && (
-                <tr><td colSpan={7}className="py-6 text-center text-gray-400">ไม่พบออเดอร์</td></tr>
+                <tr><td colSpan={8} className="py-6 text-center text-gray-400">ไม่พบออเดอร์</td></tr>
               )}
             </tbody>
           </table>
